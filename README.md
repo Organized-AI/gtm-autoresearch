@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" width="200" alt="gtm-autoresearch" />
+</p>
+
 # gtm-autoresearch
 
 **Autoresearch for tracking optimization**
