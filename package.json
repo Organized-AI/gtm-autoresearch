@@ -1,0 +1,36 @@
+{
+  "name": "auto-research-engine",
+  "version": "0.1.0",
+  "description": "Self-improvement engine — watches Claude Code sessions, extracts signals, fires Apify actor, generates experiments",
+  "type": "module",
+  "scripts": {
+    "dev": "bash scripts/run-all.sh",
+    "discover": "npx tsx scripts/discover-logs.ts",
+    "extract": "npx tsx scripts/extract-signals.ts",
+    "enrich": "npx tsx scripts/enrich-signals.ts",
+    "actor": "npx tsx scripts/run-actor.ts",
+    "prefilter": "npx tsx scripts/pre-filter-actor-results.ts",
+    "analyze": "npx tsx scripts/analyze-adjacency.ts",
+    "generate": "npx tsx scripts/generate-experiments.ts",
+    "watch": "bash scripts/watch-and-run.sh",
+    "loop": "npx tsx scripts/run-loop.ts",
+    "caption-loop": "npx tsx scripts/run-caption-loop.ts",
+    "eval:caption": "npx tsx evals/eval_caption_timing.ts",
+    "eval:speaker": "npx tsx evals/eval_speaker_diarization.ts",
+    "speaker-loop": "npx tsx scripts/run-speaker-diarization-loop.ts",
+    "eval:gtm": "npx tsx evals/eval_gtm_signal_quality.ts",
+    "gtm-loop": "npx tsx scripts/run-gtm-loop.ts",
+    "typecheck": "npx tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.22.4",
+    "dotenv": "^16.4.5",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "tsx": "^4.11.0",
+    "@types/node": "^20.12.12"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "account_id": "act_645790768357540",
+  "account_name": "HRE Beauty",
+  "pixel_id": "1029907382331846",
+  "pixel_name": "CV | HRE Pixel | Created 03.29.2025",
+  "date_range": { "since": "2026-03-07", "until": "2026-04-05" },
+  "currency": "USD",
+  "spend": 51628.89,
+  "conversion_events": [
+    {
+      "event": "view_content",
+      "count_7d_click": 20777,
+      "count_1d_click": 20127,
+      "count_1d_view": 1306,
+      "value_7d_click": 566609.75
+    },
+    {
+      "event": "add_to_cart",
+      "count_7d_click": 3537,
+      "count_1d_click": 3312,
+      "count_1d_view": 391,
+      "value_7d_click": 92008
+    },
+    {
+      "event": "initiate_checkout",
+      "count_7d_click": 2221,
+      "count_1d_click": 2050,
+      "count_1d_view": 351,
+      "value_7d_click": 27181.32
+    },
+    {
+      "event": "add_payment_info",
+      "count_7d_click": 343,
+      "count_1d_click": 320,
+      "count_1d_view": 63,
+      "value_7d_click": 14248
+    },
+    {
+      "event": "purchase",
+      "count_7d_click": 1231,
+      "count_1d_click": 1144,
+      "count_1d_view": 166,
+      "value_7d_click": 51062.94
+    },
+    {
+      "event": "search",
+      "count_7d_click": 67,
+      "count_1d_click": 60,
+      "count_1d_view": 24,
+      "value_7d_click": 0
+    },
+    {
+      "event": "lead",
+      "count_7d_click": 622,
+      "count_1d_click": 622,
+      "count_1d_view": 0,
+      "value_7d_click": 0
+    }
+  ]
+}
