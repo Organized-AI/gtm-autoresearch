@@ -17,7 +17,7 @@
  */
 
 import "dotenv/config";
-import { writeFile, readFile } from "node:fs/promises";
+import { writeFile, rename } from "node:fs/promises";
 import path from "node:path";
 import type {
   EnrichedAdsSnapshot,
@@ -31,6 +31,68 @@ const PROJECT_ROOT = path.resolve(new URL(".", import.meta.url).pathname, "..");
 const OUTPUT_PATH = path.resolve(PROJECT_ROOT, "data/signals/ads-snapshot-enriched.json");
 
 const META_API_VERSION = "v21.0";
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
+// ── Retry helper ────────────────────────────────────────────────────────────
+
+function sanitizeErrorBody(body: string): string {
+  return body
+    .slice(0, 500)
+    .replace(/"(client_secret|access_token|refresh_token)"\s*:\s*"[^"]*"/gi, '"$1":"<redacted>"');
+}
+
+function safeParseFloat(value: unknown, fallback = 0): number {
+  const parsed = parseFloat(String(value ?? "0"));
+  return isNaN(parsed) ? fallback : parsed;
+}
+
+async function fetchWithRetry(
+  url: string,
+  init?: RequestInit,
+): Promise<Response> {
+  let lastError: Error | undefined;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, init);
+
+      if (res.ok) return res;
+
+      // Don't retry 4xx errors (except 429 rate limit)
+      if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+        const body = await res.text();
+        throw new Error(`API error ${res.status}: ${sanitizeErrorBody(body)}`);
+      }
+
+      // Retry on 429 or 5xx
+      if (attempt < MAX_RETRIES) {
+        let delayMs = BASE_DELAY_MS * Math.pow(2, attempt);
+        const retryAfter = res.headers.get("Retry-After");
+        if (retryAfter) {
+          const retrySeconds = parseInt(retryAfter, 10);
+          if (!isNaN(retrySeconds)) delayMs = retrySeconds * 1000;
+        }
+        console.log(`[Retry] ${res.status} on attempt ${attempt + 1}/${MAX_RETRIES + 1}, waiting ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+
+      const body = await res.text();
+      throw new Error(`API error ${res.status} after ${MAX_RETRIES + 1} attempts: ${sanitizeErrorBody(body)}`);
+    } catch (err) {
+      lastError = err as Error;
+      if (attempt < MAX_RETRIES && (err as Error).message?.includes("fetch failed")) {
+        const delayMs = BASE_DELAY_MS * Math.pow(2, attempt);
+        console.log(`[Retry] Network error on attempt ${attempt + 1}/${MAX_RETRIES + 1}, waiting ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError ?? new Error("fetchWithRetry exhausted");
+}
 
 // ── Funnel step definitions (Shopify ecom benchmarks) ───────────────────────
 
@@ -71,11 +133,7 @@ async function fetchMetaInsights(
   });
 
   const url = `https://graph.facebook.com/${META_API_VERSION}/${accountId}/insights?${params}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Meta Insights API error ${res.status}: ${body}`);
-  }
+  const res = await fetchWithRetry(url);
   const json = await res.json();
   const data = json.data?.[0];
 
@@ -84,7 +142,7 @@ async function fetchMetaInsights(
     return { spend: 0, events: [], dateRange: { since: sinceStr, until: untilStr } };
   }
 
-  const spend = parseFloat(data.spend ?? "0");
+  const spend = safeParseFloat(data.spend);
 
   // Map standard conversion events from actions array
   const eventMap = new Map<string, { count_7d: number; count_1d: number; count_1d_view: number; value_7d: number }>();
@@ -107,7 +165,7 @@ async function fetchMetaInsights(
     if (!eventName) continue;
     const existing = eventMap.get(eventName) ?? { count_7d: 0, count_1d: 0, count_1d_view: 0, value_7d: 0 };
     // Default attribution window in actions is 7d_click + 1d_view
-    existing.count_7d = parseInt(action.value ?? "0", 10);
+    existing.count_7d = Math.max(0, parseInt(action.value ?? "0", 10) || 0);
     eventMap.set(eventName, existing);
   }
 
@@ -117,7 +175,7 @@ async function fetchMetaInsights(
     if (!eventName) continue;
     const existing = eventMap.get(eventName);
     if (existing) {
-      existing.value_7d = parseFloat(av.value ?? "0");
+      existing.value_7d = safeParseFloat(av.value);
     }
   }
 
@@ -144,20 +202,15 @@ async function fetchPixelStats(
   const url = `https://graph.facebook.com/${META_API_VERSION}/${pixelId}/stats?${params}`;
 
   try {
-    const res = await fetch(url);
-    if (!res.ok) {
-      console.log(`[Meta] Pixel stats API returned ${res.status} — skipping CAPI/browser split`);
-      return result;
-    }
-
+    const res = await fetchWithRetry(url);
     const json = await res.json();
     for (const stat of (json.data ?? [])) {
       const event = stat.event?.toLowerCase();
       if (!event) continue;
       result.set(event, {
-        count_browser: stat.count_browser_events ?? 0,
-        count_server: stat.count_server_events ?? 0,
-        dedup_rate: stat.deduplicated_percentage ? stat.deduplicated_percentage / 100 : 0,
+        count_browser: safeParseFloat(stat.count_browser_events),
+        count_server: safeParseFloat(stat.count_server_events),
+        dedup_rate: stat.deduplicated_percentage ? safeParseFloat(stat.deduplicated_percentage) / 100 : 0,
       });
     }
   } catch (err) {
@@ -176,17 +229,13 @@ async function fetchPixelEMQ(
   const url = `https://graph.facebook.com/${META_API_VERSION}/${pixelId}?fields=data_use_setting,server_events_diagnostics&access_token=${token}`;
 
   try {
-    const res = await fetch(url);
-    if (!res.ok) {
-      console.log(`[Meta] EMQ diagnostics returned ${res.status} — skipping EMQ scores`);
-      return result;
-    }
-
+    const res = await fetchWithRetry(url);
     const json = await res.json();
     const diagnostics = json.server_events_diagnostics ?? [];
     for (const diag of diagnostics) {
       if (diag.event_name && diag.event_match_quality !== undefined) {
-        result.set(diag.event_name.toLowerCase(), diag.event_match_quality);
+        const emq = safeParseFloat(diag.event_match_quality, -1);
+        if (emq >= 0) result.set(diag.event_name.toLowerCase(), emq);
       }
     }
   } catch (err) {
@@ -207,7 +256,7 @@ async function getGoogleAdsAccessToken(): Promise<string> {
     throw new Error("Missing Google Ads OAuth credentials");
   }
 
-  const res = await fetch("https://oauth2.googleapis.com/token", {
+  const res = await fetchWithRetry("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -217,11 +266,6 @@ async function getGoogleAdsAccessToken(): Promise<string> {
       grant_type: "refresh_token",
     }),
   });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Google OAuth token exchange failed ${res.status}: ${body}`);
-  }
 
   const json = await res.json();
   return json.access_token;
@@ -258,16 +302,11 @@ async function fetchGoogleConversionActions(
   }
 
   const url = `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:searchStream`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers,
     body: JSON.stringify({ query }),
   });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Google Ads API error ${res.status}: ${body}`);
-  }
 
   const json = await res.json();
   const actions: GoogleAdsConversionAction[] = [];
@@ -293,8 +332,8 @@ async function fetchGoogleConversionActions(
         status: ca.status ?? "ENABLED",
         counting_type: ca.countingType ?? "ONE_PER_CLICK",
         click_through_lookback_window_days: ca.clickThroughLookbackWindowDays ?? 30,
-        conversion_count_30d: parseFloat(result.metrics?.conversions ?? "0"),
-        conversion_value_30d: parseFloat(result.metrics?.conversionsValue ?? "0"),
+        conversion_count_30d: safeParseFloat(result.metrics?.conversions),
+        conversion_value_30d: safeParseFloat(result.metrics?.conversionsValue),
         tag_snippets: snippets,
       });
     }
@@ -355,7 +394,11 @@ async function main(): Promise<void> {
   const snapshot: EnrichedAdsSnapshot = {
     generated_at: new Date().toISOString(),
     funnel: [],
+    partial: false,
   };
+
+  let metaFailed = false;
+  let googleFailed = false;
 
   // ── Meta section ──
 
@@ -423,6 +466,7 @@ async function main(): Promise<void> {
         }
       } catch (err) {
         console.error(`[Meta] Error: ${(err as Error).message}`);
+        metaFailed = true;
       }
     }
   }
@@ -454,15 +498,25 @@ async function main(): Promise<void> {
         }
       } catch (err) {
         console.error(`[GoogleAds] Error: ${(err as Error).message}`);
+        googleFailed = true;
       }
     }
   }
 
-  // ── Write output ──
+  // ── Set partial flag ──
 
-  await writeFile(OUTPUT_PATH, JSON.stringify(snapshot, null, 2));
+  if (metaFailed || googleFailed) {
+    snapshot.partial = true;
+    console.warn(`[RefreshSnapshot] Partial failure: meta=${metaFailed ? "FAILED" : "ok"}, google=${googleFailed ? "FAILED" : "ok"}`);
+  }
+
+  // ── Atomic write (temp → rename) ──
+
+  const tempPath = OUTPUT_PATH + ".tmp";
+  await writeFile(tempPath, JSON.stringify(snapshot, null, 2));
+  await rename(tempPath, OUTPUT_PATH);
   console.log(`\n[RefreshSnapshot] Written to: ${OUTPUT_PATH}`);
-  console.log(`[RefreshSnapshot] Meta: ${snapshot.meta ? "✓" : "✗"}, Google Ads: ${snapshot.google_ads ? "✓" : "✗"}, Funnel steps: ${snapshot.funnel.length}`);
+  console.log(`[RefreshSnapshot] Meta: ${snapshot.meta ? "ok" : "missing"}, Google Ads: ${snapshot.google_ads ? "ok" : "missing"}, Funnel steps: ${snapshot.funnel.length}${snapshot.partial ? " [PARTIAL]" : ""}`);
 }
 
 main().catch((err) => {

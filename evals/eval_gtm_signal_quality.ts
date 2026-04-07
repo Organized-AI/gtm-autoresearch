@@ -169,6 +169,7 @@ export interface FunnelRatio {
 
 export interface EnrichedAdsSnapshot {
   generated_at: string;      // ISO 8601 timestamp
+  partial?: boolean;         // true if some API calls failed during refresh
   meta?: {
     account_id: string;
     account_name: string;
@@ -775,11 +776,22 @@ function scoreCapiCoverage(
   const issues: GtmIssue[] = [];
 
   if (metaEvents.length === 0) {
-    return { name: "capiCoverage", weight: 0.08, score: 1, issues };
+    return {
+      name: "capiCoverage", weight: 0.08, score: 0.5,
+      issues: [{ dimension: "capiCoverage", severity: "info", entity: "snapshot", message: "No Meta conversion events in snapshot — cannot assess CAPI coverage" }],
+    };
   }
 
   const totalValue = metaEvents.reduce((s, e) => s + e.value_7d_click, 0);
   const totalCount = metaEvents.reduce((s, e) => s + e.count_7d_click, 0);
+
+  // Guard against division by zero when all counts are 0
+  if (totalValue === 0 && totalCount === 0) {
+    return {
+      name: "capiCoverage", weight: 0.08, score: 0.5,
+      issues: [{ dimension: "capiCoverage", severity: "warning", entity: "snapshot", message: "All Meta events have zero counts — cannot compute CAPI coverage" }],
+    };
+  }
 
   let weightedScore = 0;
   let weightedTotal = 0;
@@ -923,7 +935,10 @@ function scoreFunnelIntegrity(
   const issues: GtmIssue[] = [];
 
   if (funnel.length === 0) {
-    return { name: "funnelIntegrity", weight: 0.07, score: 1, issues };
+    return {
+      name: "funnelIntegrity", weight: 0.07, score: 0.5,
+      issues: [{ dimension: "funnelIntegrity", severity: "info", entity: "funnel", message: "No funnel steps computed — verify snapshot has sufficient conversion events" }],
+    };
   }
 
   let normalSteps = 0;
@@ -979,7 +994,10 @@ function scoreGoogleAdsAlignment(
   );
 
   if (actions.length === 0) {
-    return { name: "googleAdsAlignment", weight: 0.08, score: 1, issues };
+    return {
+      name: "googleAdsAlignment", weight: 0.08, score: 0.5,
+      issues: [{ dimension: "googleAdsAlignment", severity: "info", entity: "google_ads", message: "No enabled Google Ads conversion actions found — cannot assess alignment" }],
+    };
   }
 
   const totalValue = actions.reduce((s, a) => s + a.conversion_value_30d, 0);
@@ -1202,6 +1220,12 @@ export function evaluateGtmSignalQuality(
     if (weights[dim.name] !== undefined) {
       dim.weight = weights[dim.name];
     }
+  }
+
+  // Validate weight sum ≈ 1.0 (catch future misconfigurations)
+  const weightSum = dimensions.reduce((s, d) => s + d.weight, 0);
+  if (Math.abs(weightSum - 1.0) > 0.01) {
+    console.error(`[EvalGTM] Weight sum is ${weightSum.toFixed(4)} (profile: ${profileKey}) — expected 1.0. Scoring may be incorrect.`);
   }
 
   const combinedScore = dimensions.reduce(

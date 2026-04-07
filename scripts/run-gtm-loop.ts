@@ -305,10 +305,34 @@ async function main(): Promise<void> {
     try {
       const snapRaw = await readFile(snapPath, "utf-8");
       const enriched = JSON.parse(snapRaw) as EnrichedAdsSnapshot;
+
+      // Staleness check
+      if (enriched.generated_at) {
+        const ageMs = Date.now() - new Date(enriched.generated_at).getTime();
+        const ageHours = ageMs / (1000 * 60 * 60);
+        if (ageHours > 72) {
+          console.error(`[GTMLoop] Enriched snapshot is ${ageHours.toFixed(0)}h old — too stale for reliable optimization. Run: npx tsx scripts/refresh-ads-snapshot.ts`);
+          process.exit(1);
+        }
+        if (ageHours > 24) {
+          console.warn(`[GTMLoop] WARNING: Enriched snapshot is ${ageHours.toFixed(0)}h old — results may not reflect live ads data`);
+        }
+      }
+
+      // Partial failure warning
+      if (enriched.partial) {
+        console.warn("[GTMLoop] WARNING: Enriched snapshot was generated with partial API failures — some dimensions may be inaccurate");
+      }
+
       adsSnapshot = enriched;
       console.log(`[GTMLoop] Enriched snapshot: meta=${!!enriched.meta}, google_ads=${!!enriched.google_ads}, funnel_steps=${enriched.funnel.length}`);
-    } catch {
-      console.log(`[GTMLoop] Could not load enriched snapshot at ${snapPath} — falling back`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("ENOENT") || msg.includes("no such file")) {
+        console.log(`[GTMLoop] Enriched snapshot not found at ${snapPath} — falling back to legacy`);
+      } else {
+        console.warn(`[GTMLoop] Failed to parse enriched snapshot: ${msg} — falling back to legacy`);
+      }
     }
   }
 
