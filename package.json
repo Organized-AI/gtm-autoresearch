@@ -19,6 +19,7 @@
     "eval:speaker": "npx tsx evals/eval_speaker_diarization.ts",
     "speaker-loop": "npx tsx scripts/run-speaker-diarization-loop.ts",
     "eval:gtm": "npx tsx evals/eval_gtm_signal_quality.ts",
+    "refresh-snapshot": "npx tsx scripts/refresh-ads-snapshot.ts",
     "gtm-loop": "npx tsx scripts/run-gtm-loop.ts",
     "typecheck": "npx tsc --noEmit"
   },

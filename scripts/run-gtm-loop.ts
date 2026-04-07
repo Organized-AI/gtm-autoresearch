@@ -20,6 +20,7 @@ import {
   type GtmSignalQualityResult,
   type GtmIssue,
   type MetaAdsSnapshot,
+  type EnrichedAdsSnapshot,
 } from "../evals/eval_gtm_signal_quality.js";
 
 const PROJECT_ROOT = path.resolve(
@@ -41,6 +42,7 @@ const MUTATION_BUDGET = 3;
 interface ProgramConfig {
   templatePath: string;
   metaSnapshotPath: string | undefined;
+  enrichedSnapshotPath: string | undefined;
   strategyOrder: string[];
   constraints: string[];
 }
@@ -63,6 +65,9 @@ function parseProgram(content: string): ProgramConfig {
   const metaMatch = content.match(/Meta Ads snapshot:\s*`([^`]+)`/);
   const metaSnapshotPath = metaMatch?.[1];
 
+  const enrichedMatch = content.match(/Enriched Ads snapshot:\s*`([^`]+)`/);
+  const enrichedSnapshotPath = enrichedMatch?.[1];
+
   const strategyOrder = [
     "consent",
     "meta_coverage",
@@ -70,6 +75,8 @@ function parseProgram(content: string): ProgramConfig {
     "deduplication",
     "naming",
     "folders",
+    "capi_coverage",
+    "google_ads_alignment",
   ];
 
   const constraints = [
@@ -79,7 +86,7 @@ function parseProgram(content: string): ProgramConfig {
     "unique_ids",
   ];
 
-  return { templatePath, metaSnapshotPath, strategyOrder, constraints };
+  return { templatePath, metaSnapshotPath, enrichedSnapshotPath, strategyOrder, constraints };
 }
 
 // ── Placeholder extraction ───────────────────────────────────────────────────
@@ -290,19 +297,39 @@ async function main(): Promise<void> {
 
   const templatePath = path.resolve(PROJECT_ROOT, config.templatePath);
 
-  // Load optional Meta Ads snapshot
-  let metaSnapshot: MetaAdsSnapshot | undefined;
-  if (config.metaSnapshotPath) {
+  // Load ads snapshot (enriched preferred, legacy Meta fallback)
+  let adsSnapshot: EnrichedAdsSnapshot | MetaAdsSnapshot | undefined;
+
+  if (config.enrichedSnapshotPath) {
+    const snapPath = path.resolve(PROJECT_ROOT, config.enrichedSnapshotPath);
+    try {
+      const snapRaw = await readFile(snapPath, "utf-8");
+      const enriched = JSON.parse(snapRaw) as EnrichedAdsSnapshot;
+      adsSnapshot = enriched;
+      console.log(`[GTMLoop] Enriched snapshot: meta=${!!enriched.meta}, google_ads=${!!enriched.google_ads}, funnel_steps=${enriched.funnel.length}`);
+    } catch {
+      console.log(`[GTMLoop] Could not load enriched snapshot at ${snapPath} — falling back`);
+    }
+  }
+
+  if (!adsSnapshot && config.metaSnapshotPath) {
     const metaPath = path.resolve(PROJECT_ROOT, config.metaSnapshotPath);
     const metaRaw = await readFile(metaPath, "utf-8");
-    metaSnapshot = JSON.parse(metaRaw) as MetaAdsSnapshot;
-    console.log(`[GTMLoop] Meta Ads snapshot: ${metaSnapshot.account_name} (${metaSnapshot.conversion_events.length} events)`);
+    const metaSnapshot = JSON.parse(metaRaw) as MetaAdsSnapshot;
+    adsSnapshot = metaSnapshot;
+    console.log(`[GTMLoop] Meta Ads snapshot (legacy): ${metaSnapshot.account_name} (${metaSnapshot.conversion_events.length} events)`);
   }
+
+  const snapshotLabel = adsSnapshot
+    ? ("meta" in adsSnapshot && "funnel" in adsSnapshot
+        ? "enriched"
+        : (adsSnapshot as MetaAdsSnapshot).account_name ?? "legacy meta")
+    : "none (structural only)";
 
   console.log("\n[GTMLoop] Starting GTM Autoresearch Loop");
   console.log(`[GTMLoop] Template: ${templatePath}`);
   console.log(`[GTMLoop] Program: ${absProgram}`);
-  console.log(`[GTMLoop] Meta Ads: ${metaSnapshot ? metaSnapshot.account_name : "none (structural only)"}`);
+  console.log(`[GTMLoop] Ads data: ${snapshotLabel}`);
   console.log(`[GTMLoop] Max rounds: ${MAX_ROUNDS}`);
   console.log(`[GTMLoop] Plateau target: ${(PLATEAU_SCORE * 100).toFixed(0)}%\n`);
 
@@ -328,7 +355,7 @@ async function main(): Promise<void> {
     console.log(`${"═".repeat(60)}`);
 
     // Score current state
-    const scores = evaluateGtmSignalQuality(working, metaSnapshot);
+    const scores = evaluateGtmSignalQuality(working, adsSnapshot);
 
     console.log(
       `[Score] Combined: ${(scores.combinedScore * 100).toFixed(1)}%`,
@@ -472,7 +499,7 @@ async function main(): Promise<void> {
     }
 
     // Re-score mutated version
-    const mutatedScores = evaluateGtmSignalQuality(mutated, metaSnapshot);
+    const mutatedScores = evaluateGtmSignalQuality(mutated, adsSnapshot);
     console.log(
       `[Mutate] New score: ${(mutatedScores.combinedScore * 100).toFixed(1)}% ` +
         `(was ${(scores.combinedScore * 100).toFixed(1)}%)`,
