@@ -1326,7 +1326,11 @@ async function main(): Promise<void> {
   console.log("");
 }
 
-main().catch((err) => {
-  console.error("[EvalGTM] Error:", err.message);
-  process.exit(1);
-});
+// Only run CLI when executed directly (not when imported)
+const isDirectRun = process.argv[1]?.includes("eval_gtm_signal_quality");
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error("[EvalGTM] Error:", err.message);
+    process.exit(1);
+  });
+}

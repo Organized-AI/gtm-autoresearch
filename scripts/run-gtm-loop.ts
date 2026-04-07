@@ -30,7 +30,7 @@ const PROJECT_ROOT = path.resolve(
 
 const CLAUDE_PATH =
   process.env.CLAUDE_PATH ?? "/Users/jordaaan/.local/bin/claude";
-const MAX_ROUNDS = 30;
+const MAX_ROUNDS = parseInt(process.env.MAX_ROUNDS ?? "30", 10);
 const PLATEAU_SCORE = 0.92;
 const PLATEAU_STREAK = 3;
 const MAX_REGRESSIONS = 3;
