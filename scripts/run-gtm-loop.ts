@@ -2,15 +2,20 @@
  * GTM Autoresearch Loop
  *
  * Karpathy-style autonomous experimentation loop that optimizes GTM container
- * configurations via structural scoring + Claude Haiku mutations.
+ * configurations via structural scoring + LLM mutations.
  *
- * Loop: score → build prompt → mutate via Haiku → validate → keep/revert → repeat
+ * Loop: score → build prompt → mutate via LLM → validate → keep/revert → repeat
+ *
+ * Mutation providers:
+ *   MUTATION_PROVIDER=claude  (default) — uses Claude CLI, authenticated via your Claude plan
+ *   MUTATION_PROVIDER=openai  — uses OpenAI API (GPT-5.4, GPT-4o, etc.), requires OPENAI_API_KEY
  *
  * Usage:
  *   npx tsx scripts/run-gtm-loop.ts [program.md path]
  *   npx tsx scripts/run-gtm-loop.ts   (defaults to DOCUMENTATION/loops/gtm-autoresearch/program.md)
  */
 
+import "dotenv/config";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -36,6 +41,12 @@ const PLATEAU_STREAK = 3;
 const MAX_REGRESSIONS = 3;
 const MAX_JSON_FAILURES = 5;
 const MUTATION_BUDGET = 3;
+
+// Mutation provider config
+const MUTATION_PROVIDER = process.env.MUTATION_PROVIDER ?? "claude"; // "claude" | "openai"
+const MUTATION_MODEL = process.env.MUTATION_MODEL ?? (MUTATION_PROVIDER === "openai" ? "gpt-4o" : "sonnet");
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -244,15 +255,15 @@ ${warningIssues || "  None"}
 ${JSON.stringify(container, null, 2)}`;
 }
 
-// ── Call Claude Haiku ────────────────────────────────────────────────────────
+// ── Mutation providers ──────────────────────────────────────────────────────
 
-function callHaiku(prompt: string): string | null {
+function callClaudeCli(prompt: string): string | null {
   const env = { ...process.env };
   delete env.CLAUDECODE;
 
   const result = spawnSync(
     CLAUDE_PATH,
-    ["-p", "--output-format", "text", "--model", "opus", prompt],
+    ["-p", "--output-format", "text", "--model", MUTATION_MODEL, prompt],
     {
       encoding: "utf-8",
       timeout: 180000,
@@ -262,11 +273,66 @@ function callHaiku(prompt: string): string | null {
   );
 
   if (result.status !== 0) {
-    console.log(`  [Haiku] CLI error: ${result.stderr?.slice(0, 200)}`);
+    console.log(`  [Claude] CLI error: ${result.stderr?.slice(0, 200)}`);
     return null;
   }
 
   return result.stdout;
+}
+
+async function callOpenAi(prompt: string): Promise<string | null> {
+  if (!OPENAI_API_KEY) {
+    console.log("  [OpenAI] Missing OPENAI_API_KEY");
+    return null;
+  }
+
+  try {
+    const res = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MUTATION_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: "You are a GTM container optimization engine. Output ONLY valid JSON — no markdown fences, no commentary, no explanation. Your entire response must be parseable by JSON.parse().",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.3,
+        max_tokens: 16384,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.log(`  [OpenAI] API error ${res.status}: ${body.slice(0, 200)}`);
+      return null;
+    }
+
+    const json = await res.json();
+    const content = json.choices?.[0]?.message?.content;
+
+    if (!content) {
+      console.log("  [OpenAI] Empty response");
+      return null;
+    }
+
+    return content;
+  } catch (err) {
+    console.log(`  [OpenAI] Error: ${(err as Error).message}`);
+    return null;
+  }
+}
+
+function callMutation(prompt: string): string | null | Promise<string | null> {
+  if (MUTATION_PROVIDER === "openai") {
+    return callOpenAi(prompt);
+  }
+  return callClaudeCli(prompt);
 }
 
 // ── Determine strategy focus ─────────────────────────────────────────────────
@@ -355,6 +421,7 @@ async function main(): Promise<void> {
   console.log(`[GTMLoop] Program: ${absProgram}`);
   console.log(`[GTMLoop] Ads data: ${snapshotLabel}`);
   console.log(`[GTMLoop] Max rounds: ${MAX_ROUNDS}`);
+  console.log(`[GTMLoop] Mutation: ${MUTATION_PROVIDER}/${MUTATION_MODEL}`);
   console.log(`[GTMLoop] Plateau target: ${(PLATEAU_SCORE * 100).toFixed(0)}%\n`);
 
   // Load seed template (read-only reference)
@@ -450,11 +517,11 @@ async function main(): Promise<void> {
       consecutiveJsonFails,
     );
 
-    console.log("[Mutate] Calling Claude Haiku...");
-    const response = callHaiku(prompt);
+    console.log(`[Mutate] Calling ${MUTATION_PROVIDER}/${MUTATION_MODEL}...`);
+    const response = await callMutation(prompt);
 
     if (!response) {
-      console.log("[Mutate] No response from Haiku");
+      console.log("[Mutate] No response from mutation provider");
       consecutiveJsonFails++;
       results.push({
         round,
@@ -464,7 +531,7 @@ async function main(): Promise<void> {
         ),
         issueCount: scores.issues.length,
         action: "json_fail",
-        mutationSummary: "No response from Haiku",
+        mutationSummary: "No response from mutation provider",
       });
 
       if (consecutiveJsonFails >= MAX_JSON_FAILURES) {
@@ -485,7 +552,7 @@ async function main(): Promise<void> {
       mutated = JSON.parse(cleaned);
       consecutiveJsonFails = 0;
     } catch (err) {
-      console.log(`[Mutate] Invalid JSON from Haiku: ${(err as Error).message}`);
+      console.log(`[Mutate] Invalid JSON from mutation: ${(err as Error).message}`);
       consecutiveJsonFails++;
       results.push({
         round,
