@@ -53,6 +53,59 @@ claude --dangerously-skip-permissions
 # Then: "Read PLANNING/CLAUDE-CODE-EXECUTION-RUNBOOK.md and execute the next phase"
 ```
 
+## Experiment Logger (Phase 1 — Fine-tune Pipeline)
+
+Local SQLite-backed experiment store for structured training data.
+
+### Schema
+`src/types/experiment.ts` — Zod-validated `ExperimentRecord` with id, client_id, run_id, problem, solution, score (0.0–1.0), timestamp, account_snapshot, sources_used.
+
+### Key Files
+- `src/experiment-logger/db.ts` — SQLite writer (better-sqlite3, WAL mode, INSERT OR IGNORE)
+- `src/experiment-logger/logger.ts` — `ExperimentLogger` class (save, saveBatch, query, export, count)
+- `scripts/experiment-logger.ts` — CLI: `export --client`, `count --client`, `import --file --client`
+- `evals/eval_experiment_logger.ts` — Tests: schema, score clamping, round-trip, JSONL, idempotency, filtering
+
+### Database
+- Path: `data/experiments.sqlite`
+- Indexed on `(client_id, run_id)`
+- Idempotent: duplicate IDs silently ignored
+
+### CLI
+```bash
+npx tsx scripts/experiment-logger.ts export --client hre    # JSONL to stdout
+npx tsx scripts/experiment-logger.ts count --client hre     # count records
+npx tsx scripts/experiment-logger.ts import --file data.json --client hre  # bulk import
+```
+
+## Meta Ads Capture (Phase 2 — Live Data)
+
+Pulls Meta Ads campaign + creative data from Pipeboard MCP tools into the experiment logger.
+
+### Key Files
+- `src/meta-ads/transform.ts` — `MetaAdRaw` / `CaptureMetadata` interfaces, `calculateScore`, `buildProblem`, `buildSolution`, `transformAdsToExperiments`
+- `scripts/extract-meta-ads.ts` — Extracts from Pipeboard MCP result file → staging JSON → ready for import
+- `evals/eval_meta_ads_transform.ts` — 27 tests: scoring, filtering, schema compliance
+- `.claude/commands/capture-meta-ads.md` — Slash command `/capture-meta-ads` for live capture
+
+### Score Formula
+`ROAS/5.0 (60%) + CTR/3.0 (20%) + convRate/0.05 (20%)`, clamped 0–1. HRE average ≈ 0.2, top performers 0.5–1.0.
+
+### Data Flow
+```
+Pipeboard MCP → bulk_get_insights (ad level, last 30d) → extract-meta-ads.ts → data/signals/meta-ads-experiments.json → CLI import → SQLite
+```
+
+### Account
+- HRE Beauty: `act_645790768357540`
+- Client ID: `hre`
+
+### CLI
+```bash
+npx tsx scripts/experiment-logger.ts count --client hre     # check record count
+/capture-meta-ads                                            # full capture via slash command
+```
+
 ## Agent Conventions
 - Read this file first on every session
 - Check `AGENT-HANDOFF/CURRENT-STATE.md` before starting any work

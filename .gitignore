@@ -4,5 +4,8 @@ dist/
 data/actor-runs/
 data/errors/
 data/pipeline.log
+data/experiments.sqlite
+data/experiments.sqlite-wal
+data/experiments.sqlite-shm
 *.log
 .DS_Store

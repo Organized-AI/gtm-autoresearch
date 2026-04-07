@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 1 — Experiment Logger</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #f5f0e8;
+  --surface: #ede8df;
+  --ink: #1a1410;
+  --ink2: #3d3530;
+  --muted: #8c7e72;
+  --border: #d4ccc0;
+  --teal: #06b6d4;
+  --teal-light: #ecfeff;
+  --teal-mid: #22d3ee;
+  --green: #059669;
+  --green-light: #ecfdf5;
+  --red: #dc2626;
+  --amber: #d97706;
+  --blue: #2563eb;
+  --rule: #c8bfb4;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999; opacity: 0.4;
+}
+
+.page { max-width: 1000px; margin: 0 auto; padding: 64px 32px; }
+
+/* Masthead */
+.masthead {
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding: 20px 0 16px;
+  margin-bottom: 48px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 24px;
+}
+
+.masthead .meta {
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
+
+.masthead h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(32px, 5vw, 58px);
+  line-height: 1.05; color: var(--ink); font-weight: 400;
+}
+
+.masthead h1 em { font-style: italic; color: var(--teal); }
+
+.masthead .issue {
+  text-align: right; font-size: 10px; color: var(--muted); line-height: 1.8;
+  border-left: 1px solid var(--rule); padding-left: 20px;
+}
+
+.masthead .issue strong {
+  color: var(--ink); display: block; font-size: 20px;
+  font-family: 'DM Serif Display', serif;
+}
+
+/* Section rules */
+.section-rule {
+  display: flex; align-items: center; gap: 12px; margin: 44px 0 20px;
+}
+.section-rule::before, .section-rule::after {
+  content: ''; flex: 1; height: 1px; background: var(--rule);
+}
+.section-rule span {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--muted); white-space: nowrap;
+}
+
+/* Pipeline flow */
+.pipeline-flow {
+  display: flex; align-items: stretch; gap: 0; margin-bottom: 8px;
+  overflow-x: auto; padding-bottom: 4px;
+}
+
+.pipe-stage {
+  flex: 1; min-width: 120px; background: white;
+  border: 1px solid var(--border); border-right: none; padding: 16px 14px;
+  position: relative;
+}
+.pipe-stage:last-child { border-right: 1px solid var(--border); }
+.pipe-stage::after {
+  content: '▶'; position: absolute; right: -11px; top: 50%;
+  transform: translateY(-50%); font-size: 10px; color: var(--teal);
+  z-index: 2; background: white; padding: 2px 0;
+}
+.pipe-stage:last-child::after { display: none; }
+.pipe-stage.active { background: var(--teal-light); border-color: var(--teal); }
+.pipe-stage .ps-label {
+  font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.pipe-stage.active .ps-label { color: var(--teal); }
+.pipe-stage .ps-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 13px; color: var(--ink); line-height: 1.2;
+}
+.pipe-stage .ps-count {
+  margin-top: 6px; font-size: 18px;
+  font-family: 'DM Serif Display', serif; color: var(--ink2);
+}
+.pipe-stage.active .ps-count { color: var(--teal); }
+.pipe-stage .ps-unit { font-size: 9px; color: var(--muted); }
+
+/* Two column */
+.two-col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 8px;
+}
+@media(max-width: 680px) { .two-col { grid-template-columns: 1fr; } }
+
+/* Cards */
+.card {
+  background: white; border: 1px solid var(--border); padding: 20px;
+}
+.card h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px; font-weight: 400; color: var(--ink); margin-bottom: 4px;
+}
+.card .subtitle {
+  font-size: 10px; color: var(--muted); margin-bottom: 14px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+}
+
+/* Schema table */
+.schema-table {
+  width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px;
+}
+.schema-table th {
+  text-align: left; font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 8px 12px; border-bottom: 2px solid var(--rule);
+}
+.schema-table td {
+  padding: 10px 12px; border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.schema-table .fname { color: var(--teal); font-weight: 500; }
+.schema-table .ftype {
+  font-size: 9px; padding: 2px 6px;
+  background: rgba(6,182,212,0.1); color: var(--teal);
+  border-radius: 1px; display: inline-block;
+}
+.schema-table .fdesc { color: var(--ink2); font-size: 10px; line-height: 1.6; }
+
+/* Score bar */
+.score-visual { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; }
+.score-sample {
+  display: grid; grid-template-columns: 40px 1fr 50px; gap: 8px;
+  align-items: center; font-size: 10px;
+}
+.score-sample .label { color: var(--muted); text-align: right; }
+.score-bar-wrap {
+  background: var(--surface); height: 14px; border-radius: 1px; overflow: hidden;
+}
+.score-bar {
+  height: 100%; border-radius: 1px;
+}
+.score-bar.ok { background: var(--teal); opacity: 0.7; }
+.score-bar.warn { background: var(--amber); opacity: 0.5; }
+.score-bar.clamp { background: var(--red); opacity: 0.5; }
+.score-sample .val { font-size: 10px; color: var(--ink2); }
+
+/* SQLite diagram */
+.db-visual {
+  background: #1a1410; border: 1px solid #3d3530;
+  overflow: hidden; margin-bottom: 8px;
+}
+.db-visual .db-header {
+  background: #3d3530; padding: 8px 16px;
+  font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: #8c7e72;
+  display: flex; justify-content: space-between;
+}
+.db-visual .db-header span { color: var(--teal-mid); }
+.db-row {
+  border-bottom: 1px solid #2a2420; padding: 10px 16px;
+  display: grid; grid-template-columns: 160px 80px 1fr; gap: 12px;
+  align-items: start; font-size: 11px;
+}
+.db-row:last-child { border-bottom: none; }
+.db-row .col-name { color: #7dd3fc; }
+.db-row .col-type {
+  font-size: 9px; padding: 2px 6px;
+  background: rgba(6,182,212,0.15); color: #67e8f9;
+  border-radius: 1px;
+}
+.db-row .col-note { color: #6b5e52; font-size: 10px; line-height: 1.5; }
+.db-row .col-note .hi { color: #fcd34d; }
+
+/* Gates row */
+.gates {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 8px;
+}
+@media(max-width: 680px) { .gates { grid-template-columns: repeat(2,1fr); } }
+.gate {
+  background: white; border: 1px solid var(--border);
+  padding: 16px; text-align: center;
+}
+.gate .g-icon { font-size: 22px; margin-bottom: 6px; }
+.gate .g-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 13px; color: var(--ink); margin-bottom: 4px;
+}
+.gate .g-rule { font-size: 10px; color: var(--muted); line-height: 1.5; }
+.gate .g-value {
+  margin-top: 8px; font-size: 20px;
+  font-family: 'DM Serif Display', serif; color: var(--teal);
+}
+
+/* CLI output */
+.cli-output {
+  background: #0f0c09; border: 1px solid #2a2420;
+  padding: 20px; overflow-x: auto; margin-bottom: 8px;
+}
+.cli-output pre {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; line-height: 1.7; color: #a8998a; white-space: pre;
+}
+.cli-output pre .cmd { color: #fcd34d; }
+.cli-output pre .ok { color: #6ee7b7; }
+.cli-output pre .warn { color: #fbbf24; }
+.cli-output pre .err { color: #fca5a5; }
+.cli-output pre .dim { color: #3d3530; }
+.cli-output pre .num { color: #c4b5fd; }
+.cli-output pre .teal { color: #67e8f9; }
+
+/* Prompt block */
+.prompt-block {
+  background: #0f0c09; border: 1px solid rgba(6,182,212,0.3);
+  padding: 22px; position: relative; margin-bottom: 8px;
+}
+.prompt-block::before {
+  content: 'CLAUDE CODE PROMPT — PHASE 1';
+  position: absolute; top: -9px; left: 16px;
+  background: #0f0c09; padding: 0 8px;
+  font-size: 8px; letter-spacing: 0.15em;
+  color: var(--teal); text-transform: uppercase;
+}
+.prompt-block code {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; line-height: 1.8;
+  color: #c8bfb4; white-space: pre-wrap; display: block;
+}
+
+/* File tree */
+.file-tree {
+  background: #1a1410; border: 1px solid #3d3530;
+  padding: 16px 20px; font-size: 11px; line-height: 1.9;
+  color: #a8998a; margin-bottom: 8px;
+}
+.file-tree .dir { color: #67e8f9; }
+.file-tree .file { color: #c8bfb4; }
+.file-tree .new { color: #6ee7b7; }
+.file-tree .desc { color: #6b5e52; font-size: 10px; }
+
+/* Eval results */
+.eval-results {
+  background: #0f0c09; border: 1px solid #2a2420;
+  overflow: hidden; margin-bottom: 8px;
+}
+.eval-results .er-header {
+  background: #1a1410; padding: 8px 16px;
+  font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; justify-content: space-between;
+}
+.eval-results .er-header span { color: var(--teal-mid); }
+.eval-group {
+  padding: 12px 16px; border-bottom: 1px solid #1a1410;
+}
+.eval-group:last-child { border-bottom: none; }
+.eval-group .eg-title {
+  font-size: 10px; color: #67e8f9; margin-bottom: 6px;
+  letter-spacing: 0.08em;
+}
+.eval-check {
+  font-size: 11px; line-height: 1.8; color: #a8998a;
+}
+.eval-check .pass { color: #6ee7b7; }
+.eval-check .fail { color: #fca5a5; }
+
+/* Nav footer */
+.doc-nav {
+  border-top: 1px solid var(--rule); margin-top: 56px;
+  padding-top: 20px; display: flex;
+  justify-content: space-between; align-items: center; font-size: 11px;
+}
+.doc-nav a {
+  color: var(--teal); text-decoration: none;
+  font-family: 'DM Serif Display', serif; font-size: 14px;
+}
+.doc-nav a:hover { text-decoration: underline; }
+.doc-nav .center { color: var(--muted); font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Masthead -->
+  <div class="masthead">
+    <div>
+      <div class="meta">gtm-autoresearch // feature/finetune-pipeline // Phase 1 of 6</div>
+      <h1>Experiment<br><em>Logger</em></h1>
+    </div>
+    <div class="issue">
+      <strong>01</strong>
+      Schema · SQLite<br>CLI · Eval Suite<br>
+      <span style="color:var(--teal)">v1.0.0 — Built</span>
+    </div>
+  </div>
+
+  <!-- Pipeline position -->
+  <div class="section-rule"><span>System Overview</span></div>
+  <div class="pipeline-flow">
+    <div class="pipe-stage active">
+      <div class="ps-label">Phase 1 ← NOW</div>
+      <div class="ps-name">Experiment Logger</div>
+      <div class="ps-count">25</div>
+      <div class="ps-unit">tests pass</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 2</div>
+      <div class="ps-name">Account State</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">next</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 3</div>
+      <div class="ps-name">JSONL Pipeline</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">planned</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 4</div>
+      <div class="ps-name">Fine-Tune Runner</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">planned</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 5</div>
+      <div class="ps-name">OpenClaw Brain</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">planned</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 6</div>
+      <div class="ps-name">Flywheel</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">planned</div>
+    </div>
+  </div>
+
+  <!-- What it does -->
+  <div class="section-rule"><span>What Phase 1 Does</span></div>
+  <div class="two-col">
+    <div class="card">
+      <h3>The Problem</h3>
+      <div class="subtitle">autoresearch experiments are ephemeral</div>
+      <p style="font-size:11px; color:var(--ink2); line-height:1.7;">
+        The autoresearch loop generates GTM experiments with scores, but they only exist in transient run logs. There's no structured store to query, filter, or export them for downstream fine-tuning. Every experiment is a potential training example — but only if it's captured with full context.
+      </p>
+    </div>
+    <div class="card">
+      <h3>The Solution</h3>
+      <div class="subtitle">persistent, queryable experiment store</div>
+      <p style="font-size:11px; color:var(--ink2); line-height:1.7;">
+        A Zod-validated schema + local SQLite database that captures every experiment with its score, client ID, sources used, and account snapshot. Idempotent writes (INSERT OR IGNORE), indexed queries, and JSONL export for feeding into the Phase 3 training pipeline.
+      </p>
+    </div>
+  </div>
+
+  <!-- Schema -->
+  <div class="section-rule"><span>ExperimentRecord Schema</span></div>
+  <table class="schema-table">
+    <thead>
+      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="fname">id</td>
+        <td><span class="ftype">UUID</span></td>
+        <td class="fdesc">Unique record identifier. Primary key in SQLite. Generated via uuid v4</td>
+      </tr>
+      <tr>
+        <td class="fname">client_id</td>
+        <td><span class="ftype">string</span></td>
+        <td class="fdesc">"hre" | "teleios" | "rtt" etc. Indexed with run_id for fast client-scoped queries</td>
+      </tr>
+      <tr>
+        <td class="fname">run_id</td>
+        <td><span class="ftype">string</span></td>
+        <td class="fdesc">Experiment run identifier, e.g. "exp-2026-04-07-047". Links to autoresearch run manifest</td>
+      </tr>
+      <tr>
+        <td class="fname">problem</td>
+        <td><span class="ftype">string</span></td>
+        <td class="fdesc">The experiment input — the GTM problem or question being investigated</td>
+      </tr>
+      <tr>
+        <td class="fname">solution</td>
+        <td><span class="ftype">string</span></td>
+        <td class="fdesc">The experiment output — the generated recommendation or fix</td>
+      </tr>
+      <tr>
+        <td class="fname">score</td>
+        <td><span class="ftype">float 0.0–1.0</span></td>
+        <td class="fdesc">Quality score. Validated via Zod min(0)/max(1). Logger clamps out-of-range with warning</td>
+      </tr>
+      <tr>
+        <td class="fname">timestamp</td>
+        <td><span class="ftype">ISO 8601</span></td>
+        <td class="fdesc">When the experiment was run. Enables time-range queries via the since filter</td>
+      </tr>
+      <tr>
+        <td class="fname">account_snapshot</td>
+        <td><span class="ftype">object → JSON</span></td>
+        <td class="fdesc">Account state at experiment time. Stored as JSON text in SQLite, parsed back on read</td>
+      </tr>
+      <tr>
+        <td class="fname">sources_used</td>
+        <td><span class="ftype">string[] → JSON</span></td>
+        <td class="fdesc">Data sources: ["gtm", "google_ads", "meta"]. Stored as JSON array text</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SQLite structure -->
+  <div class="section-rule"><span>SQLite Database — data/experiments.sqlite</span></div>
+  <div class="db-visual">
+    <div class="db-header">
+      <span>TABLE experiments · WAL mode · INSERT OR IGNORE</span>
+      <span>INDEX idx_experiments_client_run (client_id, run_id)</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">id</span>
+      <span class="col-type">TEXT PK</span>
+      <span class="col-note">UUID v4 — <span class="hi">INSERT OR IGNORE</span> prevents duplicates</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">client_id</span>
+      <span class="col-type">TEXT NOT NULL</span>
+      <span class="col-note">Indexed — fast lookups per client</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">run_id</span>
+      <span class="col-type">TEXT NOT NULL</span>
+      <span class="col-note">Indexed with client_id — compound queries</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">problem</span>
+      <span class="col-type">TEXT NOT NULL</span>
+      <span class="col-note">Becomes messages[1] (user role) in Phase 3 JSONL</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">solution</span>
+      <span class="col-type">TEXT NOT NULL</span>
+      <span class="col-note">Becomes messages[2] (assistant role) in Phase 3 JSONL</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">score</span>
+      <span class="col-type">REAL NOT NULL</span>
+      <span class="col-note">0.0–1.0 — Phase 3 filters at <span class="hi">≥ 0.75</span> threshold</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">timestamp</span>
+      <span class="col-type">TEXT NOT NULL</span>
+      <span class="col-note">ISO 8601 — enables time-range queries</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">account_snapshot</span>
+      <span class="col-type">TEXT (JSON)</span>
+      <span class="col-note">Serialized object — tags, triggers, conversion values at experiment time</span>
+    </div>
+    <div class="db-row">
+      <span class="col-name">sources_used</span>
+      <span class="col-type">TEXT (JSON[])</span>
+      <span class="col-note">Array of source identifiers — parsed back to string[] on read</span>
+    </div>
+  </div>
+
+  <!-- Score handling -->
+  <div class="section-rule"><span>Score Normalization</span></div>
+  <div class="two-col">
+    <div class="card">
+      <h3>Validation Rules</h3>
+      <div class="subtitle">Zod schema + logger clamp</div>
+      <div class="score-visual">
+        <div class="score-sample">
+          <div class="label">0.85</div>
+          <div class="score-bar-wrap"><div class="score-bar ok" style="width:85%"></div></div>
+          <div class="val" style="color:var(--green)">pass</div>
+        </div>
+        <div class="score-sample">
+          <div class="label">0.75</div>
+          <div class="score-bar-wrap"><div class="score-bar ok" style="width:75%"></div></div>
+          <div class="val" style="color:var(--green)">pass</div>
+        </div>
+        <div class="score-sample">
+          <div class="label">1.1</div>
+          <div class="score-bar-wrap"><div class="score-bar clamp" style="width:100%"></div></div>
+          <div class="val" style="color:var(--amber)">→ 1.0</div>
+        </div>
+        <div class="score-sample">
+          <div class="label">-0.5</div>
+          <div class="score-bar-wrap"><div class="score-bar clamp" style="width:0%"></div></div>
+          <div class="val" style="color:var(--amber)">→ 0.0</div>
+        </div>
+      </div>
+      <div style="font-size:10px; color:var(--muted); line-height:1.7; border-top:1px solid var(--rule); padding-top:10px;">
+        Out-of-range scores are clamped with a <code>[Phase1]</code> console warning. Zod rejects values outside 0.0–1.0 at the schema level — the logger clamps before validation to ensure writes always succeed.
+      </div>
+    </div>
+    <div class="card">
+      <h3>Idempotency Guarantee</h3>
+      <div class="subtitle">INSERT OR IGNORE on UUID primary key</div>
+      <p style="font-size:11px; color:var(--ink2); line-height:1.7; margin-bottom:14px;">
+        Re-running the same experiment through the logger never creates duplicates. The SQLite <code>INSERT OR IGNORE</code> silently skips any record whose UUID already exists.
+      </p>
+      <div style="background:var(--surface); border:1px solid var(--border); padding:12px; font-size:10px; line-height:1.8;">
+        <div><span style="color:var(--green)">save(record)</span> — inserted (new UUID)</div>
+        <div><span style="color:var(--muted)">save(record)</span> — ignored (duplicate UUID)</div>
+        <div><span style="color:var(--muted)">save(record)</span> — ignored (duplicate UUID)</div>
+        <div style="border-top:1px solid var(--rule); margin-top:8px; padding-top:8px; color:var(--teal);">
+          count() → 1 row
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ExperimentLogger API -->
+  <div class="section-rule"><span>ExperimentLogger Class API</span></div>
+  <div class="gates">
+    <div class="gate">
+      <div class="g-icon" style="font-size:16px; color:var(--teal);">save()</div>
+      <div class="g-name">Save One</div>
+      <div class="g-rule">Validate, clamp score, insert single record</div>
+      <div class="g-value" style="font-size:14px;">ExperimentRecord</div>
+    </div>
+    <div class="gate">
+      <div class="g-icon" style="font-size:16px; color:var(--teal);">saveBatch()</div>
+      <div class="g-name">Batch Insert</div>
+      <div class="g-rule">Transaction-wrapped multi-row insert</div>
+      <div class="g-value" style="font-size:14px;">ExperimentRecord[]</div>
+    </div>
+    <div class="gate">
+      <div class="g-icon" style="font-size:16px; color:var(--teal);">query()</div>
+      <div class="g-name">Filter Query</div>
+      <div class="g-rule">client_id, min_score, since filters</div>
+      <div class="g-value" style="font-size:14px;">ExperimentRecord[]</div>
+    </div>
+    <div class="gate">
+      <div class="g-icon" style="font-size:16px; color:var(--teal);">export()</div>
+      <div class="g-name">JSONL Export</div>
+      <div class="g-rule">One JSON object per line to stdout</div>
+      <div class="g-value" style="font-size:14px;">string (JSONL)</div>
+    </div>
+  </div>
+
+  <!-- File structure -->
+  <div class="section-rule"><span>Project Structure</span></div>
+  <div class="file-tree">
+<span class="dir">src/</span>
+  <span class="dir">types/</span>
+    <span class="new">experiment.ts</span>         <span class="desc">— Zod schema + TypeScript type</span>
+  <span class="dir">experiment-logger/</span>
+    <span class="new">db.ts</span>                  <span class="desc">— SQLite open, insert, query, count</span>
+    <span class="new">logger.ts</span>              <span class="desc">— ExperimentLogger class</span>
+    <span class="new">index.ts</span>               <span class="desc">— barrel export</span>
+<span class="dir">scripts/</span>
+  <span class="new">experiment-logger.ts</span>     <span class="desc">— CLI: export | count | import</span>
+<span class="dir">evals/</span>
+  <span class="new">eval_experiment_logger.ts</span> <span class="desc">— 25 tests across 7 suites</span>
+<span class="dir">data/</span>
+  <span class="file">experiments.sqlite</span>       <span class="desc">— auto-created on first write (gitignored)</span>
+  </div>
+
+  <!-- CLI -->
+  <div class="section-rule"><span>CLI Commands</span></div>
+  <div class="cli-output">
+    <pre>
+<span class="dim">────────────────────────────────────────────────────────</span>
+<span class="teal">  Experiment Logger CLI — Phase 1</span>
+<span class="dim">────────────────────────────────────────────────────────</span>
+
+<span class="dim"># Export all experiments for a client as JSONL</span>
+<span class="cmd">$</span> npx tsx scripts/experiment-logger.ts export --client hre
+<span class="ok">{"id":"a1b2c3...","client_id":"hre","problem":"...","solution":"...","score":0.92,...}</span>
+<span class="ok">{"id":"d4e5f6...","client_id":"hre","problem":"...","solution":"...","score":0.88,...}</span>
+
+<span class="dim"># Count records for a client</span>
+<span class="cmd">$</span> npx tsx scripts/experiment-logger.ts count --client hre
+<span class="ok">[Phase1] 247 records for client "hre"</span>
+
+<span class="dim"># Bulk import from JSON array file</span>
+<span class="cmd">$</span> npx tsx scripts/experiment-logger.ts import --file experiments.json --client hre
+<span class="ok">[Phase1] Saved batch of 50 experiments</span>
+<span class="ok">[Phase1] Imported 50 records for client "hre"</span>
+
+<span class="dim"># Re-import same file — no duplicates (idempotent)</span>
+<span class="cmd">$</span> npx tsx scripts/experiment-logger.ts import --file experiments.json --client hre
+<span class="ok">[Phase1] Saved batch of 50 experiments</span>
+<span class="ok">[Phase1] Imported 50 records for client "hre"</span>
+<span class="cmd">$</span> npx tsx scripts/experiment-logger.ts count --client hre
+<span class="ok">[Phase1] 297 records for client "hre"</span>  <span class="dim">← same count, no dupes</span>
+    </pre>
+  </div>
+
+  <!-- Eval results -->
+  <div class="section-rule"><span>Eval Suite — 25 Tests</span></div>
+  <div class="eval-results">
+    <div class="er-header">
+      <span>npx tsx evals/eval_experiment_logger.ts</span>
+      <span>25 passed · 0 failed</span>
+    </div>
+    <div class="eval-group">
+      <div class="eg-title">Schema Validation</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Valid record passes schema</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Missing fields fail schema</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Score > 1.0 fails schema validation</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Score < 0.0 fails schema validation</div>
+    </div>
+    <div class="eval-group">
+      <div class="eg-title">Score Normalization</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Score 0.75 saved as-is</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Score 1.1 clamped to 1.0</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Score -0.5 clamped to 0.0</div>
+    </div>
+    <div class="eval-group">
+      <div class="eg-title">SQLite Round-Trip</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Query returns 1 record</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> ID matches</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> client_id matches</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> problem matches</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> solution matches</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> score matches</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> account_snapshot is object</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> account_snapshot.tags matches</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> sources_used round-trips as array</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> sources_used contains 'meta'</div>
+    </div>
+    <div class="eval-group">
+      <div class="eg-title">JSONL Export</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Export produces 2 lines</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Each JSONL line is valid JSON</div>
+    </div>
+    <div class="eval-group">
+      <div class="eg-title">Idempotency</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Saving same record 3 times produces 1 row</div>
+    </div>
+    <div class="eval-group">
+      <div class="eg-title">Client Filtering</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Query client 'alpha' returns 2 records</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Query client 'beta' returns 1 record</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Query with no filter returns all 3 records</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> min_score filter returns only records >= 0.9</div>
+    </div>
+    <div class="eval-group">
+      <div class="eg-title">Batch Save</div>
+      <div class="eval-check"><span class="pass">&#10003;</span> Batch save of 50 records works</div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <div class="section-rule"><span>Dependencies Added</span></div>
+  <div class="two-col">
+    <div class="card">
+      <h3>Runtime</h3>
+      <div class="subtitle">production dependencies</div>
+      <div style="font-size:11px; line-height:2; color:var(--ink2);">
+        <div><strong style="color:var(--teal)">better-sqlite3</strong> — synchronous SQLite3 binding (native, WAL mode)</div>
+        <div><strong style="color:var(--teal)">uuid</strong> — RFC 4122 v4 UUID generation</div>
+        <div><span style="color:var(--muted)">zod</span> — already present (schema validation)</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Dev</h3>
+      <div class="subtitle">type definitions</div>
+      <div style="font-size:11px; line-height:2; color:var(--ink2);">
+        <div><strong style="color:var(--teal)">@types/better-sqlite3</strong></div>
+        <div><strong style="color:var(--teal)">@types/uuid</strong></div>
+        <div><span style="color:var(--muted)">tsx, typescript, @types/node</span> — already present</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How data flows to Phase 2+ -->
+  <div class="section-rule"><span>How This Feeds the Pipeline</span></div>
+  <div class="card" style="margin-bottom:8px;">
+    <h3>Data Flow: Phase 1 → Phase 3</h3>
+    <div class="subtitle">experiment records become fine-tune training data</div>
+    <div style="font-size:11px; color:var(--ink2); line-height:1.8;">
+      <div style="display:grid; grid-template-columns:auto 1fr; gap:8px 16px;">
+        <span style="color:var(--teal); font-weight:500;">Phase 1 saves</span>
+        <span>ExperimentRecord with problem, solution, score, account_snapshot</span>
+        <span style="color:var(--muted);">↓</span><span></span>
+        <span style="color:var(--green); font-weight:500;">Phase 2 enriches</span>
+        <span>AccountStateCollector builds full system prompts per client</span>
+        <span style="color:var(--muted);">↓</span><span></span>
+        <span style="color:var(--amber); font-weight:500;">Phase 3 transforms</span>
+        <span>Filter by score ≥ 0.75, dedup, inject system prompt → JSONL training files</span>
+        <span style="color:var(--muted);">↓</span><span></span>
+        <span style="color:#6366f1; font-weight:500;">Phase 4 trains</span>
+        <span>Feed JSONL to OpenAI fine-tune API or Ollama local</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick start -->
+  <div class="section-rule"><span>Quick Start</span></div>
+  <div class="cli-output">
+    <pre>
+<span class="dim"># Clone and setup</span>
+<span class="cmd">$</span> git clone https://github.com/Organized-AI/gtm-autoresearch.git
+<span class="cmd">$</span> cd gtm-autoresearch && git checkout feature/finetune-pipeline
+<span class="cmd">$</span> npm install
+
+<span class="dim"># Run the eval suite to verify everything works</span>
+<span class="cmd">$</span> npx tsx evals/eval_experiment_logger.ts
+<span class="ok">  === Results: 25 passed, 0 failed ===</span>
+
+<span class="dim"># Type check</span>
+<span class="cmd">$</span> npx tsc --noEmit
+<span class="ok">  (no errors)</span>
+
+<span class="dim"># Import some experiments</span>
+<span class="cmd">$</span> npx tsx scripts/experiment-logger.ts import --file my-experiments.json --client hre
+
+<span class="dim"># Check the count</span>
+<span class="cmd">$</span> npx tsx scripts/experiment-logger.ts count --client hre
+
+<span class="dim"># Export as JSONL (pipe to file or next phase)</span>
+<span class="cmd">$</span> npx tsx scripts/experiment-logger.ts export --client hre > hre-experiments.jsonl
+    </pre>
+  </div>
+
+  <!-- Claude Code prompt -->
+  <div class="section-rule"><span>Claude Code Prompt</span></div>
+  <div class="prompt-block">
+    <code>claude --dangerously-skip-permissions
+
+# Phase 1: Experiment Logger
+# Branch: feature/finetune-pipeline
+# Repo: github.com/Organized-AI/gtm-autoresearch
+
+## Context
+This is Phase 1 of 6 in the fine-tune pipeline. It instruments
+the autoresearch loop to persist structured experiment records
+with scores, enabling downstream training data generation.
+
+## Task
+
+Read CLAUDE.md and AGENT-HANDOFF/CURRENT-STATE.md first. Then:
+
+1. Create ExperimentRecord schema (src/types/experiment.ts)
+   - Zod-validated: id (UUID), client_id, run_id, problem,
+     solution, score (0.0–1.0), timestamp (ISO 8601),
+     account_snapshot (object), sources_used (string[])
+
+2. SQLite writer (src/experiment-logger/db.ts)
+   - better-sqlite3, WAL mode, data/experiments.sqlite
+   - INSERT OR IGNORE on id (idempotent)
+   - Index on (client_id, run_id)
+
+3. ExperimentLogger class (src/experiment-logger/logger.ts)
+   - save(), saveBatch(), query(), export(), count()
+   - Score clamping 0.0–1.0 with [Phase1] warning
+
+4. CLI script (scripts/experiment-logger.ts)
+   - export --client, count --client, import --file --client
+
+5. Eval suite (evals/eval_experiment_logger.ts)
+   - Schema validation, score normalization, SQLite round-trip,
+     JSONL export, idempotency, client filtering, batch save
+
+6. Update CLAUDE.md + AGENT-HANDOFF/CURRENT-STATE.md
+
+## Do NOT build Phase 2 (Account State Collector) yet.</code>
+  </div>
+
+  <!-- Nav -->
+  <div class="doc-nav">
+    <a href="index.html">← All Docs</a>
+    <span class="center">gtm-autoresearch-docs.pages.dev</span>
+    <a href="account-state.html">Phase 2: Account State →</a>
+  </div>
+
+</div>
+</body>
+</html>
