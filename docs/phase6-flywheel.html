@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 6 — Flywheel Automation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;700;900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root {
+  --bg: #f8f4ef;
+  --s1: #f0ebe4;
+  --s2: #e8e1d8;
+  --border: #d4ccc0;
+  --text: #2a2520;
+  --muted: #8a7f74;
+  --spin: #e63e00;
+  --spin-light: rgba(230,62,0,0.08);
+  --blue: #1a56db;
+  --blue-light: rgba(26,86,219,0.07);
+  --teal: #0e9f6e;
+  --teal-light: rgba(14,159,110,0.08);
+  --purple: #7e3af2;
+  --purple-light: rgba(126,58,242,0.07);
+  --gold: #b45309;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Courier Prime',monospace; font-size:13px; line-height:1.6; }
+
+.page { max-width:1040px; margin:0 auto; padding:56px 28px; }
+
+/* Big header */
+.header { margin-bottom:52px; }
+.header .eyebrow { font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+.header h1 { font-family:'Unbounded',sans-serif; font-size:clamp(28px,5vw,60px); font-weight:900; line-height:.95; color:var(--text); text-transform:uppercase; }
+.header h1 .spin { color:var(--spin); display:block; }
+.header .tagline { margin-top:16px; font-size:14px; color:var(--muted); font-style:italic; }
+.header .tagline strong { color:var(--spin); font-style:normal; }
+
+/* Divider */
+.divider { height:2px; background:var(--text); margin:8px 0 44px; }
+.divider.thin { height:1px; background:var(--border); margin:44px 0 18px; }
+
+/* Section label */
+.sl { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin:44px 0 18px; display:flex; align-items:center; gap:10px; }
+.sl::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Flywheel diagram — circular ASCII */
+.wheel-diagram { background:var(--s1); border:2px solid var(--text); padding:28px; overflow-x:auto; margin-bottom:8px; }
+.wheel-diagram pre { font-family:'Courier Prime',monospace; font-size:11.5px; line-height:1.55; white-space:pre; color:var(--muted); }
+.wheel-diagram pre .hi { color:var(--spin); font-weight:700; }
+.wheel-diagram pre .bl { color:var(--blue); }
+.wheel-diagram pre .tl { color:var(--teal); }
+.wheel-diagram pre .pu { color:var(--purple); }
+.wheel-diagram pre .go { color:var(--gold); }
+.wheel-diagram pre .dk { color:var(--text); }
+
+/* Trigger table */
+.trigger-table { width:100%; border-collapse:collapse; margin-bottom:8px; }
+.trigger-table th { font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); padding:8px 12px; text-align:left; border-bottom:2px solid var(--text); }
+.trigger-table td { font-size:11px; padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; line-height:1.5; }
+.trigger-table td:first-child { color:var(--text); font-weight:700; white-space:nowrap; }
+.trigger-table tr:last-child td { border-bottom:none; }
+.trigger-table td code { font-family:'Courier Prime',monospace; font-size:10px; color:var(--spin); background:var(--spin-light); padding:0 4px; border-radius:1px; }
+
+/* Watcher config */
+.watcher-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:8px; }
+@media(max-width:680px) { .watcher-grid { grid-template-columns:1fr; } }
+
+.watcher-card { background:white; border:1px solid var(--border); padding:18px; position:relative; }
+.watcher-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--card-color); }
+.watcher-card h4 { font-family:'Unbounded',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text); margin-bottom:10px; }
+.watcher-card .wc-val { font-size:28px; font-family:'Unbounded',sans-serif; font-weight:700; color:var(--card-color); margin-bottom:4px; }
+.watcher-card .wc-desc { font-size:10px; color:var(--muted); line-height:1.6; }
+
+/* Drift detection */
+.drift-visual { background:var(--s1); border:1px solid var(--border); padding:20px; margin-bottom:8px; }
+.drift-chart { display:flex; flex-direction:column; gap:8px; }
+.drift-row { display:grid; grid-template-columns:60px 1fr 50px; gap:10px; align-items:center; font-size:10px; }
+.drift-row .dr-label { color:var(--muted); text-align:right; }
+.drift-bar-wrap { height:20px; background:var(--s2); border:1px solid var(--border); position:relative; overflow:visible; }
+.drift-bar { height:100%; background:var(--teal); opacity:.7; transition:width .6s; }
+.drift-bar.regress { background:var(--spin); }
+.drift-bar.warn { background:var(--gold); }
+.drift-threshold { position:absolute; left:75%; top:-4px; bottom:-4px; width:1px; background:var(--spin); z-index:2; }
+.drift-threshold::before { content:'min'; position:absolute; top:-14px; left:-8px; font-size:8px; color:var(--spin); white-space:nowrap; }
+.drift-row .dr-score { color:var(--text); font-weight:700; }
+
+.drift-legend { display:flex; gap:16px; margin-top:12px; font-size:9px; color:var(--muted); }
+.drift-legend span { display:flex; align-items:center; gap:4px; }
+.drift-legend span::before { content:''; width:10px; height:10px; border-radius:1px; }
+.leg-ok::before { background:var(--teal); opacity:.7; }
+.leg-warn::before { background:var(--gold); opacity:.7; }
+.leg-bad::before { background:var(--spin); opacity:.7; }
+
+/* Notification config */
+.notif-cards { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px; }
+@media(max-width:680px) { .notif-cards { grid-template-columns:1fr; } }
+
+.notif-card { background:white; border:1px solid var(--border); padding:16px; }
+.notif-card h4 { font-family:'Unbounded',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text); margin-bottom:8px; }
+.notif-card .events { display:flex; flex-direction:column; gap:4px; }
+.notif-event { display:flex; align-items:center; gap:8px; font-size:10px; padding:5px 8px; border-radius:1px; }
+.ev-promote { background:var(--teal-light); color:var(--teal); }
+.ev-regress { background:var(--spin-light); color:var(--spin); }
+.ev-gate { background:var(--blue-light); color:var(--blue); }
+.ev-drift { background:var(--purple-light); color:var(--purple); }
+
+/* Code block */
+.code-block { background:var(--s2); border:1px solid var(--border); padding:20px; overflow-x:auto; position:relative; margin-bottom:8px; }
+.code-block::before { content:attr(data-label); position:absolute; top:-9px; left:14px; background:var(--s2); padding:0 8px; font-size:8px; letter-spacing:.15em; color:var(--spin); text-transform:uppercase; }
+.code-block code { font-family:'Courier Prime',monospace; font-size:11px; line-height:1.75; color:var(--muted); white-space:pre; display:block; }
+.code-block .kw { color:var(--spin); font-weight:700; }
+.code-block .str { color:var(--teal); }
+.code-block .num { color:var(--gold); }
+.code-block .cm { color:var(--border); }
+.code-block .hi { color:var(--text); }
+
+/* CLI */
+.cli-block { background:var(--text); border:1px solid var(--text); padding:20px; overflow-x:auto; margin-bottom:8px; }
+.cli-block pre { font-family:'Courier Prime',monospace; font-size:11px; line-height:1.75; color:#6b6055; white-space:pre; }
+.cli-block pre .cmd { color:#ffd600; }
+.cli-block pre .ok { color:#00e676; }
+.cli-block pre .info { color:#64b5f6; }
+.cli-block pre .warn { color:#ffb74d; }
+.cli-block pre .spin { color:#ff7043; }
+.cli-block pre .dim { color:#3a3028; }
+.cli-block pre .hi { color:#f5f5f5; }
+
+/* Full pipeline summary */
+.pipeline-summary { background:white; border:2px solid var(--text); padding:24px; margin-bottom:8px; }
+.pipeline-summary h3 { font-family:'Unbounded',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; color:var(--text); margin-bottom:16px; }
+.ps-phases { display:flex; flex-direction:column; gap:6px; }
+.ps-phase { display:grid; grid-template-columns:80px 1fr auto; gap:16px; align-items:center; padding:8px 12px; background:var(--s1); border:1px solid var(--border); font-size:11px; }
+.ps-phase .psp-num { font-family:'Unbounded',sans-serif; font-size:10px; font-weight:700; color:var(--muted); }
+.ps-phase .psp-name { color:var(--text); }
+.ps-phase .psp-status { font-size:9px; padding:2px 8px; border-radius:1px; border:1px solid; white-space:nowrap; }
+.st-done { color:var(--teal); border-color:var(--teal); background:var(--teal-light); }
+.st-active { color:var(--spin); border-color:var(--spin); background:var(--spin-light); }
+.st-next { color:var(--blue); border-color:var(--blue); background:var(--blue-light); }
+
+/* Prompt */
+.prompt-block { background:var(--text); border:2px solid var(--spin); padding:22px; position:relative; margin-bottom:8px; }
+.prompt-block::before { content:'CLAUDE CODE PROMPT — PHASE 6'; position:absolute; top:-9px; left:14px; background:var(--text); padding:0 8px; font-size:8px; letter-spacing:.15em; color:var(--spin); text-transform:uppercase; }
+.prompt-block code { font-family:'Courier Prime',monospace; font-size:11px; line-height:1.8; color:#d4ccc0; white-space:pre-wrap; display:block; }
+
+/* Nav */
+.doc-nav { border-top:2px solid var(--text); margin-top:56px; padding-top:20px; display:flex; justify-content:space-between; align-items:center; }
+.doc-nav a { color:var(--spin); text-decoration:none; font-family:'Unbounded',sans-serif; font-size:12px; font-weight:700; text-transform:uppercase; }
+.doc-nav a:hover { color:var(--text); }
+.doc-nav .center { color:var(--muted); font-size:10px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="eyebrow">gtm-autoresearch // feature/finetune-pipeline // Phase 6 of 6</div>
+    <h1>The<br><span class="spin">Flywheel</span></h1>
+    <div class="tagline">More client work → more experiments → better training data → <strong>smarter model</strong> → more accurate answers → more client work</div>
+  </div>
+  <div class="divider"></div>
+
+  <!-- Wheel diagram -->
+  <div class="sl">The Compounding Loop</div>
+  <div class="wheel-diagram"><pre>
+                        <span class="hi">CLIENT ENGAGEMENT</span>
+                        (GTM fixes, ad optimizations)
+                               <span class="hi">│</span>
+                    <span class="hi">┌──────────▼──────────┐</span>
+                    <span class="hi">│</span>  <span class="bl">AUTORESEARCH LOOP</span>    <span class="hi">│</span>
+                    <span class="hi">│</span>  50-100 experiments   <span class="hi">│</span>
+                    <span class="hi">│</span>  per run, scored      <span class="hi">│</span>
+                    <span class="hi">└──────────┬──────────┘</span>
+                               <span class="hi">│</span>
+                    <span class="hi">┌──────────▼──────────┐</span>
+                    <span class="hi">│</span>  <span class="tl">FLYWHEEL WATCHER</span>    <span class="hi">│</span>←─────────────────────────┐
+                    <span class="hi">│</span>  counts new          <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  high-score records  <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">└──────────┬──────────┘</span>                          <span class="hi">│</span>
+                               <span class="hi">│ delta ≥ 20</span>                         <span class="hi">│</span>
+                    <span class="hi">┌──────────▼──────────┐</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  <span class="pu">PIPELINE EXPORT</span>     <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  JSONL v{N} appended <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  quality gates pass  <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">└──────────┬──────────┘</span>                          <span class="hi">│</span>
+                               <span class="hi">│</span>                                    <span class="hi">│</span>
+                    <span class="hi">┌──────────▼──────────┐</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  <span class="go">FINE-TUNE RUNNER</span>    <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  Track A or B        <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  eval → promote      <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">└──────────┬──────────┘</span>                          <span class="hi">│</span>
+                               <span class="hi">│</span>                                    <span class="hi">│</span>
+                    <span class="hi">┌──────────▼──────────┐</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  <span class="hi">OPENCLAW BRAIN</span>      <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  new model active    <span class="hi">│</span>                          <span class="hi">│</span>
+                    <span class="hi">│</span>  smarter responses   ├──── DRIFT CHECK ─────────┘
+                    <span class="hi">└─────────────────────┘</span>  (telemetry → regression?)
+</pre></div>
+
+  <!-- Trigger events -->
+  <div class="sl">Watcher Trigger Events</div>
+  <table class="trigger-table">
+    <thead>
+      <tr><th>Event</th><th>Condition</th><th>Action</th><th>Configurable</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>New examples gate</td>
+        <td>New high-score experiments since last export ≥ threshold</td>
+        <td>Trigger JSONL pipeline export → bump version</td>
+        <td><code>RETRAIN_DELTA=20</code></td>
+      </tr>
+      <tr>
+        <td>Scheduled run</td>
+        <td>Cron: after each autoresearch run completes</td>
+        <td>Check new example count, trigger if gate met</td>
+        <td><code>CRON_SCHEDULE</code></td>
+      </tr>
+      <tr>
+        <td>Drift detection</td>
+        <td>Telemetry shows eval score drop > tolerance vs last version</td>
+        <td>Alert + optionally rollback to last stable version</td>
+        <td><code>DRIFT_TOLERANCE=0.05</code></td>
+      </tr>
+      <tr>
+        <td>Account state change</td>
+        <td>AccountState minor/major version bump detected</td>
+        <td>Force retrain — old training data used stale account context</td>
+        <td><code>RETRAIN_ON_STATE_CHANGE=true</code></td>
+      </tr>
+      <tr>
+        <td>Manual trigger</td>
+        <td><code>pnpm flywheel run --client hre --force</code></td>
+        <td>Bypass delta gate, run full pipeline immediately</td>
+        <td>always available</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Watcher config cards -->
+  <div class="sl">Watcher Configuration Per Client</div>
+  <div class="watcher-grid">
+    <div class="watcher-card" style="--card-color: var(--spin)">
+      <h4>Retrain Delta</h4>
+      <div class="wc-val">20</div>
+      <div class="wc-desc">Minimum new high-score experiments before triggering a retrain. Prevents over-training on small batches.</div>
+    </div>
+    <div class="watcher-card" style="--card-color: var(--teal)">
+      <h4>Drift Tolerance</h4>
+      <div class="wc-val">0.05</div>
+      <div class="wc-desc">Max acceptable eval score regression between versions. Below this → rollback to last stable model automatically.</div>
+    </div>
+    <div class="watcher-card" style="--card-color: var(--purple)">
+      <h4>Max Versions Kept</h4>
+      <div class="wc-val">5</div>
+      <div class="wc-desc">Older model versions pruned after this count. Keeps registry lean. Fine-tune files deleted from OpenAI too.</div>
+    </div>
+  </div>
+
+  <!-- Drift detection visual -->
+  <div class="sl">Drift Detection — Eval Score Over Versions</div>
+  <div class="drift-visual">
+    <div style="font-size:10px; color:var(--muted); margin-bottom:14px;">HRE model eval score per version. Dashed line = min acceptable (prev - 0.05). Regression in v4 triggers auto-rollback.</div>
+    <div class="drift-chart">
+      <div class="drift-row">
+        <div class="dr-label">v1</div>
+        <div class="drift-bar-wrap">
+          <div class="drift-bar" style="width:62%"></div>
+          <div class="drift-threshold"></div>
+        </div>
+        <div class="dr-score">0.62</div>
+      </div>
+      <div class="drift-row">
+        <div class="dr-label">v2</div>
+        <div class="drift-bar-wrap">
+          <div class="drift-bar" style="width:71%"></div>
+          <div class="drift-threshold"></div>
+        </div>
+        <div class="dr-score">0.71</div>
+      </div>
+      <div class="drift-row">
+        <div class="dr-label">v3 ●</div>
+        <div class="drift-bar-wrap">
+          <div class="drift-bar" style="width:84%"></div>
+          <div class="drift-threshold"></div>
+        </div>
+        <div class="dr-score" style="color:var(--teal)">0.84</div>
+      </div>
+      <div class="drift-row">
+        <div class="dr-label">v4 ✕</div>
+        <div class="drift-bar-wrap">
+          <div class="drift-bar regress" style="width:72%"></div>
+          <div class="drift-threshold"></div>
+        </div>
+        <div class="dr-score" style="color:var(--spin)">0.72</div>
+      </div>
+    </div>
+    <div class="drift-legend">
+      <span class="leg-ok">improving</span>
+      <span class="leg-warn">within tolerance</span>
+      <span class="leg-bad">regression → rollback</span>
+    </div>
+    <div style="margin-top:12px; font-size:10px; color:var(--spin); padding:8px 12px; background:var(--spin-light); border:1px solid var(--spin);">
+      v4 regression: 0.72 &lt; (0.84 - 0.05 = 0.79) → auto-rolled back to v3. Slack alert sent. v4 archived.
+    </div>
+  </div>
+
+  <!-- Notification events -->
+  <div class="sl">Notification Events</div>
+  <div class="notif-cards">
+    <div class="notif-card">
+      <h4>Slack Notifications</h4>
+      <div class="events">
+        <div class="notif-event ev-promote">✓ hre v4 promoted → active (eval: 0.91)</div>
+        <div class="notif-event ev-regress">⚠ hre v4 regression (0.72) → rolled back to v3</div>
+        <div class="notif-event ev-gate">◎ teleios: 50 examples reached → retrain queued</div>
+        <div class="notif-event ev-drift">⟳ Account state v2.0.0 detected → force retrain hre</div>
+      </div>
+    </div>
+    <div class="notif-card">
+      <h4>Retrain Schedule (HRE)</h4>
+      <div class="events" style="font-size:10px; color:var(--muted); line-height:2;">
+        <div>Last autoresearch run: <strong style="color:var(--text)">2026-04-07</strong></div>
+        <div>New high-score examples: <strong style="color:var(--teal)">23 / 20 ✓</strong></div>
+        <div>Retrain triggered: <strong style="color:var(--text)">yes → v4 queued</strong></div>
+        <div>Current active: <strong style="color:var(--text)">v3 (0.84)</strong></div>
+        <div>Next check: <strong style="color:var(--text)">after next research run</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flywheel watcher config -->
+  <div class="sl">Flywheel Watcher Config — data/clients/{id}/flywheel.json</div>
+  <div class="code-block" data-label="flywheel.json — hre">
+    <code><span class="hi">{</span>
+  <span class="kw">"client_id"</span>: <span class="str">"hre"</span>,
+  <span class="kw">"retrain_delta"</span>: <span class="num">20</span>,            <span class="cm">// new examples needed to trigger retrain</span>
+  <span class="kw">"drift_tolerance"</span>: <span class="num">0.05</span>,         <span class="cm">// max acceptable eval regression</span>
+  <span class="kw">"max_versions"</span>: <span class="num">5</span>,              <span class="cm">// prune older versions beyond this count</span>
+  <span class="kw">"retrain_on_state_change"</span>: <span class="num">true</span>,  <span class="cm">// force retrain if AccountState major bumped</span>
+  <span class="kw">"auto_promote"</span>: <span class="num">true</span>,           <span class="cm">// auto-promote if eval passes, no manual step</span>
+  <span class="kw">"auto_rollback"</span>: <span class="num">true</span>,          <span class="cm">// auto-rollback on regression</span>
+  <span class="kw">"notifications"</span>: <span class="hi">{</span>
+    <span class="kw">"slack_channel"</span>: <span class="str">"#organized-ai-ops"</span>,
+    <span class="kw">"events"</span>: [<span class="str">"promote"</span>, <span class="str">"rollback"</span>, <span class="str">"gate_met"</span>, <span class="str">"state_change"</span>]
+  <span class="hi">}</span>,
+  <span class="kw">"last_export_run_id"</span>: <span class="str">"exp-2026-04-07-100"</span>,  <span class="cm">// cursor for delta tracking</span>
+  <span class="kw">"last_retrain_version"</span>: <span class="str">"v3"</span>
+<span class="hi">}</span></code>
+  </div>
+
+  <!-- Full pipeline summary -->
+  <div class="sl">Complete Pipeline — All 6 Phases</div>
+  <div class="pipeline-summary">
+    <h3>gtm-autoresearch · feature/finetune-pipeline</h3>
+    <div class="ps-phases">
+      <div class="ps-phase">
+        <div class="psp-num">Phase 1</div>
+        <div class="psp-name">Experiment Logger — SQLite ExperimentRecord schema, score normalization</div>
+        <div class="psp-status st-done">✓ specced</div>
+      </div>
+      <div class="ps-phase">
+        <div class="psp-num">Phase 2</div>
+        <div class="psp-name">Account State Collector — GTM + Google Ads + Meta MCP → AccountState JSON</div>
+        <div class="psp-status st-done">✓ specced</div>
+      </div>
+      <div class="ps-phase">
+        <div class="psp-num">Phase 3</div>
+        <div class="psp-name">JSONL Pipeline — Score filter, Chroma dedup, system prompt injection, quality gates</div>
+        <div class="psp-status st-done">✓ specced</div>
+      </div>
+      <div class="ps-phase">
+        <div class="psp-num">Phase 4</div>
+        <div class="psp-name">Fine-Tune Runner — Track A (OpenAI) + Track B (Ollama M3 Ultra), eval harness</div>
+        <div class="psp-status st-done">✓ specced</div>
+      </div>
+      <div class="ps-phase">
+        <div class="psp-num">Phase 5</div>
+        <div class="psp-name">OpenClaw Brain — ClientID middleware, ModelRouter, fallback chain, telemetry</div>
+        <div class="psp-status st-done">✓ specced</div>
+      </div>
+      <div class="ps-phase">
+        <div class="psp-num">Phase 6</div>
+        <div class="psp-name">Flywheel — Watcher, drift detection, auto-promote/rollback, Slack notifications</div>
+        <div class="psp-status st-active">← building</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLI -->
+  <div class="sl">CLI Output — pnpm flywheel start --client hre</div>
+  <div class="cli-block"><pre>
+<span class="cmd">$</span> pnpm flywheel start --client hre
+
+<span class="dim">──────────────────────────────────────────────────────</span>
+<span class="ok">  Flywheel Watcher — HRE</span>
+<span class="dim">──────────────────────────────────────────────────────</span>
+  Config loaded...           <span class="ok">✓ flywheel.json (retrain_delta: 20)</span>
+  Last export cursor:        <span class="hi">exp-2026-04-07-100</span>
+  Checking new examples...   <span class="ok">✓ 23 new high-score experiments</span>
+  Delta gate (≥20):          <span class="ok">✓ 23 ≥ 20 — triggering pipeline</span>
+
+<span class="info">  → Running JSONL export...</span>
+    Score filter:            <span class="ok">✓ 23 records pass (≥0.75)</span>
+    Dedup check:             <span class="ok">✓ 2 removed, 21 kept</span>
+    Quality gates:           <span class="ok">✓ all pass</span>
+    Output:                  <span class="ok">✓ data/clients/hre/v4.jsonl (21 records)</span>
+
+<span class="info">  → Submitting fine-tune (Track A)...</span>
+    Upload:                  <span class="ok">✓ file-xyz789</span>
+    Job created:             <span class="ok">✓ ftjob-xyz789</span>
+    Training...              <span class="hi">[ 15 min ]</span>
+    Succeeded:               <span class="ok">✓ ft:gpt-4o-mini-2024-07-18:hre-v4</span>
+
+<span class="info">  → Running eval harness...</span>
+    v4 eval score:           <span class="ok">✓ 0.91</span>
+    vs v3 (0.84):            <span class="ok">✓ +0.07 improvement</span>
+    Regression guard:        <span class="ok">✓ pass</span>
+
+<span class="info">  → Promoting...</span>
+    v3 → archived            <span class="ok">✓</span>
+    v4 → active              <span class="ok">✓</span>
+    OpenClaw reloaded:       <span class="ok">✓ hre → ft:gpt-4o-mini:hre-v4</span>
+    Slack notified:          <span class="ok">✓ #organized-ai-ops</span>
+
+  Cursor updated:            <span class="hi">exp-2026-04-14-023</span>
+<span class="dim">──────────────────────────────────────────────────────</span>
+<span class="spin">  ⟳ Flywheel complete — HRE model v4 active (0.91)</span>
+  </pre></div>
+
+  <!-- Prompt -->
+  <div class="sl">Claude Code Prompt</div>
+  <div class="prompt-block"><code>claude --dangerously-skip-permissions
+
+# Phase 6: Flywheel Automation
+# Branch: feature/finetune-pipeline
+# Repo: github.com/Organized-AI/gtm-autoresearch
+
+## Context
+All prior phases complete. Phase 6 closes the loop —
+a watcher that triggers the full pipeline automatically
+after each autoresearch run when enough new high-quality
+examples have accumulated.
+
+## Task
+
+Read AGENT-HANDOFF/ and PLANNING/ first. Then:
+
+1. Create packages/flywheel/
+
+   FlywheelWatcher:
+   - Load flywheel.json per client
+   - Track cursor: last_export_run_id (last SQLite run_id processed)
+   - On run: COUNT experiments WHERE run_id > cursor AND score >= threshold
+   - If count >= retrain_delta: trigger full pipeline
+   - Update cursor to latest run_id after trigger
+
+   Pipeline Orchestrator (calls existing packages in sequence):
+   1. training-pipeline export --client {id} --delta
+   2. fine-tune-runner submit --client {id} --version {N} --track {pref}
+   3. fine-tune-runner eval --client {id} --version {N}
+   4. If eval passes: openclaw register + promote
+   5. If eval regresses: rollback + alert
+
+   DriftDetector:
+   - After each promotion, query telemetry SQLite (from Phase 5)
+   - Compare live response quality vs eval score baseline
+   - If delta > drift_tolerance over 24h window: trigger alert
+   - Optional: schedule periodic re-eval against holdout set
+
+   AccountStateWatcher:
+   - Watch AccountState version file for major/minor bumps
+   - On major bump: force full retrain (bypass delta gate)
+   - On minor bump: log + retrain at next natural cycle
+
+   NotificationService:
+   - Slack webhook to #organized-ai-ops
+   - Events: promote, rollback, gate_met, regression, state_change
+   - Message format: emoji + client_id + event + key metric
+
+   VersionPruner:
+   - After each promote, check version count
+   - If > max_versions: delete oldest archived version
+   - For Track A: call OpenAI DELETE /v1/files/{file_id}
+   - For Track B: call ollama rm {client_id}-client:v{old}
+
+2. flywheel.json schema per client (data/clients/{id}/flywheel.json):
+   retrain_delta, drift_tolerance, max_versions,
+   retrain_on_state_change, auto_promote, auto_rollback,
+   notifications{slack_channel, events[]},
+   last_export_run_id (cursor), last_retrain_version
+
+3. CLI:
+   pnpm flywheel start --client hre          # run once now
+   pnpm flywheel watch --client hre          # watch mode (post-research hook)
+   pnpm flywheel status --client hre         # show current state
+   pnpm flywheel run --client hre --force    # bypass delta gate
+
+4. Hook into autoresearch run completion:
+   Add post-run hook that calls:
+   pnpm flywheel watch --client {client_id}
+
+5. Unit tests:
+   - Delta gate: triggers at exactly retrain_delta, not before
+   - Rollback: activates when eval drops below tolerance
+   - Cursor: advances only after successful pipeline run
+   - Pruner: removes correct version when count > max_versions
+   - NotificationService: formats Slack message correctly
+
+## Env vars:
+CLIENT_DATA_DIR=./data/clients
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+RETRAIN_DELTA=20
+DRIFT_TOLERANCE=0.05
+MAX_MODEL_VERSIONS=5
+
+## This is the final phase. After completion:
+## - Run full integration test: all 6 phases end-to-end with HRE
+## - Update README with complete pipeline diagram
+## - Tag: v1.0.0-finetune-pipeline</code></div>
+
+  <div class="doc-nav">
+    <a href="phase5-openclaw-brain.html">← Phase 5: OpenClaw</a>
+    <span class="center">gtm-autoresearch-docs.pages.dev</span>
+    <a href="index.html">All Docs →</a>
+  </div>
+
+</div>
+</body>
+</html>

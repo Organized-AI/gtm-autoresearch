@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTM AutoResearch — Fine-Tune Pipeline Docs</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #05080c;
+    --surface: #0a0f16;
+    --border: #141e2b;
+    --accent: #00d4ff;
+    --accent2: #10b981;
+    --text: #e2e8f0;
+    --muted: #3d5166;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .container {
+    max-width: 760px;
+    width: 100%;
+    padding: 48px 24px;
+    position: relative;
+  }
+
+  .header {
+    margin-bottom: 48px;
+    padding-left: 18px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .header .tag {
+    font-size: 9px; letter-spacing: 0.22em; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(22px, 3vw, 36px);
+    font-weight: 800; color: #fff; line-height: 1.1;
+  }
+
+  .header h1 span { color: var(--accent); }
+
+  .header p {
+    margin-top: 10px; font-size: 12px;
+    color: var(--muted); line-height: 1.8;
+  }
+
+  .header p a {
+    color: var(--accent); text-decoration: none;
+  }
+  .header p a:hover { text-decoration: underline; }
+
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+
+  .card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 22px 24px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--card-color);
+    transition: width 0.2s;
+  }
+
+  .card:hover {
+    border-color: var(--card-color);
+    transform: translateX(3px);
+  }
+
+  .card:hover::before { width: 5px; }
+
+  .card .num {
+    font-size: 9px; letter-spacing: 0.15em;
+    color: var(--card-color); text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px; font-weight: 700; color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .card p {
+    font-size: 11px; color: var(--muted); line-height: 1.7;
+  }
+
+  .card .arrow {
+    position: absolute; right: 20px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px; color: var(--card-color); opacity: 0.4;
+    transition: opacity 0.2s, right 0.2s;
+  }
+
+  .card:hover .arrow { opacity: 1; right: 16px; }
+
+  .footer {
+    font-size: 10px; color: var(--muted); line-height: 1.8;
+    border-top: 1px solid var(--border); padding-top: 20px;
+  }
+
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="tag">Organized AI // gtm-autoresearch</div>
+    <h1>Fine-Tune <span>Pipeline</span><br>Documentation</h1>
+    <p>
+      Architecture docs for converting GTM autoresearch experiment outputs into
+      client-specialized fine-tuned LLMs.<br>
+      Branch: <a href="https://github.com/Organized-AI/gtm-autoresearch/tree/feature/finetune-pipeline" target="_blank">feature/finetune-pipeline</a>
+    </p>
+  </div>
+
+  <div class="cards">
+
+    <a class="card" href="pipeline.html" style="--card-color: #00d4ff">
+      <div class="num">Phase 1–6 // Full Architecture</div>
+      <h3>Client Intelligence Training Loop</h3>
+      <p>Six-phase pipeline from autoresearch experiment logging through fine-tune runner, OpenClaw integration, and flywheel automation. Includes JSONL training record format and Claude Code prompt for Phase 1.</p>
+      <span class="arrow">→</span>
+    </a>
+
+    <a class="card" href="account-state.html" style="--card-color: #10b981">
+      <div class="num">Phase 2 // Deep Dive</div>
+      <h3>Account State Collector</h3>
+      <p>Full AccountState schema, MCP tool call map for GTM / Google Ads / Pipeboard Meta, GTM container JSON normalization transform steps, and rendered system prompt output for HRE. Includes Claude Code prompt for Phase 2.</p>
+      <span class="arrow">→</span>
+    </a>
+
+    <a class="card" href="phase3-jsonl-pipeline.html" style="--card-color: #d97706">
+      <div class="num">Phase 3 // Deep Dive</div>
+      <h3>JSONL Training Data Pipeline</h3>
+      <p>Score filter distribution, Chroma deduplication, system prompt anatomy with token budget, full JSONL record schema, quality gates, CLI output walkthrough, and Claude Code prompt for Phase 3.</p>
+      <span class="arrow">→</span>
+    </a>
+
+    <a class="card" href="phase4-fine-tune-runner.html" style="--card-color: #6366f1">
+      <div class="num">Phase 4 // Deep Dive</div>
+      <h3>Fine-Tune Runner — Dual Track</h3>
+      <p>Track A (OpenAI cloud) vs Track B (Ollama local M3 Ultra) comparison, track selection matrix, OpenAI API flow, Modelfile generation, model registry schema, eval harness, CLI output, and Claude Code prompt for Phase 4.</p>
+      <span class="arrow">→</span>
+    </a>
+
+    <a class="card" href="phase5-openclaw-brain.html" style="--card-color: #ff4500">
+      <div class="num">Phase 5 // Deep Dive</div>
+      <h3>OpenClaw Client Brain</h3>
+      <p>Request routing architecture through OpenClaw :18789, full middleware stack (Auth → ClientID → ModelRouter → Telemetry → Fallback), per-client config schema, fallback chain, active client status, and Claude Code prompt for Phase 5.</p>
+      <span class="arrow">→</span>
+    </a>
+
+    <a class="card" href="phase6-flywheel.html" style="--card-color: #e63e00">
+      <div class="num">Phase 6 // Deep Dive</div>
+      <h3>The Flywheel</h3>
+      <p>Complete compounding loop diagram, watcher trigger events, drift detection with auto-rollback visualization, notification events, flywheel config schema, version pruner, and Claude Code prompt for Phase 6 — the final phase.</p>
+      <span class="arrow">→</span>
+    </a>
+
+  </div>
+
+  <div class="footer">
+    <a href="https://github.com/Organized-AI/gtm-autoresearch" target="_blank">github.com/Organized-AI/gtm-autoresearch</a>
+    &nbsp;·&nbsp;
+    <a href="https://organizedai.vip" target="_blank">organizedai.vip</a>
+    &nbsp;·&nbsp; Built with Organized Codebase
+  </div>
+
+</div>
+</body>
+</html>

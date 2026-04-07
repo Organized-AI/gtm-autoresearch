@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 3 — JSONL Training Data Pipeline</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #f5f0e8;
+  --surface: #ede8df;
+  --ink: #1a1410;
+  --ink2: #3d3530;
+  --muted: #8c7e72;
+  --border: #d4ccc0;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --amber-mid: #f59e0b;
+  --green: #059669;
+  --green-light: #ecfdf5;
+  --red: #dc2626;
+  --blue: #2563eb;
+  --blue-light: #eff6ff;
+  --rule: #c8bfb4;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Grain texture overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999; opacity: 0.4;
+}
+
+.page { max-width: 1000px; margin: 0 auto; padding: 64px 32px; }
+
+/* Header — editorial newspaper feel */
+.masthead {
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding: 20px 0 16px;
+  margin-bottom: 48px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 24px;
+}
+
+.masthead .meta {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.masthead h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(32px, 5vw, 58px);
+  line-height: 1.05;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.masthead h1 em {
+  font-style: italic;
+  color: var(--amber);
+}
+
+.masthead .issue {
+  text-align: right;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.8;
+  border-left: 1px solid var(--rule);
+  padding-left: 20px;
+}
+
+.masthead .issue strong { color: var(--ink); display: block; font-size: 20px; font-family: 'DM Serif Display', serif; }
+
+/* Section rules */
+.section-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 44px 0 20px;
+}
+.section-rule::before, .section-rule::after {
+  content: ''; flex: 1; height: 1px; background: var(--rule);
+}
+.section-rule span {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--muted); white-space: nowrap;
+}
+
+/* Pipeline flow — horizontal with animated pulses */
+.pipeline-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.pipe-stage {
+  flex: 1;
+  min-width: 120px;
+  background: white;
+  border: 1px solid var(--border);
+  border-right: none;
+  padding: 16px 14px;
+  position: relative;
+}
+
+.pipe-stage:last-child { border-right: 1px solid var(--border); }
+
+.pipe-stage::after {
+  content: '▶';
+  position: absolute;
+  right: -11px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--amber);
+  z-index: 2;
+  background: white;
+  padding: 2px 0;
+}
+.pipe-stage:last-child::after { display: none; }
+
+.pipe-stage.active { background: var(--amber-light); border-color: var(--amber); }
+.pipe-stage.active::after { color: var(--amber); }
+
+.pipe-stage .ps-label {
+  font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.pipe-stage.active .ps-label { color: var(--amber); }
+
+.pipe-stage .ps-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 13px; color: var(--ink); line-height: 1.2;
+}
+
+.pipe-stage .ps-count {
+  margin-top: 6px;
+  font-size: 18px;
+  font-family: 'DM Serif Display', serif;
+  color: var(--ink2);
+}
+.pipe-stage.active .ps-count { color: var(--amber); }
+
+.pipe-stage .ps-unit { font-size: 9px; color: var(--muted); }
+
+/* Two column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+@media(max-width: 680px) { .two-col { grid-template-columns: 1fr; } }
+
+/* Cards */
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.card h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px; font-weight: 400;
+  color: var(--ink); margin-bottom: 4px;
+}
+
+.card .subtitle {
+  font-size: 10px; color: var(--muted); margin-bottom: 14px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+}
+
+/* Score distribution visual */
+.score-bar-chart { display: flex; flex-direction: column; gap: 6px; }
+
+.score-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  gap: 8px;
+  align-items: center;
+  font-size: 10px;
+}
+.score-row .label { color: var(--muted); text-align: right; }
+.score-bar-wrap {
+  background: var(--surface);
+  height: 16px;
+  border-radius: 1px;
+  overflow: hidden;
+  position: relative;
+}
+.score-bar {
+  height: 100%;
+  background: var(--amber-mid);
+  opacity: 0.3;
+  transition: width 0.6s ease;
+}
+.score-bar.keep { background: var(--green); opacity: 0.7; }
+.score-bar.discard { background: var(--red); opacity: 0.4; }
+.score-row .count { color: var(--ink2); font-size: 10px; }
+
+.threshold-line {
+  border: none;
+  border-top: 2px dashed var(--amber);
+  margin: 4px 0;
+  position: relative;
+}
+.threshold-line::before {
+  content: '← threshold 0.75';
+  position: absolute;
+  right: 0; top: -18px;
+  font-size: 9px; color: var(--amber);
+  letter-spacing: 0.05em;
+}
+
+/* Dedup visual */
+.dedup-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dedup-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+  font-size: 10px;
+}
+
+.dedup-doc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  border-radius: 1px;
+  line-height: 1.5;
+  color: var(--ink2);
+}
+
+.dedup-doc.dup {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.dedup-arrow {
+  font-size: 10px; color: var(--muted);
+  text-align: center;
+}
+
+.similarity-badge {
+  font-size: 9px; padding: 2px 6px;
+  border-radius: 1px;
+  display: inline-block; margin-top: 4px;
+}
+.similarity-badge.high { background: #fef2f2; color: var(--red); }
+.similarity-badge.low { background: var(--green-light); color: var(--green); }
+
+/* System prompt anatomy */
+.prompt-anatomy {
+  background: #1a1410;
+  border: 1px solid #3d3530;
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.prompt-anatomy .pa-header {
+  background: #3d3530;
+  padding: 8px 16px;
+  font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: #8c7e72;
+  display: flex; justify-content: space-between;
+}
+
+.prompt-anatomy .pa-header span { color: var(--amber-mid); }
+
+.prompt-section {
+  border-bottom: 1px solid #2a2420;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.prompt-section:last-child { border-bottom: none; }
+
+.prompt-section .ps-tag {
+  font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 2px 8px;
+  border-radius: 1px; align-self: start;
+  white-space: nowrap; margin-top: 2px;
+}
+
+.tag-gtm { background: rgba(0,212,255,0.15); color: #7dd3fc; }
+.tag-gads { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+.tag-meta { background: rgba(124,58,237,0.15); color: #c4b5fd; }
+.tag-mem { background: rgba(245,158,11,0.15); color: #fcd34d; }
+.tag-issues { background: rgba(220,38,38,0.15); color: #fca5a5; }
+.tag-tokens { background: rgba(100,116,139,0.15); color: #94a3b8; }
+
+.prompt-section .ps-content {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px; line-height: 1.7;
+  color: #c8bfb4;
+  white-space: pre-wrap;
+}
+
+.prompt-section .ps-content .hi { color: #fcd34d; }
+.prompt-section .ps-content .g { color: #6ee7b7; }
+.prompt-section .ps-content .b { color: #7dd3fc; }
+.prompt-section .ps-content .r { color: #fca5a5; }
+
+.token-meter {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: #110e0b;
+  font-size: 10px;
+}
+.token-bar-wrap {
+  flex: 1; height: 6px; background: #2a2420; border-radius: 1px; overflow: hidden;
+}
+.token-bar { height: 100%; border-radius: 1px; background: var(--green); }
+.token-bar.warn { background: var(--amber-mid); }
+.token-bar.over { background: var(--red); }
+.token-label { font-size: 9px; color: #6b5e52; }
+.token-count { color: #c8bfb4; font-size: 11px; }
+
+/* JSONL record breakdown */
+.jsonl-breakdown {
+  background: #0f0c09;
+  border: 1px solid #2a2420;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.jsonl-breakdown .jb-header {
+  background: #1a1410;
+  padding: 8px 16px;
+  font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; gap: 24px;
+}
+
+.jb-field {
+  padding: 10px 16px;
+  display: grid;
+  grid-template-columns: 160px 60px 1fr;
+  gap: 12px;
+  border-bottom: 1px solid #1a1410;
+  align-items: start;
+  font-size: 11px;
+}
+.jb-field:last-child { border-bottom: none; }
+
+.jb-field .fname { color: #f9a8d4; }
+.jb-field .ftype {
+  font-size: 9px; padding: 2px 6px;
+  background: rgba(16,185,129,0.1); color: #6ee7b7;
+  border-radius: 1px; align-self: start;
+}
+.jb-field .fdesc { color: #6b5e52; line-height: 1.6; font-size: 10px; }
+
+/* Quality gates */
+.gates {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 8px;
+}
+@media(max-width: 680px) { .gates { grid-template-columns: repeat(2,1fr); } }
+
+.gate {
+  background: white;
+  border: 1px solid var(--border);
+  padding: 16px;
+  text-align: center;
+}
+.gate .g-icon { font-size: 22px; margin-bottom: 6px; }
+.gate .g-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 13px; color: var(--ink); margin-bottom: 4px;
+}
+.gate .g-rule { font-size: 10px; color: var(--muted); line-height: 1.5; }
+.gate .g-value {
+  margin-top: 8px;
+  font-size: 20px;
+  font-family: 'DM Serif Display', serif;
+  color: var(--amber);
+}
+
+/* CLI output */
+.cli-output {
+  background: #0f0c09;
+  border: 1px solid #2a2420;
+  padding: 20px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+.cli-output pre {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; line-height: 1.7;
+  color: #a8998a; white-space: pre;
+}
+.cli-output pre .cmd { color: #fcd34d; }
+.cli-output pre .ok { color: #6ee7b7; }
+.cli-output pre .warn { color: #fbbf24; }
+.cli-output pre .err { color: #fca5a5; }
+.cli-output pre .dim { color: #3d3530; }
+.cli-output pre .num { color: #c4b5fd; }
+
+/* Prompt block */
+.prompt-block {
+  background: #0f0c09;
+  border: 1px solid rgba(217,119,6,0.3);
+  padding: 22px;
+  position: relative;
+  margin-bottom: 8px;
+}
+.prompt-block::before {
+  content: 'CLAUDE CODE PROMPT — PHASE 3';
+  position: absolute; top: -9px; left: 16px;
+  background: #0f0c09; padding: 0 8px;
+  font-size: 8px; letter-spacing: 0.15em;
+  color: var(--amber); text-transform: uppercase;
+}
+.prompt-block code {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; line-height: 1.8;
+  color: #c8bfb4; white-space: pre-wrap; display: block;
+}
+
+/* Nav footer */
+.doc-nav {
+  border-top: 1px solid var(--rule);
+  margin-top: 56px;
+  padding-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+.doc-nav a {
+  color: var(--amber); text-decoration: none;
+  font-family: 'DM Serif Display', serif; font-size: 14px;
+}
+.doc-nav a:hover { text-decoration: underline; }
+.doc-nav .center { color: var(--muted); font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Masthead -->
+  <div class="masthead">
+    <div>
+      <div class="meta">gtm-autoresearch // feature/finetune-pipeline // Phase 3 of 6</div>
+      <h1>JSONL Training<br><em>Data Pipeline</em></h1>
+    </div>
+    <div class="issue">
+      <strong>03</strong>
+      Filter · Dedup<br>Inject · Export<br>
+      <span style="color:var(--amber)">Client: HRE</span>
+    </div>
+  </div>
+
+  <!-- Pipeline position -->
+  <div class="section-rule"><span>System Overview</span></div>
+  <div class="pipeline-flow">
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 1</div>
+      <div class="ps-name">Experiment Logger</div>
+      <div class="ps-count">✓</div>
+      <div class="ps-unit">complete</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 2</div>
+      <div class="ps-name">Account State</div>
+      <div class="ps-count">✓</div>
+      <div class="ps-unit">complete</div>
+    </div>
+    <div class="pipe-stage active">
+      <div class="ps-label">Phase 3 ← NOW</div>
+      <div class="ps-name">JSONL Pipeline</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">building</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 4</div>
+      <div class="ps-name">Fine-Tune Runner</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">next</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 5</div>
+      <div class="ps-name">OpenClaw Brain</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">planned</div>
+    </div>
+    <div class="pipe-stage">
+      <div class="ps-label">Phase 6</div>
+      <div class="ps-name">Flywheel</div>
+      <div class="ps-count">—</div>
+      <div class="ps-unit">planned</div>
+    </div>
+  </div>
+
+  <!-- Score filter + dedup -->
+  <div class="section-rule"><span>Step 1 — Score Filter</span></div>
+  <div class="two-col">
+    <div class="card">
+      <h3>Score Distribution</h3>
+      <div class="subtitle">Typical autoresearch run · 100 experiments</div>
+      <div class="score-bar-chart">
+        <div class="score-row">
+          <div class="label">0.9–1.0</div>
+          <div class="score-bar-wrap"><div class="score-bar keep" style="width:18%"></div></div>
+          <div class="count">~18</div>
+        </div>
+        <div class="score-row">
+          <div class="label">0.8–0.9</div>
+          <div class="score-bar-wrap"><div class="score-bar keep" style="width:24%"></div></div>
+          <div class="count">~24</div>
+        </div>
+        <div class="score-row">
+          <div class="label">0.75–0.8</div>
+          <div class="score-bar-wrap"><div class="score-bar keep" style="width:13%"></div></div>
+          <div class="count">~13</div>
+        </div>
+        <hr class="threshold-line">
+        <div class="score-row">
+          <div class="label">0.6–0.75</div>
+          <div class="score-bar-wrap"><div class="score-bar discard" style="width:28%"></div></div>
+          <div class="count">~28</div>
+        </div>
+        <div class="score-row">
+          <div class="label">0.0–0.6</div>
+          <div class="score-bar-wrap"><div class="score-bar discard" style="width:17%"></div></div>
+          <div class="count">~17</div>
+        </div>
+      </div>
+      <div style="margin-top:14px; font-size:11px; color:var(--green); border-top:1px solid var(--rule); padding-top:10px;">
+        ✓ ~55 records kept per run &nbsp;·&nbsp; threshold configurable per client
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Deduplication</h3>
+      <div class="subtitle">Cosine similarity via Chroma :37777 · threshold 0.92</div>
+      <div class="dedup-visual">
+        <div style="font-size:10px; color:var(--muted); margin-bottom:4px;">Incoming experiment vs existing training set:</div>
+
+        <div class="dedup-pair">
+          <div class="dedup-doc">
+            "PMAX shows $0 conversion value — sGTM items mapping issue"
+            <div><span class="similarity-badge high">sim: 0.97 — DROP</span></div>
+          </div>
+          <div class="dedup-arrow">≈</div>
+          <div class="dedup-doc dup">
+            "PMAX revenue zero — fix sGTM ecommerce.items array"
+          </div>
+        </div>
+
+        <div style="height:1px; background:var(--rule); margin:4px 0;"></div>
+
+        <div class="dedup-pair">
+          <div class="dedup-doc">
+            "Add to Cart firing on page load instead of button click"
+            <div><span class="similarity-badge low">sim: 0.31 — KEEP</span></div>
+          </div>
+          <div class="dedup-arrow">≠</div>
+          <div class="dedup-doc">
+            "Purchase tag misfiring on order confirmation reload"
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:10px; color:var(--muted);">
+        Prevents model overfitting to repeated variations of the same problem.
+        New experiments are embedded and compared before write.
+      </div>
+    </div>
+  </div>
+
+  <!-- System prompt anatomy -->
+  <div class="section-rule"><span>Step 2 — System Prompt Injection</span></div>
+  <div class="prompt-anatomy">
+    <div class="pa-header">
+      <span>system_prompt field anatomy — HRE account · <span>AccountState v1.2.0</span></span>
+      <span>target: ≤800 tokens</span>
+    </div>
+
+    <div class="prompt-section">
+      <span class="ps-tag tag-gtm">GTM Context</span>
+      <div class="ps-content"><span class="hi">GTM:</span> <span class="b">GTM-XXXXXXX</span> | ws_4 | <span class="num">31</span> tags, <span class="num">18</span> triggers, <span class="num">22</span> variables
+Key tags: GA4 Config, GA4 - Purchase, AW - All Purchases,
+          sGTM Bridge, Custom HTML - DataLayer Push
+<span class="hi">dataLayer:</span> page_view, view_item, add_to_cart, purchase, generate_lead
+<span class="hi">DLV:</span> ecommerce.value, ecommerce.items[].item_id, ecommerce.items[].price</div>
+    </div>
+
+    <div class="prompt-section">
+      <span class="ps-tag tag-gads">Google Ads</span>
+      <div class="ps-content"><span class="hi">Google Ads:</span> <span class="g">123-456-7890</span> | USD
+Campaigns: PMAX - Core, Brand - HRE (SEARCH), Retargeting (DISPLAY)
+Conversions: All Purchases <span class="g">(value: ecommerce.value)</span>, Lead Submit (count)
+Enhanced Conversions: <span class="g">ENABLED</span></div>
+    </div>
+
+    <div class="prompt-section">
+      <span class="ps-tag tag-meta">Meta / CAPI</span>
+      <div class="ps-content"><span class="hi">Meta Pixel:</span> HRE-pixel-id | act_12345
+Events <span class="b">(browser+CAPI)</span>: PageView, ViewContent, AddToCart, Purchase
+CAPI match rate: ~68% | Stape: cnt_abc123</div>
+    </div>
+
+    <div class="prompt-section">
+      <span class="ps-tag tag-mem">Memory</span>
+      <div class="ps-content">Cart abandonment tracking fixed <span class="b">2025-11</span>
+dataLayer conflict resolved <span class="b">2025-09</span>
+PMAX value fix deployed <span class="b">2026-01</span>
+Lead form dedup logic added <span class="b">2026-03</span></div>
+    </div>
+
+    <div class="prompt-section">
+      <span class="ps-tag tag-issues">Known Issues</span>
+      <div class="ps-content"><span class="r">→ PMAX $0 value:</span> sGTM reads ecommerce.value but HRE pushes
+  revenue inside items[].price * quantity
+<span class="r">→ Lead dedup:</span> generate_lead fires on page load + form submit</div>
+    </div>
+
+    <div class="token-meter">
+      <span class="token-label">tokens</span>
+      <div class="token-bar-wrap">
+        <div class="token-bar" style="width: 72%"></div>
+      </div>
+      <span class="token-count">~576 / 800</span>
+      <span class="token-label">✓ within budget</span>
+    </div>
+  </div>
+
+  <!-- JSONL record schema -->
+  <div class="section-rule"><span>Step 3 — JSONL Record Schema</span></div>
+  <div class="jsonl-breakdown">
+    <div class="jb-header">
+      <span>training/{client_id}/v{N}.jsonl — one record per line</span>
+      <span style="color:var(--amber-mid)">OpenAI fine-tune format</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">messages[0].role</span>
+      <span class="ftype">string</span>
+      <span class="fdesc">Always "system" — contains rendered AccountState.system_prompt (≤800 tokens)</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">messages[1].role</span>
+      <span class="ftype">string</span>
+      <span class="fdesc">Always "user" — the problem/question from the autoresearch experiment input</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">messages[2].role</span>
+      <span class="ftype">string</span>
+      <span class="fdesc">Always "assistant" — the high-scoring solution output (score ≥ 0.75)</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">metadata.client_id</span>
+      <span class="ftype">string</span>
+      <span class="fdesc">e.g. "hre" — used to filter and route to the correct fine-tuned model</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">metadata.score</span>
+      <span class="ftype">float</span>
+      <span class="fdesc">Original experiment score 0.0–1.0. Stored for post-training analysis and threshold tuning</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">metadata.run_id</span>
+      <span class="ftype">string</span>
+      <span class="fdesc">Experiment run identifier. Links back to ExperimentRecord in SQLite for traceability</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">metadata.account_state_version</span>
+      <span class="ftype">semver</span>
+      <span class="fdesc">AccountState version snapshot at time of experiment. Enables version-gated retraining after major account changes</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">metadata.sources</span>
+      <span class="ftype">string[]</span>
+      <span class="fdesc">Which data sources were injected: ["gtm", "google_ads", "meta", "memory"]</span>
+    </div>
+    <div class="jb-field">
+      <span class="fname">metadata.chroma_embedding_id</span>
+      <span class="ftype">string</span>
+      <span class="fdesc">Chroma vector ID for this record — enables dedup lookup on future runs</span>
+    </div>
+  </div>
+
+  <!-- Quality gates -->
+  <div class="section-rule"><span>Step 4 — Quality Gates Before Export</span></div>
+  <div class="gates">
+    <div class="gate">
+      <div class="g-icon">⚖️</div>
+      <div class="g-name">Min Examples</div>
+      <div class="g-rule">Won't export JSONL until minimum batch size reached</div>
+      <div class="g-value">50</div>
+    </div>
+    <div class="gate">
+      <div class="g-icon">📏</div>
+      <div class="g-name">Token Guard</div>
+      <div class="g-rule">Rejects records where system prompt exceeds token ceiling</div>
+      <div class="g-value">800</div>
+    </div>
+    <div class="gate">
+      <div class="g-icon">🔁</div>
+      <div class="g-name">Dedup Rate</div>
+      <div class="g-rule">Flags run if >40% of new experiments are duplicates</div>
+      <div class="g-value">40%</div>
+    </div>
+    <div class="gate">
+      <div class="g-icon">🧪</div>
+      <div class="g-name">Holdout Split</div>
+      <div class="g-rule">10% withheld per version for post-fine-tune eval scoring</div>
+      <div class="g-value">10%</div>
+    </div>
+  </div>
+
+  <!-- CLI output example -->
+  <div class="section-rule"><span>CLI Output — pnpm pipeline export --client hre</span></div>
+  <div class="cli-output">
+    <pre>
+<span class="cmd">$</span> pnpm pipeline export --client hre --threshold 0.75
+
+<span class="dim">─────────────────────────────────────────────</span>
+<span class="ok">  JSONL Training Pipeline — HRE</span>
+<span class="dim">─────────────────────────────────────────────</span>
+  Loading experiments from SQLite...          <span class="ok">✓ 247 records found</span>
+  Applying score filter (≥0.75)...            <span class="ok">✓ 138 records pass</span>
+  Loading AccountState v1.2.0...              <span class="ok">✓ system_prompt: 576 tokens</span>
+  Injecting system prompts...                 <span class="ok">✓ 138 records injected</span>
+  Running dedup check via Chroma...           <span class="warn">⚠  14 near-duplicates removed (sim ≥0.92)</span>
+  Remaining after dedup:                      <span class="ok">✓ 124 records</span>
+  Checking quality gates:
+    Min examples (50):                        <span class="ok">✓ 124 ≥ 50</span>
+    Token guard (800):                        <span class="ok">✓ all records within budget</span>
+    Dedup rate (&lt;40%):                        <span class="ok">✓ 10.1% dedup rate</span>
+    Holdout split (10%):                      <span class="ok">✓ 12 records withheld → eval set</span>
+
+<span class="dim">─────────────────────────────────────────────</span>
+  Output:  <span class="ok">data/clients/hre/v3.jsonl</span>         <span class="num">112 training records</span>
+  Eval:    <span class="ok">data/clients/hre/v3_eval.jsonl</span>    <span class="num">12 eval records</span>
+  Version: <span class="ok">v3</span>  (prev: v2 · delta: +112 new records)
+<span class="dim">─────────────────────────────────────────────</span>
+<span class="ok">  ✓ Ready for Phase 4 fine-tune runner</span>
+  Next: <span class="cmd">pnpm fine-tune submit --client hre --version 3</span>
+    </pre>
+  </div>
+
+  <!-- Claude Code prompt -->
+  <div class="section-rule"><span>Claude Code Prompt</span></div>
+  <div class="prompt-block">
+    <code>claude --dangerously-skip-permissions
+
+# Phase 3: JSONL Training Data Pipeline
+# Branch: feature/finetune-pipeline
+# Repo: github.com/Organized-AI/gtm-autoresearch
+
+## Context
+Phase 1 (ExperimentLogger) and Phase 2 (AccountStateCollector) are complete.
+Phase 3 builds the pipeline that transforms stored experiments into
+clean, fine-tune-ready JSONL files. Primary client: HRE.
+
+## Task
+
+Read AGENT-HANDOFF/ and PLANNING/ first. Then:
+
+1. Create packages/training-pipeline/
+
+   ScoreFilter:
+   - Query SQLite experiments table: SELECT * WHERE score >= threshold
+   - Default threshold: 0.75 (env: SCORE_THRESHOLD)
+   - Return ExperimentRecord[] sorted by score DESC
+
+   DedupChecker (Chroma :37777):
+   - Embed each experiment's solution text via Chroma embedding
+   - Query: find existing records with cosine_sim >= 0.92
+   - If match found: skip record, log as duplicate
+   - If new: write embedding to Chroma collection "training_{client_id}"
+
+   SystemPromptInjector:
+   - Load AccountState from data/clients/{client_id}/account_state_v{N}.json
+   - For each passing record: build messages[0] = {role:"system", content: account_state.system_prompt}
+   - Token guard: count tokens (use tiktoken cl100k_base), reject if > 800
+   - Build full message array: [system, user, assistant]
+
+   QualityGates (assert before export):
+   - MIN_EXAMPLES = 50 (configurable)
+   - TOKEN_CEILING = 800
+   - MAX_DEDUP_RATE = 0.40 (warn + halt if exceeded)
+   - HOLDOUT_SPLIT = 0.10
+
+   JSONLExporter:
+   - Write to: data/clients/{client_id}/v{N}.jsonl
+   - Holdout: data/clients/{client_id}/v{N}_eval.jsonl
+   - Each line: {messages:[...], metadata:{client_id, score, run_id,
+     account_state_version, sources, chroma_embedding_id}}
+   - Versioning: auto-increment v{N} by checking existing files
+   - Delta mode: --delta flag to only export records since last version
+
+2. CLI: pnpm pipeline export --client hre [--threshold 0.75] [--delta]
+   - Print progress as shown in spec
+   - Exit 0 on success, 1 on gate failure
+
+3. Unit tests:
+   - Score filter boundary conditions (0.749 excluded, 0.75 included)
+   - Token guard rejects > 800 token system prompts
+   - Dedup correctly identifies near-duplicate solutions
+   - QualityGate halts export when MIN_EXAMPLES not met
+   - JSONL output is valid JSON per line (json-lines format)
+
+4. Update CLAUDE.md with training-pipeline package docs
+
+## Env vars:
+SCORE_THRESHOLD=0.75
+CHROMA_URL=http://localhost:37777
+CLIENT_DATA_DIR=./data/clients
+MIN_TRAINING_EXAMPLES=50
+TOKEN_CEILING=800
+HOLDOUT_SPLIT=0.10
+
+## Do NOT build Phase 4 (fine-tune runner) yet.</code>
+  </div>
+
+  <!-- Nav -->
+  <div class="doc-nav">
+    <a href="account-state.html">← Phase 2: Account State</a>
+    <span class="center">gtm-autoresearch-docs.pages.dev</span>
+    <a href="index.html">All Docs →</a>
+  </div>
+
+</div>
+</body>
+</html>

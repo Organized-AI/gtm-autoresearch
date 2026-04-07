@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 4 — Fine-Tune Runner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #0c0c14;
+  --surface: #11111e;
+  --surface2: #161625;
+  --border: #1e1e35;
+  --text: #c9c9e8;
+  --muted: #4a4a72;
+  --track-a: #6366f1;
+  --track-a-light: rgba(99,102,241,0.12);
+  --track-b: #10b981;
+  --track-b-light: rgba(16,185,129,0.12);
+  --gold: #f59e0b;
+  --gold-light: rgba(245,158,11,0.1);
+  --red: #ef4444;
+  --white: #e8e8f5;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Star field */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 25%, rgba(99,102,241,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 65%, rgba(16,185,129,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 35%, rgba(245,158,11,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 80%, rgba(99,102,241,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 85%, rgba(16,185,129,0.2) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.page { max-width: 1040px; margin: 0 auto; padding: 56px 28px; position: relative; }
+
+/* Header */
+.header {
+  margin-bottom: 56px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: end;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header .eyebrow {
+  font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  font-size: clamp(28px, 4vw, 50px);
+  font-weight: 700; color: var(--white);
+  line-height: 1.1;
+}
+
+.header h1 .track-a { color: var(--track-a); }
+.header h1 .track-b { color: var(--track-b); }
+
+.header p {
+  margin-top: 10px; font-size: 13px;
+  color: var(--muted); max-width: 520px; line-height: 1.7;
+}
+
+.phase-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  text-align: center;
+  white-space: nowrap;
+}
+.phase-badge .pb-num {
+  font-size: 36px; font-weight: 700;
+  color: var(--gold); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.phase-badge .pb-label {
+  font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Section label */
+.slabel {
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted);
+  margin: 44px 0 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.slabel::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Two tracks side by side */
+.tracks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+@media(max-width: 680px) { .tracks { grid-template-columns: 1fr; } }
+
+.track {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.track-header {
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+}
+.track-header .th-letter {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  flex-shrink: 0;
+}
+.track-header h3 {
+  font-size: 15px; font-weight: 600; color: var(--white);
+}
+.track-header .th-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+.track-a .track-header { background: var(--track-a-light); border-bottom: 1px solid rgba(99,102,241,0.2); }
+.track-a .track-header .th-letter { background: rgba(99,102,241,0.2); color: var(--track-a); }
+.track-b .track-header { background: var(--track-b-light); border-bottom: 1px solid rgba(16,185,129,0.2); }
+.track-b .track-header .th-letter { background: rgba(16,185,129,0.2); color: var(--track-b); }
+
+.track-body { padding: 16px 18px; background: var(--surface); }
+
+.track-row {
+  display: flex; align-items: flex-start;
+  gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.track-row:last-child { border-bottom: none; }
+.track-row .tr-key { color: var(--muted); width: 110px; flex-shrink: 0; }
+.track-row .tr-val { color: var(--text); line-height: 1.5; }
+.track-row .tr-val .pill {
+  display: inline-block; padding: 1px 7px;
+  border-radius: 20px; font-size: 9px;
+  letter-spacing: 0.08em; margin-right: 4px;
+}
+.pill-a { background: var(--track-a-light); color: var(--track-a); border: 1px solid rgba(99,102,241,0.3); }
+.pill-b { background: var(--track-b-light); color: var(--track-b); border: 1px solid rgba(16,185,129,0.3); }
+.pill-gold { background: var(--gold-light); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
+
+/* Decision matrix */
+.decision-matrix {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.dm-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.dm-header div {
+  padding: 8px 14px;
+  font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--muted);
+  border-right: 1px solid var(--border);
+}
+.dm-header div:last-child { border-right: none; }
+
+.dm-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  border-bottom: 1px solid var(--border);
+}
+.dm-row:last-child { border-bottom: none; }
+.dm-row div {
+  padding: 10px 14px; font-size: 11px;
+  border-right: 1px solid var(--border);
+  line-height: 1.5; color: var(--text);
+}
+.dm-row div:last-child { border-right: none; }
+.dm-row div:first-child { color: var(--white); font-weight: 500; }
+.dm-row .recommend {
+  color: var(--gold); font-weight: 600; font-size: 10px;
+}
+
+/* API flow diagram */
+.flow-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 8px;
+}
+
+.flow-group {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 0;
+}
+
+.flow-group .fg-label {
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 16px;
+  font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  border-right: 2px solid var(--border);
+  position: relative;
+}
+
+.flow-group .fg-label::after {
+  content: '';
+  position: absolute; right: -5px; top: 50%;
+  transform: translateY(-50%);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border);
+}
+
+.flow-group.active .fg-label { color: var(--gold); }
+.flow-group.active .fg-label::after { background: var(--gold); }
+.flow-group.track-a-group .fg-label::after { background: var(--track-a); }
+.flow-group.track-b-group .fg-label::after { background: var(--track-b); }
+
+.flow-steps {
+  padding: 12px 0 12px 20px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.flow-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 8px 14px;
+  font-size: 11px;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+
+.flow-step .fs-num {
+  font-size: 9px; color: var(--muted);
+  min-width: 16px; padding-top: 1px;
+}
+.flow-step .fs-content { color: var(--text); line-height: 1.5; }
+.flow-step .fs-content code {
+  font-family: 'Fira Code', monospace;
+  font-size: 10px; color: var(--gold);
+  background: var(--gold-light);
+  padding: 0 4px; border-radius: 2px;
+}
+.flow-step.highlight-a { border-color: rgba(99,102,241,0.3); background: var(--track-a-light); }
+.flow-step.highlight-b { border-color: rgba(16,185,129,0.3); background: var(--track-b-light); }
+
+/* Modelfile example */
+.code-block {
+  background: #080810;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 20px;
+  overflow-x: auto;
+  position: relative;
+  margin-bottom: 8px;
+}
+.code-block::before {
+  content: attr(data-label);
+  position: absolute; top: -9px; left: 14px;
+  background: #080810; padding: 0 8px;
+  font-size: 8px; letter-spacing: 0.15em;
+  color: var(--track-b); text-transform: uppercase;
+}
+.code-block code {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px; line-height: 1.75;
+  color: #8888b8; white-space: pre; display: block;
+}
+.code-block .kw { color: var(--track-a); }
+.code-block .str { color: var(--track-b); }
+.code-block .cm { color: var(--muted); }
+.code-block .hi { color: var(--gold); }
+.code-block .w { color: var(--white); }
+
+/* Model registry */
+.registry {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.registry-header {
+  display: grid;
+  grid-template-columns: 120px 80px 80px 80px 1fr 80px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+.registry-header div {
+  padding: 8px 12px;
+  font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  border-right: 1px solid var(--border);
+}
+.registry-header div:last-child { border-right: none; }
+
+.registry-row {
+  display: grid;
+  grid-template-columns: 120px 80px 80px 80px 1fr 80px;
+  border-bottom: 1px solid var(--border);
+}
+.registry-row:last-child { border-bottom: none; }
+.registry-row div {
+  padding: 10px 12px; font-size: 11px;
+  border-right: 1px solid var(--border);
+  color: var(--text); line-height: 1.4;
+}
+.registry-row div:last-child { border-right: none; }
+.registry-row .client-name { color: var(--white); font-weight: 500; }
+.status-active { color: var(--track-b); font-weight: 600; }
+.status-training { color: var(--gold); }
+.status-eval { color: var(--track-a); }
+
+@media(max-width: 680px) {
+  .registry-header, .registry-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Eval harness */
+.eval-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 8px;
+}
+@media(max-width: 680px) { .eval-grid { grid-template-columns: 1fr; } }
+
+.eval-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 16px;
+}
+.eval-card h4 {
+  font-size: 12px; font-weight: 600;
+  color: var(--white); margin-bottom: 6px;
+}
+.eval-card p { font-size: 10px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+.score-display {
+  font-size: 28px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.score-display.pass { color: var(--track-b); }
+.score-display.warn { color: var(--gold); }
+.score-display .unit { font-size: 12px; color: var(--muted); }
+
+/* CLI */
+.cli-block {
+  background: #050508;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 20px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+.cli-block pre {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px; line-height: 1.75;
+  color: #6666aa; white-space: pre;
+}
+.cli-block pre .cmd { color: var(--gold); }
+.cli-block pre .ok { color: var(--track-b); }
+.cli-block pre .info { color: var(--track-a); }
+.cli-block pre .warn { color: #fbbf24; }
+.cli-block pre .dim { color: #2a2a48; }
+.cli-block pre .hi { color: var(--white); }
+.cli-block pre .num { color: #c4b5fd; }
+
+/* Prompt block */
+.prompt-block {
+  background: #050508;
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 2px;
+  padding: 22px;
+  position: relative;
+  margin-bottom: 8px;
+}
+.prompt-block::before {
+  content: 'CLAUDE CODE PROMPT — PHASE 4';
+  position: absolute; top: -9px; left: 14px;
+  background: #050508; padding: 0 8px;
+  font-size: 8px; letter-spacing: 0.15em;
+  color: var(--gold); text-transform: uppercase;
+}
+.prompt-block code {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px; line-height: 1.8;
+  color: #c9c9e8; white-space: pre-wrap; display: block;
+}
+
+/* Nav */
+.doc-nav {
+  border-top: 1px solid var(--border);
+  margin-top: 56px; padding-top: 20px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.doc-nav a {
+  color: var(--track-a); text-decoration: none;
+  font-size: 13px; font-weight: 500;
+}
+.doc-nav a:hover { color: var(--white); }
+.doc-nav .center { color: var(--muted); font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="eyebrow">gtm-autoresearch // feature/finetune-pipeline // Phase 4 of 6</div>
+      <h1>Fine-Tune<br><span class="track-a">Runner</span> <span class="track-b">Dual Track</span></h1>
+      <p>Two parallel execution paths — OpenAI API for fast cloud fine-tunes, Ollama/MLX for private local fine-tunes on M3 Ultra. Triggered automatically when JSONL version is ready.</p>
+    </div>
+    <div class="phase-badge">
+      <div class="pb-num">04</div>
+      <div class="pb-label">Phase 4 of 6</div>
+    </div>
+  </div>
+
+  <!-- Track comparison -->
+  <div class="slabel">Two Execution Tracks</div>
+  <div class="tracks">
+
+    <div class="track track-a">
+      <div class="track-header">
+        <div class="th-letter">A</div>
+        <div>
+          <h3>OpenAI Fine-Tune API</h3>
+          <div class="th-sub">Cloud · gpt-4o-mini · $5–15 per client</div>
+        </div>
+      </div>
+      <div class="track-body">
+        <div class="track-row"><div class="tr-key">Target model</div><div class="tr-val"><span class="pill pill-a">gpt-4o-mini</span></div></div>
+        <div class="track-row"><div class="tr-key">Trigger</div><div class="tr-val">JSONL v{N} ready + ≥50 examples</div></div>
+        <div class="track-row"><div class="tr-key">API flow</div><div class="tr-val">Upload file → create job → poll → register model ID</div></div>
+        <div class="track-row"><div class="tr-key">Infra</div><div class="tr-val">OpenAI cloud — no local GPU needed</div></div>
+        <div class="track-row"><div class="tr-key">Data egress</div><div class="tr-val" style="color:#ef4444">Training data leaves network</div></div>
+        <div class="track-row"><div class="tr-key">Best for</div><div class="tr-val">New clients while data accumulates, fast MVP</div></div>
+        <div class="track-row"><div class="tr-key">Est. cost</div><div class="tr-val">~$5–15 per training run (100 examples)</div></div>
+      </div>
+    </div>
+
+    <div class="track track-b">
+      <div class="track-header">
+        <div class="th-letter">B</div>
+        <div>
+          <h3>Ollama Local (NoClaw)</h3>
+          <div class="th-sub">M3 Ultra · :11434 · zero data egress</div>
+        </div>
+      </div>
+      <div class="track-body">
+        <div class="track-row"><div class="tr-key">Target model</div><div class="tr-val"><span class="pill pill-b">Llama 3.1 8B</span> or <span class="pill pill-b">Mistral</span></div></div>
+        <div class="track-row"><div class="tr-key">Trigger</div><div class="tr-val">Same gate — JSONL v{N} + ≥50 examples</div></div>
+        <div class="track-row"><div class="tr-key">API flow</div><div class="tr-val">JSONL → Modelfile → ollama create → register</div></div>
+        <div class="track-row"><div class="tr-key">Infra</div><div class="tr-val">M3 Ultra 512GB (Tailscale 100.x.x.x) via NoClaw</div></div>
+        <div class="track-row"><div class="tr-key">Data egress</div><div class="tr-val" style="color:var(--track-b)">Zero — stays on Tailscale network</div></div>
+        <div class="track-row"><div class="tr-key">Best for</div><div class="tr-val">Sensitive clients (Teleios), long-term production</div></div>
+        <div class="track-row"><div class="tr-key">Est. cost</div><div class="tr-val">Electricity only — ~$0 marginal cost</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Decision matrix -->
+  <div class="slabel">Track Selection Matrix</div>
+  <div class="decision-matrix">
+    <div class="dm-header">
+      <div>Scenario</div>
+      <div>Track A (OpenAI)</div>
+      <div>Track B (Ollama)</div>
+      <div>Recommendation</div>
+    </div>
+    <div class="dm-row">
+      <div>New client, &lt;200 examples</div>
+      <div>✓ Good baseline fast</div>
+      <div>Possible, lower quality</div>
+      <div class="recommend">Track A</div>
+    </div>
+    <div class="dm-row">
+      <div>Mature client, 500+ examples</div>
+      <div>✓ Strong performance</div>
+      <div>✓ Strong performance</div>
+      <div class="recommend">Track B (private)</div>
+    </div>
+    <div class="dm-row">
+      <div>Healthcare / sensitive data</div>
+      <div>✗ Data egress risk</div>
+      <div>✓ Zero egress</div>
+      <div class="recommend">Track B only</div>
+    </div>
+    <div class="dm-row">
+      <div>Rapid iteration / testing</div>
+      <div>✓ Fast turnaround</div>
+      <div>Slower iteration cycle</div>
+      <div class="recommend">Track A</div>
+    </div>
+    <div class="dm-row">
+      <div>Production serving at scale</div>
+      <div>Per-token cost accrues</div>
+      <div>✓ Fixed infra cost</div>
+      <div class="recommend">Track B</div>
+    </div>
+  </div>
+
+  <!-- Track A API flow -->
+  <div class="slabel">Track A — OpenAI API Flow</div>
+  <div class="flow-diagram">
+    <div class="flow-group track-a-group">
+      <div class="fg-label">01 Upload</div>
+      <div class="flow-steps">
+        <div class="flow-step highlight-a">
+          <div class="fs-num">→</div>
+          <div class="fs-content">POST <code>files</code> endpoint with <code>v{N}.jsonl</code> · purpose: <code>fine-tune</code> · returns <code>file_id</code></div>
+        </div>
+      </div>
+    </div>
+    <div class="flow-group track-a-group">
+      <div class="fg-label">02 Create</div>
+      <div class="flow-steps">
+        <div class="flow-step highlight-a">
+          <div class="fs-num">→</div>
+          <div class="fs-content">POST <code>fine_tuning/jobs</code> · model: <code>gpt-4o-mini-2024-07-18</code> · training_file: file_id · suffix: <code>hre-v3</code></div>
+        </div>
+      </div>
+    </div>
+    <div class="flow-group track-a-group">
+      <div class="fg-label">03 Poll</div>
+      <div class="flow-steps">
+        <div class="flow-step highlight-a">
+          <div class="fs-num">→</div>
+          <div class="fs-content">GET <code>fine_tuning/jobs/{job_id}</code> every 60s · status: queued → running → succeeded · emit progress events</div>
+        </div>
+      </div>
+    </div>
+    <div class="flow-group track-a-group">
+      <div class="fg-label">04 Register</div>
+      <div class="flow-steps">
+        <div class="flow-step highlight-a">
+          <div class="fs-num">→</div>
+          <div class="fs-content">On success: write <code>fine_tuned_model</code> ID to <code>data/clients/hre/model_registry.json</code> · set active: true · run eval harness</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Track B Modelfile -->
+  <div class="slabel">Track B — Ollama Modelfile + Local Flow</div>
+  <div class="code-block" data-label="Modelfile — generated per client + version">
+    <code><span class="kw">FROM</span> <span class="str">llama3.1:8b</span>
+
+<span class="cm"># System prompt baked from AccountState.system_prompt</span>
+<span class="kw">SYSTEM</span> <span class="str">"""
+You are a conversion tracking expert for HRE.
+GTM: GTM-XXXXXXX | ws_4 | 31 tags, 18 triggers, 22 variables
+Key tags: GA4 Config, GA4 - Purchase, AW - All Purchases, sGTM Bridge
+dataLayer: page_view, add_to_cart, purchase, generate_lead
+DLV: ecommerce.value, ecommerce.items[].price
+
+Google Ads: 123-456-7890 | PMAX - Core, Brand - HRE, Retargeting
+Conversions: All Purchases (value: ecommerce.value), Lead Submit
+
+Meta Pixel: HRE-pixel-id | CAPI match: ~68% | Stape: cnt_abc123
+
+Known: PMAX $0 value — sGTM reads top-level ecommerce.value
+       but HRE pushes revenue inside items[].price * quantity
+"""</span>
+
+<span class="cm"># Fine-tune parameters</span>
+<span class="kw">PARAMETER</span> temperature <span class="hi">0.2</span>
+<span class="kw">PARAMETER</span> num_ctx <span class="hi">4096</span>
+<span class="kw">PARAMETER</span> stop <span class="str">"&lt;|eot_id|&gt;"</span>
+
+<span class="cm"># Model metadata</span>
+<span class="kw">LABEL</span> client_id=<span class="str">"hre"</span>
+<span class="kw">LABEL</span> version=<span class="str">"v3"</span>
+<span class="kw">LABEL</span> account_state_version=<span class="str">"1.2.0"</span>
+<span class="kw">LABEL</span> training_examples=<span class="str">"112"</span>
+<span class="kw">LABEL</span> created=<span class="str">"2026-04-07"</span></code>
+  </div>
+
+  <!-- Model registry -->
+  <div class="slabel">Model Registry — data/clients/{id}/model_registry.json</div>
+  <div class="registry">
+    <div class="registry-header">
+      <div>Client</div>
+      <div>Version</div>
+      <div>Track</div>
+      <div>Eval Score</div>
+      <div>Model ID</div>
+      <div>Status</div>
+    </div>
+    <div class="registry-row">
+      <div class="client-name">hre</div>
+      <div>v3</div>
+      <div><span class="pill pill-a">A</span></div>
+      <div style="color:var(--track-b)">0.84</div>
+      <div style="font-family:'Fira Code',monospace; font-size:10px;">ft:gpt-4o-mini:hre-v3</div>
+      <div class="status-active">● active</div>
+    </div>
+    <div class="registry-row">
+      <div class="client-name">hre</div>
+      <div>v2</div>
+      <div><span class="pill pill-a">A</span></div>
+      <div style="color:var(--muted)">0.71</div>
+      <div style="font-family:'Fira Code',monospace; font-size:10px; color:var(--muted)">ft:gpt-4o-mini:hre-v2</div>
+      <div style="color:var(--muted)">archived</div>
+    </div>
+    <div class="registry-row">
+      <div class="client-name">teleios</div>
+      <div>v1</div>
+      <div><span class="pill pill-b">B</span></div>
+      <div style="color:var(--track-a)">pending</div>
+      <div style="font-family:'Fira Code',monospace; font-size:10px; color:var(--track-a)">hre-client-teleios:v1</div>
+      <div class="status-eval">◐ eval</div>
+    </div>
+    <div class="registry-row">
+      <div class="client-name">rtt</div>
+      <div>—</div>
+      <div>—</div>
+      <div style="color:var(--muted)">—</div>
+      <div style="color:var(--muted); font-size:10px;">awaiting 50 examples</div>
+      <div style="color:var(--muted)">queued</div>
+    </div>
+  </div>
+
+  <!-- Eval harness -->
+  <div class="slabel">Eval Harness — Auto-Score Before Promoting</div>
+  <div class="eval-grid">
+    <div class="eval-card">
+      <h4>Problem Recall</h4>
+      <p>Feed the 10-question holdout set. Score: did the model identify the correct root cause?</p>
+      <div class="score-display pass">84<span class="unit">%</span></div>
+    </div>
+    <div class="eval-card">
+      <h4>Solution Accuracy</h4>
+      <p>Compare model solution to known-correct fix. Scored by cosine similarity to reference answer.</p>
+      <div class="score-display pass">0.87<span class="unit"> sim</span></div>
+    </div>
+    <div class="eval-card">
+      <h4>Regression Guard</h4>
+      <p>v{N} eval score must exceed v{N-1} by margin. Rollback triggered if regression detected.</p>
+      <div class="score-display warn">+0.13<span class="unit"> Δ</span></div>
+    </div>
+  </div>
+
+  <!-- CLI output -->
+  <div class="slabel">CLI Output — pnpm fine-tune submit --client hre --version 3</div>
+  <div class="cli-block">
+    <pre>
+<span class="cmd">$</span> pnpm fine-tune submit --client hre --version 3 --track a
+
+<span class="dim">──────────────────────────────────────────────────────</span>
+<span class="ok">  Fine-Tune Runner — HRE v3 · Track A (OpenAI)</span>
+<span class="dim">──────────────────────────────────────────────────────</span>
+  Loading JSONL...           <span class="ok">✓ data/clients/hre/v3.jsonl (112 records)</span>
+  Uploading to OpenAI...     <span class="ok">✓ file_id: file-abc123xyz</span>
+  Creating fine-tune job...  <span class="ok">✓ job_id: ftjob-abc123</span>
+  Model suffix:              <span class="hi">gpt-4o-mini-2024-07-18:hre-v3</span>
+
+  Polling status...
+    <span class="info">[00:00]</span> queued
+    <span class="info">[02:14]</span> running — step 12/112
+    <span class="info">[08:31]</span> running — step 67/112
+    <span class="info">[14:02]</span> running — step 112/112
+    <span class="ok">[15:44]</span> succeeded
+
+  Fine-tuned model:          <span class="hi">ft:gpt-4o-mini-2024-07-18:hre-v3</span>
+
+<span class="dim">──────────────────────────────────────────────────────</span>
+<span class="ok">  Running eval harness (holdout: v3_eval.jsonl)...</span>
+    Problem recall:          <span class="ok">✓ 84%</span>
+    Solution accuracy:       <span class="ok">✓ 0.87 cosine sim</span>
+    Regression vs v2:        <span class="ok">✓ +0.13 improvement</span>
+
+<span class="dim">──────────────────────────────────────────────────────</span>
+  Registering model...       <span class="ok">✓ model_registry.json updated</span>
+  Promoting to active...     <span class="ok">✓ hre → ft:gpt-4o-mini:hre-v3</span>
+  Archiving v2...            <span class="ok">✓ archived</span>
+<span class="dim">──────────────────────────────────────────────────────</span>
+<span class="ok">  ✓ HRE v3 live — ready for Phase 5 OpenClaw routing</span>
+  Next: <span class="cmd">pnpm openclaw register --client hre --model ft:gpt-4o-mini:hre-v3</span>
+    </pre>
+  </div>
+
+  <!-- Claude Code Prompt -->
+  <div class="slabel">Claude Code Prompt</div>
+  <div class="prompt-block">
+    <code>claude --dangerously-skip-permissions
+
+# Phase 4: Fine-Tune Runner (Dual Track)
+# Branch: feature/finetune-pipeline
+# Repo: github.com/Organized-AI/gtm-autoresearch
+
+## Context
+Phases 1–3 complete. Phase 4 builds the runner that takes a
+versioned JSONL file and submits it to either:
+  Track A: OpenAI fine-tuning API (cloud, gpt-4o-mini)
+  Track B: Ollama on M3 Ultra via NoClaw :11434 (local, Llama 3.1 8B)
+
+## Task
+
+Read AGENT-HANDOFF/ and PLANNING/ first. Then:
+
+1. Create packages/fine-tune-runner/
+
+   FineTuneRunner interface:
+   - submit(client_id, version, track): Promise<FineTuneJob>
+   - poll(job_id): Promise<JobStatus>
+   - evaluate(client_id, version): Promise<EvalResult>
+   - register(client_id, version, model_id, track): void
+   - promote(client_id, version): void  (sets active: true, archives prev)
+
+   TrackA (OpenAI):
+   - Upload JSONL: POST /v1/files (purpose: fine-tune)
+   - Create job: POST /v1/fine_tuning/jobs
+     model: "gpt-4o-mini-2024-07-18"
+     suffix: "{client_id}-v{N}"
+   - Poll: GET /v1/fine_tuning/jobs/{id} every 60s
+   - On succeeded: extract fine_tuned_model string
+
+   TrackB (Ollama via NoClaw):
+   - Generate Modelfile from AccountState.system_prompt + base model
+   - SSH/Tailscale to NoClaw host (100.86.248.8 or M3 Ultra)
+   - Run: ollama create {client_id}-client:v{N} -f ./Modelfile
+   - Register: ollama list to confirm creation
+   - Model name pattern: "{client_id}-client:v{N}"
+
+   EvalHarness:
+   - Load data/clients/{client_id}/v{N}_eval.jsonl (holdout set)
+   - For each eval record: call the new model with user message
+   - Score: cosine_sim(model_response, expected_assistant_response)
+   - Aggregate: problem_recall (exact match %), solution_accuracy (avg sim)
+   - Regression guard: new eval_score must be ≥ prev_version score - 0.05
+   - On regression: abort promotion, alert
+
+   ModelRegistry:
+   - File: data/clients/{client_id}/model_registry.json
+   - Schema: [{version, track, model_id, eval_score, active, created_at}]
+   - promote(): set active=true on new, active=false on all prev versions
+   - rollback(version): reactivate a prior version
+
+2. CLI:
+   pnpm fine-tune submit --client hre --version 3 --track a
+   pnpm fine-tune submit --client teleios --version 1 --track b
+   pnpm fine-tune eval --client hre --version 3
+   pnpm fine-tune rollback --client hre --version 2
+
+3. Unit tests:
+   - TrackA: mock OpenAI API, assert correct file upload + job creation
+   - TrackB: mock Ollama CLI output, assert Modelfile generation
+   - EvalHarness: assert regression guard triggers correctly
+   - ModelRegistry: promote/rollback state transitions
+
+## Env vars:
+OPENAI_API_KEY=sk-...
+OLLAMA_HOST=http://100.86.248.8:11434
+CLIENT_DATA_DIR=./data/clients
+EVAL_REGRESSION_TOLERANCE=0.05
+
+## Track selection per client (data/clients/{id}/config.json):
+hre: track_preference: "a"   (MVP phase)
+teleios: track_preference: "b"  (sensitive data, no egress)
+
+## Do NOT build Phase 5 (OpenClaw integration) yet.</code>
+  </div>
+
+  <div class="doc-nav">
+    <a href="phase3-jsonl-pipeline.html">← Phase 3: JSONL Pipeline</a>
+    <span class="center">gtm-autoresearch-docs.pages.dev</span>
+    <a href="index.html">All Docs →</a>
+  </div>
+
+</div>
+</body>
+</html>

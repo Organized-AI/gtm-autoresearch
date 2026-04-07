@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 5 — OpenClaw Client Brain</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --s1: #111;
+  --s2: #161616;
+  --border: #222;
+  --text: #ccc;
+  --muted: #555;
+  --claw: #ff4500;
+  --claw-dim: rgba(255,69,0,0.12);
+  --cyan: #00e5ff;
+  --cyan-dim: rgba(0,229,255,0.1);
+  --yellow: #ffd600;
+  --yellow-dim: rgba(255,214,0,0.1);
+  --green: #00e676;
+  --green-dim: rgba(0,230,118,0.1);
+  --white: #f0f0f0;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.6; }
+
+.page { max-width:1060px; margin:0 auto; padding:56px 28px; }
+
+/* Header */
+.header {
+  margin-bottom:52px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:24px;
+  align-items:start;
+}
+.header .eyebrow { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.header h1 { font-family:'Barlow Condensed',sans-serif; font-size:clamp(36px,5vw,68px); font-weight:800; line-height:1; color:var(--white); text-transform:uppercase; letter-spacing:-.01em; }
+.header h1 .claw { color:var(--claw); }
+.header p { margin-top:12px; font-size:12px; color:var(--muted); max-width:500px; line-height:1.7; }
+.header .badge { background:var(--claw-dim); border:1px solid var(--claw); padding:12px 16px; text-align:center; }
+.header .badge .bn { font-family:'Barlow Condensed',sans-serif; font-size:48px; font-weight:800; color:var(--claw); line-height:1; }
+.header .badge .bl { font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-top:4px; }
+
+/* Section label */
+.sl { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin:44px 0 16px; display:flex; align-items:center; gap:10px; }
+.sl::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Request routing diagram */
+.routing-diagram {
+  background:var(--s1);
+  border:1px solid var(--border);
+  padding:28px;
+  overflow-x:auto;
+  margin-bottom:8px;
+}
+.routing-diagram pre {
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px; line-height:1.6; white-space:pre; color:#555;
+}
+.routing-diagram pre .hi { color:var(--claw); }
+.routing-diagram pre .cy { color:var(--cyan); }
+.routing-diagram pre .ye { color:var(--yellow); }
+.routing-diagram pre .gr { color:var(--green); }
+.routing-diagram pre .wh { color:var(--white); }
+.routing-diagram pre .dim { color:#333; }
+
+/* Middleware detail */
+.middleware-stack {
+  display:flex; flex-direction:column; gap:0; margin-bottom:8px;
+  border:1px solid var(--border);
+}
+.mw-layer {
+  padding:14px 20px;
+  border-bottom:1px solid var(--border);
+  display:grid; grid-template-columns:180px 1fr auto;
+  gap:16px; align-items:start;
+}
+.mw-layer:last-child { border-bottom:none; }
+.mw-layer .mwl-name { font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; color:var(--white); text-transform:uppercase; letter-spacing:.04em; }
+.mw-layer .mwl-sub { font-size:9px; color:var(--muted); margin-top:2px; }
+.mw-layer .mwl-desc { font-size:11px; color:var(--text); line-height:1.6; }
+.mw-layer .mwl-desc code { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--cyan); background:var(--cyan-dim); padding:0 4px; border-radius:1px; }
+.mw-layer .mwl-tag { font-size:9px; padding:2px 8px; border-radius:1px; letter-spacing:.08em; text-transform:uppercase; align-self:start; white-space:nowrap; border:1px solid; }
+.tag-claw { color:var(--claw); border-color:var(--claw); background:var(--claw-dim); }
+.tag-cy { color:var(--cyan); border-color:var(--cyan); background:var(--cyan-dim); }
+.tag-ye { color:var(--yellow); border-color:var(--yellow); background:var(--yellow-dim); }
+.tag-gr { color:var(--green); border-color:var(--green); background:var(--green-dim); }
+
+@media(max-width:680px) {
+  .mw-layer { grid-template-columns:1fr; }
+  .routing-diagram pre { font-size:9px; }
+}
+
+/* Three column grid */
+.three-col { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:8px; }
+@media(max-width:680px) { .three-col { grid-template-columns:1fr; } }
+
+.info-card { background:var(--s1); border:1px solid var(--border); padding:16px; }
+.info-card h4 { font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--white); margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:8px; }
+.info-card .ic-rows { display:flex; flex-direction:column; gap:6px; }
+.ic-row { display:flex; justify-content:space-between; align-items:start; gap:8px; font-size:10px; }
+.ic-row .ik { color:var(--muted); }
+.ic-row .iv { color:var(--text); text-align:right; }
+.ic-row .iv code { font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--cyan); }
+
+/* Config JSON */
+.code-block { background:#050505; border:1px solid var(--border); padding:20px; overflow-x:auto; position:relative; margin-bottom:8px; }
+.code-block::before { content:attr(data-label); position:absolute; top:-9px; left:14px; background:#050505; padding:0 8px; font-size:8px; letter-spacing:.15em; color:var(--claw); text-transform:uppercase; }
+.code-block code { font-family:'IBM Plex Mono',monospace; font-size:11px; line-height:1.75; color:#666; white-space:pre; display:block; }
+.code-block .kw { color:var(--claw); }
+.code-block .str { color:var(--green); }
+.code-block .num { color:var(--yellow); }
+.code-block .cm { color:#333; }
+.code-block .cy { color:var(--cyan); }
+.code-block .wh { color:var(--white); }
+
+/* Fallback chain */
+.fallback-chain { display:flex; flex-direction:column; gap:0; margin-bottom:8px; }
+.fb-step { display:grid; grid-template-columns:32px 1fr; gap:0; background:var(--s1); border:1px solid var(--border); border-bottom:none; }
+.fb-step:last-child { border-bottom:1px solid var(--border); }
+.fb-step .fb-num { background:var(--s2); display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--border); border-right:1px solid var(--border); padding:12px 0; }
+.fb-step.active .fb-num { color:var(--claw); background:var(--claw-dim); }
+.fb-step .fb-body { padding:12px 16px; }
+.fb-step .fb-title { font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; }
+.fb-step.active .fb-title { color:var(--claw); }
+.fb-step .fb-desc { font-size:10px; color:var(--muted); line-height:1.6; }
+.fb-step .fb-desc code { color:var(--cyan); font-size:9px; }
+
+/* CLI */
+.cli-block { background:#050505; border:1px solid var(--border); padding:20px; overflow-x:auto; margin-bottom:8px; }
+.cli-block pre { font-family:'IBM Plex Mono',monospace; font-size:11px; line-height:1.75; color:#444; white-space:pre; }
+.cli-block pre .cmd { color:var(--yellow); }
+.cli-block pre .ok { color:var(--green); }
+.cli-block pre .info { color:var(--cyan); }
+.cli-block pre .hi { color:var(--white); }
+.cli-block pre .claw { color:var(--claw); }
+.cli-block pre .dim { color:#222; }
+
+/* Prompt */
+.prompt-block { background:#050505; border:1px solid rgba(255,69,0,.25); padding:22px; position:relative; margin-bottom:8px; }
+.prompt-block::before { content:'CLAUDE CODE PROMPT — PHASE 5'; position:absolute; top:-9px; left:14px; background:#050505; padding:0 8px; font-size:8px; letter-spacing:.15em; color:var(--claw); text-transform:uppercase; }
+.prompt-block code { font-family:'IBM Plex Mono',monospace; font-size:11px; line-height:1.8; color:#ccc; white-space:pre-wrap; display:block; }
+
+/* Nav */
+.doc-nav { border-top:1px solid var(--border); margin-top:56px; padding-top:20px; display:flex; justify-content:space-between; align-items:center; }
+.doc-nav a { color:var(--claw); text-decoration:none; font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.doc-nav a:hover { color:var(--white); }
+.doc-nav .center { color:var(--muted); font-size:10px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <div class="eyebrow">gtm-autoresearch // feature/finetune-pipeline // Phase 5 of 6</div>
+      <h1><span class="claw">Open</span>Claw<br>Client Brain</h1>
+      <p>Routes every incoming request through OpenClaw gateway to the correct client-specialized model. Each client_id maps to an active model version. No 200k context dump at inference.</p>
+    </div>
+    <div class="badge">
+      <div class="bn">05</div>
+      <div class="bl">Phase 5 of 6</div>
+    </div>
+  </div>
+
+  <!-- Routing diagram -->
+  <div class="sl">Request Routing Architecture</div>
+  <div class="routing-diagram"><pre>
+<span class="dim">┌─────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="dim">│</span>  Incoming Request                                                            <span class="dim">│</span>
+<span class="dim">│</span>  POST <span class="cy">http://localhost:18789/v1/messages</span>                                    <span class="dim">│</span>
+<span class="dim">│</span>  Headers: <span class="ye">x-client-id: hre</span>  |  <span class="ye">x-model-preference: client</span>                   <span class="dim">│</span>
+<span class="dim">└──────────────────────────────────┬──────────────────────────────────────────┘</span>
+                                   <span class="hi">│</span>
+                                   <span class="hi">▼</span>
+<span class="dim">┌──────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="dim">│</span>              <span class="hi">OPENCLAW GATEWAY  :18789  (apps/openclaw-gateway/)</span>             <span class="dim">│</span>
+<span class="dim">├──────────────────────────────────────────────────────────────────────────────┤</span>
+<span class="dim">│</span>  Layer 1: <span class="cy">AuthMiddleware</span>       Tailscale IP check + API key validation       <span class="dim">│</span>
+<span class="dim">│</span>  Layer 2: <span class="ye">ClientIDMiddleware</span>   Extract x-client-id → lookup model_registry   <span class="dim">│</span>
+<span class="dim">│</span>  Layer 3: <span class="gr">ModelRouter</span>         Resolve active model version + track          <span class="dim">│</span>
+<span class="dim">│</span>  Layer 4: <span class="hi">TelemetryMiddleware</span>  Log client_id, model_version, latency         <span class="dim">│</span>
+<span class="dim">└──────────────────────────────────┬───────────────────────────────────────────┘</span>
+                                   <span class="hi">│</span>
+            <span class="hi">ModelRouter resolves → active model for client_id</span>
+                  <span class="hi">┌──────────────┴──────────────┐</span>
+                  <span class="hi">▼</span>                             <span class="hi">▼</span>
+<span class="dim">┌─────────────────────────────┐   ┌────────────────────────────────────────────┐</span>
+<span class="dim">│</span> <span class="cy">Track A — OpenAI</span>             <span class="dim">│</span>   <span class="dim">│</span> <span class="gr">Track B — Ollama (NoClaw :11434)</span>           <span class="dim">│</span>
+<span class="dim">│</span> model: <span class="cy">ft:gpt-4o-mini:hre-v3</span> <span class="dim">│</span>   <span class="dim">│</span> model: <span class="gr">hre-client:v3</span>                       <span class="dim">│</span>
+<span class="dim">│</span> client: hre (active)         <span class="dim">│</span>   <span class="dim">│</span> client: teleios (active, no egress)        <span class="dim">│</span>
+<span class="dim">└──────────────┬──────────────┘</span>   <span class="dim">└──────────────────┬─────────────────────────┘</span>
+               <span class="hi">└──────────────────┬──────────────────┘</span>
+                                  <span class="hi">▼</span>
+<span class="dim">┌──────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="dim">│</span>  Response  +  <span class="ye">x-model-version: hre-v3</span>  +  <span class="ye">x-client-id: hre</span>  response header <span class="dim">│</span>
+<span class="dim">└──────────────────────────────────────────────────────────────────────────────┘</span>
+</pre></div>
+
+  <!-- Middleware stack -->
+  <div class="sl">Middleware Stack Detail</div>
+  <div class="middleware-stack">
+    <div class="mw-layer">
+      <div><div class="mwl-name">Auth</div><div class="mwl-sub">Layer 1</div></div>
+      <div class="mwl-desc">Validate request originates from Tailscale network (IP range check) or carries valid <code>x-api-key</code> header. Reject with 401 if either fails. Part of existing OpenClaw 8-phase hardening plan for CVE-2026-25253.</div>
+      <div class="mwl-tag tag-claw">existing</div>
+    </div>
+    <div class="mw-layer">
+      <div><div class="mwl-name">Client ID</div><div class="mwl-sub">Layer 2 — new</div></div>
+      <div class="mwl-desc">Extract <code>x-client-id</code> header. Load <code>data/clients/{id}/model_registry.json</code>. Find record where <code>active: true</code>. Attach resolved <code>ClientContext</code> (model_id, track, version) to request object.</div>
+      <div class="mwl-tag tag-cy">new</div>
+    </div>
+    <div class="mw-layer">
+      <div><div class="mwl-name">Model Router</div><div class="mwl-sub">Layer 3 — new</div></div>
+      <div class="mwl-desc">Route to Track A (OpenAI client) or Track B (Ollama via <code>http://100.86.248.8:11434</code>) based on <code>ClientContext.track</code>. Falls back to RAG context injection if no active model exists for client.</div>
+      <div class="mwl-tag tag-cy">new</div>
+    </div>
+    <div class="mw-layer">
+      <div><div class="mwl-name">Telemetry</div><div class="mwl-sub">Layer 4 — new</div></div>
+      <div class="mwl-desc">Log each request: <code>client_id</code>, <code>model_version</code>, <code>track</code>, latency_ms, token_count, timestamp. Write to SQLite telemetry table. Used for drift detection in Phase 6 flywheel.</div>
+      <div class="mwl-tag tag-ye">new</div>
+    </div>
+    <div class="mw-layer">
+      <div><div class="mwl-name">Fallback</div><div class="mwl-sub">Layer 5 — new</div></div>
+      <div class="mwl-desc">If no fine-tuned model is active for client_id, inject full <code>AccountState.system_prompt</code> into the request messages array before forwarding to base model. Ensures graceful degradation for new clients.</div>
+      <div class="mwl-tag tag-gr">fallback</div>
+    </div>
+  </div>
+
+  <!-- Client config -->
+  <div class="sl">Per-Client Config — data/clients/{id}/config.json</div>
+  <div class="code-block" data-label="hre config.json">
+    <code><span class="wh">{</span>
+  <span class="kw">"client_id"</span>: <span class="str">"hre"</span>,
+  <span class="kw">"display_name"</span>: <span class="str">"HRE"</span>,
+  <span class="kw">"track_preference"</span>: <span class="str">"a"</span>,          <span class="cm">// "a" | "b"</span>
+  <span class="kw">"data_egress_allowed"</span>: <span class="num">true</span>,        <span class="cm">// false = track B only (Teleios)</span>
+  <span class="kw">"min_examples_to_activate"</span>: <span class="num">50</span>,
+  <span class="kw">"score_threshold"</span>: <span class="num">0.75</span>,
+  <span class="kw">"openclaw_routing"</span>: <span class="wh">{</span>
+    <span class="kw">"header"</span>: <span class="str">"x-client-id"</span>,
+    <span class="kw">"fallback_on_missing_model"</span>: <span class="str">"rag_context"</span>,  <span class="cm">// "rag_context" | "base_model" | "error"</span>
+    <span class="kw">"response_header_version"</span>: <span class="num">true</span>              <span class="cm">// attach x-model-version to responses</span>
+  <span class="wh">}</span>,
+  <span class="kw">"integrations"</span>: <span class="wh">{</span>
+    <span class="kw">"gtm_container_id"</span>: <span class="str">"GTM-XXXXXXX"</span>,
+    <span class="kw">"google_ads_account_id"</span>: <span class="str">"123-456-7890"</span>,
+    <span class="kw">"meta_pixel_id"</span>: <span class="str">"HRE-pixel-id"</span>,
+    <span class="kw">"meta_ad_account_id"</span>: <span class="str">"act_12345"</span>
+  <span class="wh">}</span>
+<span class="wh">}</span></code>
+  </div>
+
+  <!-- Three column: clients -->
+  <div class="sl">Active Client Brain Status</div>
+  <div class="three-col">
+    <div class="info-card">
+      <h4 style="color:var(--claw)">HRE</h4>
+      <div class="ic-rows">
+        <div class="ic-row"><span class="ik">Track</span><span class="iv">A (OpenAI)</span></div>
+        <div class="ic-row"><span class="ik">Model</span><span class="iv"><code>ft:gpt-4o-mini:hre-v3</code></span></div>
+        <div class="ic-row"><span class="ik">Version</span><span class="iv">v3</span></div>
+        <div class="ic-row"><span class="ik">Eval score</span><span class="iv" style="color:var(--green)">0.84</span></div>
+        <div class="ic-row"><span class="ik">Status</span><span class="iv" style="color:var(--green)">● active</span></div>
+        <div class="ic-row"><span class="ik">Egress</span><span class="iv">allowed</span></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h4 style="color:var(--cyan)">Teleios</h4>
+      <div class="ic-rows">
+        <div class="ic-row"><span class="ik">Track</span><span class="iv">B (Ollama)</span></div>
+        <div class="ic-row"><span class="ik">Model</span><span class="iv"><code>teleios-client:v1</code></span></div>
+        <div class="ic-row"><span class="ik">Version</span><span class="iv">v1</span></div>
+        <div class="ic-row"><span class="ik">Eval score</span><span class="iv" style="color:var(--yellow)">pending</span></div>
+        <div class="ic-row"><span class="ik">Status</span><span class="iv" style="color:var(--yellow)">◐ eval</span></div>
+        <div class="ic-row"><span class="ik">Egress</span><span class="iv" style="color:var(--claw)">blocked</span></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h4 style="color:var(--muted)">RTT / Next</h4>
+      <div class="ic-rows">
+        <div class="ic-row"><span class="ik">Track</span><span class="iv" style="color:var(--muted)">TBD</span></div>
+        <div class="ic-row"><span class="ik">Model</span><span class="iv" style="color:var(--muted)">none yet</span></div>
+        <div class="ic-row"><span class="ik">Examples</span><span class="iv" style="color:var(--muted)">12 / 50</span></div>
+        <div class="ic-row"><span class="ik">Status</span><span class="iv" style="color:var(--muted)">accumulating</span></div>
+        <div class="ic-row"><span class="ik">Fallback</span><span class="iv">RAG context</span></div>
+        <div class="ic-row"><span class="ik">Egress</span><span class="iv">allowed</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fallback chain -->
+  <div class="sl">Fallback Chain — When No Active Model Exists</div>
+  <div class="fallback-chain">
+    <div class="fb-step active">
+      <div class="fb-num">1</div>
+      <div class="fb-body">
+        <div class="fb-title" style="color:var(--claw)">Fine-Tuned Client Model (preferred)</div>
+        <div class="fb-desc">Active model from <code>model_registry.json</code> routed directly. No context injection needed — account knowledge baked into weights. Fastest, most accurate.</div>
+      </div>
+    </div>
+    <div class="fb-step">
+      <div class="fb-num">2</div>
+      <div class="fb-body">
+        <div class="fb-title">RAG Context Injection</div>
+        <div class="fb-desc">No fine-tuned model yet (client &lt; 50 examples). Load <code>AccountState.system_prompt</code> + top-5 Chroma memories. Inject as system message. Forward to base model (Claude Sonnet / GPT-4o).</div>
+      </div>
+    </div>
+    <div class="fb-step">
+      <div class="fb-num">3</div>
+      <div class="fb-body">
+        <div class="fb-title">Base Model (last resort)</div>
+        <div class="fb-desc">No account state available (collector hasn't run). Forward request to base model with no client context. Log warning — trigger account state collection.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLI register -->
+  <div class="sl">CLI Output — pnpm openclaw register --client hre</div>
+  <div class="cli-block"><pre>
+<span class="cmd">$</span> pnpm openclaw register --client hre --model ft:gpt-4o-mini-2024-07-18:hre-v3 --track a
+
+<span class="dim">──────────────────────────────────────────────────────</span>
+<span class="ok">  OpenClaw Client Brain — Registering HRE v3</span>
+<span class="dim">──────────────────────────────────────────────────────</span>
+  Loading config...          <span class="ok">✓ data/clients/hre/config.json</span>
+  Validating model_id...     <span class="ok">✓ ft:gpt-4o-mini-2024-07-18:hre-v3 (reachable)</span>
+  Writing registry...        <span class="ok">✓ model_registry.json updated</span>
+  Reloading OpenClaw...      <span class="ok">✓ gateway :18789 hot-reloaded</span>
+
+  Testing routing:
+    x-client-id: hre   →     <span class="hi">ft:gpt-4o-mini-2024-07-18:hre-v3</span>  <span class="ok">✓</span>
+    x-client-id: teleios →   <span class="hi">teleios-client:v1 (ollama)</span>        <span class="ok">✓</span>
+    x-client-id: unknown →   <span class="info">fallback: rag_context</span>             <span class="ok">✓</span>
+<span class="dim">──────────────────────────────────────────────────────</span>
+<span class="ok">  ✓ HRE Client Brain active on OpenClaw :18789</span>
+<span class="claw">  x-client-id: hre → ft:gpt-4o-mini-2024-07-18:hre-v3</span>
+  Next: <span class="cmd">pnpm flywheel start --client hre</span>  (Phase 6)
+  </pre></div>
+
+  <!-- Prompt -->
+  <div class="sl">Claude Code Prompt</div>
+  <div class="prompt-block"><code>claude --dangerously-skip-permissions
+
+# Phase 5: OpenClaw Client Brain Integration
+# Branch: feature/finetune-pipeline
+# Repo: github.com/Organized-AI/gtm-autoresearch
+
+## Context
+Phases 1–4 complete. Phase 5 wires the fine-tuned models into
+the OpenClaw gateway (:18789) via client-aware middleware.
+
+## Task
+
+Read AGENT-HANDOFF/ and PLANNING/ first.
+Read existing apps/openclaw-gateway/ code before modifying.
+
+1. Create packages/client-brain-router/
+
+   ClientIDMiddleware:
+   - Extract x-client-id from request header
+   - Load data/clients/{id}/config.json
+   - Load data/clients/{id}/model_registry.json
+   - Find active:true record → attach ClientContext to req
+   - If no config: set fallback mode = "rag_context"
+
+   ModelRouter:
+   - ClientContext.track === "a" → route to OpenAI with model_id
+   - ClientContext.track === "b" → route to Ollama
+     URL: http://{OLLAMA_HOST}/api/chat, model: client model name
+   - No active model → FallbackHandler
+
+   FallbackHandler:
+   - Load AccountState.system_prompt from data/clients/{id}/
+   - Query Chroma :37777 for top-5 memories by client_id
+   - Prepend as system message to request
+   - Forward to base model (FALLBACK_MODEL env var)
+
+   TelemetryLogger:
+   - On each request completion, write to SQLite:
+     {timestamp, client_id, model_version, track,
+      latency_ms, input_tokens, output_tokens, fallback_used}
+   - Expose GET /telemetry?client_id=hre for Phase 6 drift query
+
+2. Wire middleware into apps/openclaw-gateway/ request pipeline:
+   AuthMiddleware → ClientIDMiddleware → ModelRouter →
+   TelemetryLogger → response
+
+3. CLI: pnpm openclaw register --client hre --model {id} --track a
+   - Validates model is reachable before registering
+   - Hot-reloads gateway config (no restart needed)
+   - Tests all registered client routes
+
+4. Add response headers:
+   x-model-version: {version}
+   x-client-id: {client_id}
+   x-fallback-used: true|false
+
+5. Unit tests:
+   - ClientIDMiddleware resolves correct model for known client
+   - FallbackHandler activates when no active model exists
+   - TelemetryLogger writes correct record to SQLite
+   - ModelRouter correctly distinguishes track A vs B
+
+## Env vars:
+OPENCLAW_PORT=18789
+OLLAMA_HOST=http://100.86.248.8:11434
+FALLBACK_MODEL=claude-sonnet-4-6
+CHROMA_URL=http://localhost:37777
+CLIENT_DATA_DIR=./data/clients
+TELEMETRY_DB_PATH=./data/telemetry.sqlite
+
+## Do NOT build Phase 6 (flywheel) yet.</code></div>
+
+  <div class="doc-nav">
+    <a href="phase4-fine-tune-runner.html">← Phase 4: Fine-Tune Runner</a>
+    <span class="center">gtm-autoresearch-docs.pages.dev</span>
+    <a href="phase6-flywheel.html">Phase 6: Flywheel →</a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client LLM Fine-Tune Pipeline</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --border: #1a2332;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #4a5568;
+    --phase1: #00d4ff;
+    --phase2: #7c3aed;
+    --phase3: #10b981;
+    --phase4: #f59e0b;
+    --phase5: #ef4444;
+    --phase6: #ec4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 56px;
+    border-left: 3px solid var(--accent);
+    padding-left: 20px;
+  }
+
+  .header .tag {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #fff;
+  }
+
+  .header h1 span {
+    color: var(--accent);
+  }
+
+  .header p {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 600px;
+    line-height: 1.7;
+  }
+
+  /* ASCII Architecture */
+  .ascii-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    margin-bottom: 48px;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .ascii-block::before {
+    content: 'ARCHITECTURE';
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: var(--bg);
+    padding: 0 8px;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+  }
+
+  .ascii-block pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #7dd3fc;
+    white-space: pre;
+  }
+
+  .ascii-block pre .dim { color: var(--muted); }
+  .ascii-block pre .hi { color: var(--accent); }
+  .ascii-block pre .g { color: var(--accent3); }
+  .ascii-block pre .p { color: var(--accent2); }
+  .ascii-block pre .y { color: var(--accent4); }
+  .ascii-block pre .r { color: var(--phase5); }
+  .ascii-block pre .pk { color: var(--phase6); }
+
+  /* Phases Grid */
+  .phases-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .phases {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .phase {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    align-items: start;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phase::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--phase-color);
+  }
+
+  .phase:hover {
+    border-color: var(--phase-color);
+  }
+
+  .phase-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--phase-color);
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+
+  .phase-content h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .phase-content .desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .task {
+    font-size: 11px;
+    color: #94a3b8;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+  }
+
+  .task::before {
+    content: '→';
+    color: var(--phase-color);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .badge-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+  }
+
+  .badge {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+    border: 1px solid currentColor;
+    opacity: 0.7;
+  }
+
+  /* Data Flow */
+  .flow-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .flow-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+
+  @media (max-width: 700px) {
+    .flow-grid { grid-template-columns: 1fr; }
+    .phase { grid-template-columns: 1fr; }
+    .badge-group { align-items: flex-start; }
+  }
+
+  .flow-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+  }
+
+  .flow-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .flow-card h4 .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .flow-card ul {
+    list-style: none;
+  }
+
+  .flow-card ul li {
+    font-size: 11px;
+    color: #64748b;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    line-height: 1.5;
+  }
+
+  .flow-card ul li:last-child { border-bottom: none; }
+
+  /* JSONL example */
+  .code-block {
+    background: #020408;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .code-block::before {
+    content: attr(data-label);
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: #020408;
+    padding: 0 8px;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--accent3);
+    text-transform: uppercase;
+  }
+
+  .code-block code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    color: #7dd3fc;
+    white-space: pre;
+    display: block;
+  }
+
+  .code-block .str { color: #86efac; }
+  .code-block .key { color: #f9a8d4; }
+  .code-block .num { color: var(--accent4); }
+  .code-block .kw { color: var(--accent2); }
+
+  /* Bottom note */
+  .flywheel {
+    background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(0,212,255,0.05));
+    border: 1px solid rgba(124,58,237,0.3);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+  }
+
+  .flywheel h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent2);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .flywheel p {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.7;
+  }
+
+  .flywheel p strong { color: var(--accent); }
+
+  /* Claude Code prompt */
+  .prompt-block {
+    background: #020408;
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 4px;
+    padding: 20px;
+    position: relative;
+  }
+
+  .prompt-block::before {
+    content: 'CLAUDE CODE PROMPT';
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: #020408;
+    padding: 0 8px;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .prompt-block code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    display: block;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="tag">Organized AI // AutoResearch → Fine-Tune Pipeline</div>
+    <h1>Client <span>Intelligence</span><br>Training Loop</h1>
+    <p>Architecture for converting autoresearch experiment outputs into client-specialized fine-tuned LLMs via GTM, Meta, and Google Ads account state ingestion.</p>
+  </div>
+
+  <!-- ASCII Diagram -->
+  <div class="ascii-block">
+    <pre>
+<span class="hi">╔══════════════════════════════════════════════════════════════════════════╗</span>
+<span class="hi">║</span>                     CLIENT ACCOUNT DATA SOURCES                         <span class="hi">║</span>
+<span class="hi">╠══════════════╦═══════════════════╦══════════════╦════════════════════════╣</span>
+<span class="hi">║</span>  <span class="y">GTM Export</span>   <span class="hi">║</span>  <span class="g">Google Ads MCP</span>   <span class="hi">║</span>  <span class="p">Meta MCP</span>    <span class="hi">║</span>  <span class="dim">claude-mem</span>             <span class="hi">║</span>
+<span class="hi">║</span>  Container   <span class="hi">║</span>  Campaigns/Conv   <span class="hi">║</span>  Pixel/CAPI  <span class="hi">║</span>  SQLite + Chroma       <span class="hi">║</span>
+<span class="hi">╚══════════════╩═════════╤═════════╩══════════════╩════════════════════════╝</span>
+                          <span class="hi">│</span>
+                          <span class="hi">▼</span>
+<span class="hi">┌─────────────────────────────────────────────────────────────────────────┐</span>
+<span class="hi">│</span>                    <span class="hi">ACCOUNT STATE COLLECTOR</span>                              <span class="hi">│</span>
+<span class="hi">│</span>   <span class="dim">Normalizes all client account data into structured context object</span>        <span class="hi">│</span>
+<span class="hi">│</span>   <span class="dim">client_id / gtm_schema / ad_structure / pixel_events / history</span>          <span class="hi">│</span>
+<span class="hi">└──────────────────────────────────┬──────────────────────────────────────┘</span>
+                                   <span class="hi">│</span>
+                    <span class="hi">┌──────────────┴──────────────┐</span>
+                    <span class="hi">▼</span>                             <span class="hi">▼</span>
+<span class="hi">┌───────────────────────────┐   ┌──────────────────────────────────────────┐</span>
+<span class="hi">│</span>  <span class="y">AUTORESEARCH LOOP</span>         <span class="hi">│</span>   <span class="hi">│</span>  <span class="dim">EXISTING claude-mem HISTORY</span>              <span class="hi">│</span>
+<span class="hi">│</span>  <span class="dim">50-100 experiments/run</span>    <span class="hi">│</span>   <span class="hi">│</span>  <span class="dim">Past fixes, decisions, patterns</span>          <span class="hi">│</span>
+<span class="hi">│</span>  <span class="dim">Each: problem→solution</span>    <span class="hi">│</span>   <span class="hi">│</span>  <span class="dim">Chroma vector store</span>                      <span class="hi">│</span>
+<span class="hi">│</span>  <span class="dim">Score: 0.0 → 1.0</span>         <span class="hi">│</span>   <span class="hi">└──────────────────────────────────────────┘</span>
+<span class="hi">└──────────────┬────────────┘</span>                  <span class="hi">│</span>
+               <span class="hi">│</span>                                <span class="hi">│</span>
+               <span class="hi">▼</span>                                <span class="hi">▼</span>
+<span class="hi">┌──────────────────────────────────────────────────────────────────────────┐</span>
+<span class="hi">│</span>                    <span class="g">SCORING FILTER + FORMATTER</span>                            <span class="hi">│</span>
+<span class="hi">│</span>  <span class="dim">score ≥ 0.75 → keep │ Dedup │ Inject account_state into system prompt</span>    <span class="hi">│</span>
+<span class="hi">│</span>  <span class="dim">Output: training.jsonl  {"system":..., "user":..., "assistant":...}</span>      <span class="hi">│</span>
+<span class="hi">└──────────────────────────────┬───────────────────────────────────────────┘</span>
+                               <span class="hi">│</span>
+              <span class="hi">┌────────────────┴────────────────┐</span>
+              <span class="hi">▼</span>                                 <span class="hi">▼</span>
+<span class="hi">┌─────────────────────────┐   ┌─────────────────────────────────────────────┐</span>
+<span class="hi">│</span> <span class="p">OPENAI FINE-TUNE API</span>     <span class="hi">│</span>   <span class="hi">│</span> <span class="r">OLLAMA LOCAL (NoClaw :11434)</span>                <span class="hi">│</span>
+<span class="hi">│</span> <span class="dim">gpt-4o-mini target</span>       <span class="hi">│</span>   <span class="hi">│</span> <span class="dim">Llama 3.1 8B / Mistral → M3 Ultra</span>          <span class="hi">│</span>
+<span class="hi">│</span> <span class="dim">Fast MVP / cloud</span>         <span class="hi">│</span>   <span class="hi">│</span> <span class="dim">Private / no data egress</span>                   <span class="hi">│</span>
+<span class="hi">└─────────────┬───────────┘</span>   <span class="hi">└──────────────────┬──────────────────────────┘</span>
+              <span class="hi">└────────────────┬────────────────┘</span>
+                               <span class="hi">▼</span>
+<span class="hi">┌──────────────────────────────────────────────────────────────────────────┐</span>
+<span class="hi">│</span>                   <span class="pk">CLIENT BRAIN AGENT (OpenClaw)</span>                          <span class="hi">│</span>
+<span class="hi">│</span>  <span class="dim">Fine-tuned model routed per client_id inside OpenClaw gateway</span>           <span class="hi">│</span>
+<span class="hi">│</span>  <span class="dim">No 200k context dump needed — patterns baked into weights</span>               <span class="hi">│</span>
+<span class="hi">│</span>  <span class="dim">New experiments → re-score → auto retrain trigger → model v++</span>           <span class="hi">│</span>
+<span class="hi">└──────────────────────────────────────────────────────────────────────────┘</span>
+                               <span class="hi">▲</span>
+                               <span class="hi">│  flywheel: more client work → better model</span>
+                               <span class="hi">└──────────────────────────────────────────</span>
+    </pre>
+  </div>
+
+  <!-- Phases -->
+  <div class="phases-title">// Phased Implementation</div>
+  <div class="phases">
+
+    <div class="phase" style="--phase-color: var(--phase1)">
+      <div class="phase-num">PHASE 01</div>
+      <div class="phase-content">
+        <h3>Experiment Logger Instrumentation</h3>
+        <p class="desc">Modify autoresearch loop to persist structured experiment records with score, context, and client_id. This is the foundation — everything else depends on clean experiment output.</p>
+        <div class="tasks">
+          <div class="task">Add <code>ExperimentRecord</code> schema: client_id, run_id, problem, solution, score, timestamp, account_snapshot</div>
+          <div class="task">Write to SQLite experiments table (extend claude-mem or new DB)</div>
+          <div class="task">Score normalization: ensure 0.0–1.0 float, not pass/fail binary</div>
+          <div class="task">Tag each record with data sources used (GTM / Google Ads / Meta)</div>
+        </div>
+      </div>
+      <div class="badge-group">
+        <span class="badge" style="color: var(--phase1)">sqlite</span>
+        <span class="badge" style="color: var(--phase1)">autoresearch</span>
+      </div>
+    </div>
+
+    <div class="phase" style="--phase-color: var(--phase2)">
+      <div class="phase-num">PHASE 02</div>
+      <div class="phase-content">
+        <h3>Account State Collector</h3>
+        <p class="desc">Pull and normalize client account data from GTM, Google Ads MCP, and Pipeboard Meta MCP into a structured <code>AccountState</code> object stored per client. This becomes the system prompt context.</p>
+        <div class="tasks">
+          <div class="task">GTM: export container JSON → parse tags/triggers/variables into schema</div>
+          <div class="task">Google Ads MCP: pull campaigns, conversion actions, account structure</div>
+          <div class="task">Pipeboard Meta MCP: pull pixel events, CAPI config, ad account structure</div>
+          <div class="task">Serialize to <code>clients/{client_id}/account_state.json</code>, versioned</div>
+          <div class="task">Snapshot on each autoresearch run (state at time of experiment)</div>
+        </div>
+      </div>
+      <div class="badge-group">
+        <span class="badge" style="color: var(--phase2)">GTM MCP</span>
+        <span class="badge" style="color: var(--phase2)">Google Ads</span>
+        <span class="badge" style="color: var(--phase2)">Meta MCP</span>
+      </div>
+    </div>
+
+    <div class="phase" style="--phase-color: var(--phase3)">
+      <div class="phase-num">PHASE 03</div>
+      <div class="phase-content">
+        <h3>Training Data Pipeline</h3>
+        <p class="desc">Filter high-scoring experiments, inject account state into system prompts, and export clean JSONL training files per client. This is the core transformation step.</p>
+        <div class="tasks">
+          <div class="task">Score filter: <code>score ≥ 0.75</code> (configurable threshold per client)</div>
+          <div class="task">Deduplication: cosine similarity on solution text via Chroma</div>
+          <div class="task">System prompt builder: inject client AccountState + role context</div>
+          <div class="task">Export: <code>training/{client_id}/v{N}.jsonl</code> in OpenAI fine-tune format</div>
+          <div class="task">Minimum 50 examples gate before fine-tune is triggered</div>
+        </div>
+      </div>
+      <div class="badge-group">
+        <span class="badge" style="color: var(--phase3)">chroma</span>
+        <span class="badge" style="color: var(--phase3)">jsonl</span>
+      </div>
+    </div>
+
+    <div class="phase" style="--phase-color: var(--phase4)">
+      <div class="phase-num">PHASE 04</div>
+      <div class="phase-content">
+        <h3>Fine-Tune Runner</h3>
+        <p class="desc">Two-track runner: OpenAI API for fast cloud fine-tunes, Ollama/MLX for private local fine-tunes on M3 Ultra. Triggered automatically when new JSONL version is ready.</p>
+        <div class="tasks">
+          <div class="task">Track A — OpenAI: upload JSONL → create fine-tune job → poll status → register model ID</div>
+          <div class="task">Track B — Ollama: convert JSONL → Modelfile → <code>ollama create client-{id}-v{N}</code> on M3 Ultra</div>
+          <div class="task">Model registry: <code>models/{client_id}.json</code> tracking versions, eval scores, active flag</div>
+          <div class="task">Eval harness: 10-question holdout set per client, auto-score new model before promoting</div>
+        </div>
+      </div>
+      <div class="badge-group">
+        <span class="badge" style="color: var(--phase4)">OpenAI API</span>
+        <span class="badge" style="color: var(--phase4)">Ollama</span>
+        <span class="badge" style="color: var(--phase4)">M3 Ultra</span>
+      </div>
+    </div>
+
+    <div class="phase" style="--phase-color: var(--phase5)">
+      <div class="phase-num">PHASE 05</div>
+      <div class="phase-content">
+        <h3>OpenClaw Client Brain Integration</h3>
+        <p class="desc">Route requests through OpenClaw gateway to the correct client-specialized model. Each client_id maps to an active model version. No context dump required at inference.</p>
+        <div class="tasks">
+          <div class="task">OpenClaw middleware: read <code>x-client-id</code> header → lookup active model in registry</div>
+          <div class="task">Route to local Ollama client model OR OpenAI fine-tuned model per flag</div>
+          <div class="task">Fallback: if no client model ready, use full AccountState as RAG context</div>
+          <div class="task">Telemetry: log which model version handled each request for drift tracking</div>
+        </div>
+      </div>
+      <div class="badge-group">
+        <span class="badge" style="color: var(--phase5)">OpenClaw</span>
+        <span class="badge" style="color: var(--phase5)">:18789</span>
+      </div>
+    </div>
+
+    <div class="phase" style="--phase-color: var(--phase6)">
+      <div class="phase-num">PHASE 06</div>
+      <div class="phase-content">
+        <h3>Flywheel Automation</h3>
+        <p class="desc">Close the loop. New autoresearch runs automatically trigger re-scoring, JSONL delta append, and retrain when enough new high-quality examples accumulate. Model gets smarter with every client engagement.</p>
+        <div class="tasks">
+          <div class="task">Watcher: after each autoresearch run, check if new high-score count ≥ threshold (default 20)</div>
+          <div class="task">Auto-append to JSONL, bump version, trigger fine-tune runner</div>
+          <div class="task">Drift detection: compare eval scores v(N) vs v(N-1), rollback if regression</div>
+          <div class="task">Slack/notification: post model promotion events to client channel</div>
+        </div>
+      </div>
+      <div class="badge-group">
+        <span class="badge" style="color: var(--phase6)">cron</span>
+        <span class="badge" style="color: var(--phase6)">flywheel</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Data Sources Detail -->
+  <div class="flow-title">// Account State Schema Inputs</div>
+  <div class="flow-grid">
+    <div class="flow-card">
+      <h4><span class="dot" style="background: var(--accent)"></span>GTM Container</h4>
+      <ul>
+        <li>Tag names + trigger conditions</li>
+        <li>Variable definitions</li>
+        <li>dataLayer event schema</li>
+        <li>Container workspace state</li>
+        <li>Published vs draft diff</li>
+      </ul>
+    </div>
+    <div class="flow-card">
+      <h4><span class="dot" style="background: var(--accent3)"></span>Google Ads MCP</h4>
+      <ul>
+        <li>Campaign structure + types</li>
+        <li>Conversion action IDs + names</li>
+        <li>Enhanced Conversions config</li>
+        <li>PMAX asset group IDs</li>
+        <li>Historical performance flags</li>
+      </ul>
+    </div>
+    <div class="flow-card">
+      <h4><span class="dot" style="background: var(--accent2)"></span>Pipeboard Meta MCP</h4>
+      <ul>
+        <li>Pixel ID + event list</li>
+        <li>CAPI configuration</li>
+        <li>Custom audience IDs</li>
+        <li>Ad account structure</li>
+        <li>Stape container state</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- JSONL Example -->
+  <div class="flow-title">// Training Record Format</div>
+  <div class="code-block" data-label="training.jsonl — one record">
+    <code><span class="kw">{</span>
+  <span class="key">"messages"</span>: [
+    <span class="kw">{</span>
+      <span class="key">"role"</span>: <span class="str">"system"</span>,
+      <span class="key">"content"</span>: <span class="str">"You are a tracking expert for HRE.
+GTM: GTM-XXXXXXX | sGTM: container-XXXXXXX
+Conversion actions: All Purchases (tag:AW-xxx/yyy), Lead Form Submit
+Known issue history: PMAX $0 value → fix: sGTM cart items mapping
+dataLayer schema: {event, ecommerce.value, ecommerce.items[]}
+Meta Pixel: HRE-pixel-id | CAPI: configured via Stape"</span>
+    <span class="kw">}</span>,
+    <span class="kw">{</span>
+      <span class="key">"role"</span>: <span class="str">"user"</span>,
+      <span class="key">"content"</span>: <span class="str">"PMAX campaign shows conversions but $0 revenue value"</span>
+    <span class="kw">}</span>,
+    <span class="kw">{</span>
+      <span class="key">"role"</span>: <span class="str">"assistant"</span>,
+      <span class="key">"content"</span>: <span class="str">"Root cause: sGTM purchase tag is reading value from 
+top-level ecommerce object but HRE pushes revenue 
+inside items[0].price * quantity. Fix: update sGTM variable 
+to map items array and sum value. Tag: 'sGTM - GA4 Purchase'
+→ Variable: {{DLV - ecommerce.items}} → recompute value."</span>
+    <span class="kw">}</span>
+  ],
+  <span class="key">"metadata"</span>: <span class="kw">{</span>
+    <span class="key">"client_id"</span>: <span class="str">"hre"</span>,
+    <span class="key">"score"</span>: <span class="num">0.91</span>,
+    <span class="key">"run_id"</span>: <span class="str">"exp-2026-04-07-047"</span>,
+    <span class="key">"sources"</span>: [<span class="str">"gtm"</span>, <span class="str">"google_ads"</span>]
+  <span class="kw">}</span>
+<span class="kw">}</span></code>
+  </div>
+
+  <!-- Flywheel note -->
+  <div class="flywheel">
+    <h3>⟳ The Compounding Moat</h3>
+    <p>Every client engagement generates experiments. Every experiment above threshold extends the training set. Every retrain makes the model more accurate for that client's specific patterns. <strong>At ~500 high-quality examples per client</strong>, the model knows their full tracking architecture better than any human consultant who hasn't lived in their accounts for years. This is the retention mechanic — the model is an asset that only you and the client share.</p>
+  </div>
+
+  <!-- Claude Code Prompt -->
+  <div class="flow-title">// Claude Code Prompt</div>
+  <div class="prompt-block">
+    <code>claude --dangerously-skip-permissions
+
+# Client LLM Fine-Tune Pipeline — Phase 1 Bootstrap
+
+## Context
+Repo: github.com/Organized-AI/gtm-autoresearch
+Infra: M3 Ultra (Ollama :11434 NoClaw), M4 Mini (OpenClaw :18789), claude-mem (SQLite + Chroma :37777)
+Clients: bioptimizers, rtt, teleios
+
+## Phase 1 Task: Experiment Logger Instrumentation
+
+Read AGENT-HANDOFF/ and PLANNING/ first. Then:
+
+1. Create packages/experiment-logger/
+   - ExperimentRecord TypeScript schema:
+     client_id, run_id, problem, solution, score (float 0-1),
+     timestamp, account_snapshot (JSON), sources_used string[]
+   - SQLite writer extending claude-mem DB at :37777
+   - Score normalizer: validate 0.0–1.0 range
+   - Client_id tagger on each record
+
+2. Instrument autoresearch loop to call ExperimentLogger.save()
+   on each scored experiment output
+
+3. Add CLI: `pnpm experiment-logger export --client bioptimizers`
+   outputs all records to stdout as JSONL
+
+4. Write tests for schema validation and SQLite round-trip
+
+Use Organized Codebase structure. Update CLAUDE.md with
+experiment-logger package docs. Do not build Phase 2 yet.
+
+## Env vars needed:
+CLAUDE_MEM_DB_PATH=/path/to/claude-mem.sqlite
+EXPERIMENT_LOG_DIR=./data/experiments
+SCORE_THRESHOLD=0.75</code>
+  </div>
+
+</div>
+</body>
+</html>

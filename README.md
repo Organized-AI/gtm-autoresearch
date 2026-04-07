@@ -1,82 +1,108 @@
-<p align="center">
-  <img src="logo.png" width="200" alt="gtm-autoresearch" />
-</p>
-
 # gtm-autoresearch
 
-**Autoresearch for tracking optimization**
+> Automated GTM + tracking research loop for HRE — running 50–100 scored experiments per run, building toward a client-specialized fine-tuned LLM.
 
-Karpathy's autonomous experimentation loop — applied to GTM configs instead of neural nets.
+**Live Docs →** [gtm-autoresearch-docs.pages.dev](https://gtm-autoresearch-docs.pages.dev)
 
-```
-Modify config → Deploy → Measure → Keep/revert → Repeat
-```
+---
 
-- **Fixed measurement window** — 5-min training budget, 24-hr signal window. Standardized comparison across every config variation.
-- **Single metric: signal quality score** — val_bpb → event match quality + dedup rate + conversion parity. One number to beat.
-- **Agent modifies one file** — train.py → GTM container JSON. Claude iterates tag configs, trigger rules, variable mappings.
-- **program.md → SKILL.md** — Human-curated instructions map to skill files. Domain knowledge guides agent experiments.
+## Overview
 
-> [github.com/karpathy/autoresearch](https://github.com/karpathy/autoresearch) — same loop, different domain. Agent experiments with tracking configs like it experiments with model architectures.
+This repo contains the autoresearch loop that:
+1. Pulls live account state from GTM, Google Ads, and Meta
+2. Runs scored experiments (problem → solution, scored 0.0–1.0)
+3. Filters high-quality outputs into fine-tune training data (JSONL)
+4. Feeds a client-specialized LLM routed through OpenClaw
 
-## Results
+---
 
-Wake up to a **validated workspace**.
+## Branches
 
-Run it overnight. Morning deliverables: a staging workspace ready to publish, a versioned config in R2, and a full experiment log.
-
-| Deliverable | What you get |
+| Branch | Purpose |
 |---|---|
-| **Staging workspace** | GTM workspace with winning config — one-click publish when you're ready |
-| **Versioned JSON** | winning-config.json stored in R2 — rollback to any previous night's best |
-| **Experiment log** | Every patch tested, scored, and kept or reverted. Full audit trail with diffs |
-| **Playwright QA** | Each experiment validated in staging preview — tag firing, parameters, dedup all checked |
+| `main` | Stable autoresearch loop |
+| `feature/finetune-pipeline` | Fine-tune data pipeline (active) |
 
-~100 experiments over a weekend. Never publishes to live. You review the winner and decide.
+---
 
-```python
-# morning deliverables
-workspace = gtm.getWorkspace("autoresearch-nightly")
-# review what changed
-print(workspace.changelog)
-# → 14 tags modified  # → score: 0.72 → 0.91
-# → 47 experiments run
-# happy? one-click publish
-gtm.publishWorkspace(workspace)
-# or grab the JSON for review
-config = r2.get("winning-config.json")
-gtm.importContainer(config)
-```
+## Fine-Tune Pipeline (feature/finetune-pipeline)
 
-## How it works
+Six-phase architecture for converting autoresearch outputs into a client LLM:
 
-9-dimension structural scorer evaluates GTM container quality:
+| Phase | Name | Status |
+|---|---|---|
+| 1 | Experiment Logger Instrumentation | 🔨 In progress |
+| 2 | Account State Collector | 📋 Specced |
+| 3 | Training Data Pipeline (JSONL) | 📋 Planned |
+| 4 | Fine-Tune Runner (OpenAI + Ollama) | 📋 Planned |
+| 5 | OpenClaw Client Brain Integration | 📋 Planned |
+| 6 | Flywheel Automation | 📋 Planned |
 
-1. Tag coverage (ecom events + infra tags)
-2. Parameter completeness
-3. Deduplication (event ID generator)
-4. Consent Mode v2 settings
-5. Naming conventions
-6. Variable hygiene
-7. Trigger quality
-8. Folder organization
-9. Meta Ads alignment (weighted by conversion value)
+**Full architecture and phase prompts →** [gtm-autoresearch-docs.pages.dev](https://gtm-autoresearch-docs.pages.dev)
 
-Each round: score → build prompt → mutate via Claude Haiku → validate → keep/revert → repeat.
+---
 
-## Usage
+## Stack
+
+- **Runtime**: TypeScript / Node.js, pnpm workspaces, Turborepo
+- **Memory**: SQLite + Chroma (claude-mem, `:37777`)
+- **MCP Tools**: GTM (Stape), Google Ads (TrueClicks), Pipeboard Meta
+- **Fine-tune targets**: OpenAI gpt-4o-mini (cloud) · Ollama Llama 3.1 8B (local, M3 Ultra via NoClaw `:11434`)
+- **Agent gateway**: OpenClaw (`:18789`)
+- **Infra**: Tailscale mesh — M4 Mac Mini · MacBook M1 Pro · M3 Ultra
+
+---
+
+## Docs
+
+Documentation is deployed to Cloudflare Pages from the `docs/` directory.
+
+### Deploy locally
 
 ```bash
-# run the loop
-npx tsx scripts/run-gtm-loop.ts
+# Install wrangler if needed
+npm install -g wrangler
 
-# run the eval standalone
-npx tsx evals/eval_gtm_signal_quality.ts content/gtm-templates/shopify-ecom-web.json
-
-# hydrate a template with client values
-npx tsx scripts/hydrate-gtm-template.ts client-config.json
+# Deploy (from repo root)
+wrangler pages deploy docs --project-name gtm-autoresearch-docs
 ```
 
-## Cost
+### Update docs
 
-~30 rounds x ~3K tokens = ~90K tokens total. About $0.15 per full run on Claude Haiku.
+```bash
+# After editing files in docs/
+wrangler pages deploy docs --project-name gtm-autoresearch-docs
+```
+
+---
+
+## Local Setup
+
+```bash
+git clone https://github.com/Organized-AI/gtm-autoresearch
+cd gtm-autoresearch
+pnpm install
+
+# Copy env template
+cp .env.example .env
+# Fill in: CLAUDE_MEM_DB_PATH, GTM_MCP_URL, GOOGLE_ADS_MCP_URL, META_MCP_URL
+```
+
+### Env vars
+
+| Variable | Description |
+|---|---|
+| `CLAUDE_MEM_DB_PATH` | Path to claude-mem SQLite DB |
+| `EXPERIMENT_LOG_DIR` | Where experiment JSONL logs are written |
+| `SCORE_THRESHOLD` | Min score for training data (default: `0.75`) |
+| `GTM_MCP_URL` | `https://gtm-mcp.stape.ai/mcp` |
+| `GOOGLE_ADS_MCP_URL` | TrueClicks MCP endpoint |
+| `META_MCP_URL` | `https://mcp.pipeboard.co/meta-ads-mcp` |
+| `CHROMA_URL` | `http://localhost:37777` |
+| `CLIENT_DATA_DIR` | `./data/clients` |
+
+---
+
+## Organized AI
+
+Built and maintained by [Organized AI](https://organizedai.vip) · [GitHub](https://github.com/Organized-AI)

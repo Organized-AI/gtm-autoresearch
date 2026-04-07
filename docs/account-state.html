@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 2 — Account State Collector</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #05080c;
+    --surface: #0a0f16;
+    --border: #141e2b;
+    --accent: #10b981;
+    --accent2: #00d4ff;
+    --accent3: #7c3aed;
+    --accent4: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #3d5166;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(16,185,129,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16,185,129,0.025) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+  }
+
+  .container { max-width: 1060px; margin: 0 auto; padding: 48px 24px; position: relative; }
+
+  .header {
+    margin-bottom: 48px;
+    padding-left: 18px;
+    border-left: 3px solid var(--accent);
+  }
+  .header .tag { font-size: 9px; letter-spacing: 0.22em; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+  .header h1 { font-family: 'Syne', sans-serif; font-size: clamp(24px, 3.5vw, 42px); font-weight: 800; color: #fff; line-height: 1.1; }
+  .header h1 span { color: var(--accent); }
+  .header p { margin-top: 10px; font-size: 12px; color: var(--muted); line-height: 1.8; max-width: 580px; }
+
+  /* Section labels */
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    margin-top: 44px;
+  }
+
+  /* ASCII schema */
+  .ascii {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 24px;
+    overflow-x: auto;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .ascii::before {
+    content: attr(data-label);
+    position: absolute; top: -9px; left: 16px;
+    background: var(--surface); padding: 0 8px;
+    font-size: 8px; letter-spacing: 0.15em; color: var(--accent); text-transform: uppercase;
+  }
+  .ascii pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; line-height: 1.55; color: #5eead4; white-space: pre;
+  }
+  .ascii pre .hi { color: var(--accent); }
+  .ascii pre .b { color: var(--accent2); }
+  .ascii pre .p { color: var(--accent3); }
+  .ascii pre .y { color: var(--accent4); }
+  .ascii pre .dim { color: var(--muted); }
+  .ascii pre .w { color: #fff; }
+
+  /* Three-column source grid */
+  .source-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  @media(max-width: 720px) { .source-grid { grid-template-columns: 1fr; } }
+
+  .source-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .source-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--card-color);
+  }
+  .source-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--card-color);
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+  }
+  .source-card .subtitle {
+    font-size: 10px; color: var(--muted); margin-bottom: 14px; line-height: 1.5;
+  }
+  .field-list { display: flex; flex-direction: column; gap: 6px; }
+  .field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    font-size: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    align-items: start;
+  }
+  .field:last-child { border-bottom: none; padding-bottom: 0; }
+  .field .fname { color: #94a3b8; line-height: 1.5; }
+  .field .ftype {
+    font-size: 9px; padding: 1px 5px;
+    border: 1px solid currentColor; border-radius: 2px;
+    color: var(--card-color); opacity: 0.6;
+    white-space: nowrap; align-self: flex-start;
+  }
+
+  /* Transform steps */
+  .transform-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px; font-weight: 800;
+    color: var(--border); line-height: 1;
+    padding-top: 2px;
+  }
+  .step h5 {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .step p { font-size: 11px; color: #64748b; line-height: 1.7; }
+  .step code {
+    background: rgba(16,185,129,0.08);
+    color: var(--accent); padding: 1px 5px; border-radius: 2px;
+    font-size: 10px;
+  }
+
+  /* Code blocks */
+  .code-block {
+    background: #020507;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 20px;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    position: relative;
+  }
+  .code-block::before {
+    content: attr(data-label);
+    position: absolute; top: -9px; left: 16px;
+    background: #020507; padding: 0 8px;
+    font-size: 8px; letter-spacing: 0.15em;
+    color: var(--accent2); text-transform: uppercase;
+  }
+  .code-block code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; line-height: 1.75; color: #7dd3fc;
+    white-space: pre; display: block;
+  }
+  .code-block .str { color: #86efac; }
+  .code-block .key { color: #f9a8d4; }
+  .code-block .type { color: var(--accent); }
+  .code-block .kw { color: var(--accent3); }
+  .code-block .num { color: var(--accent4); }
+  .code-block .cm { color: var(--muted); }
+
+  /* Prompt block */
+  .prompt-block {
+    background: #020507;
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 3px;
+    padding: 22px;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .prompt-block::before {
+    content: 'CLAUDE CODE PROMPT — PHASE 2';
+    position: absolute; top: -9px; left: 16px;
+    background: #020507; padding: 0 8px;
+    font-size: 8px; letter-spacing: 0.15em; color: var(--accent2); text-transform: uppercase;
+  }
+  .prompt-block code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; line-height: 1.8; color: #e2e8f0;
+    white-space: pre-wrap; display: block;
+  }
+
+  /* Versioning note */
+  .note {
+    background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(0,212,255,0.04));
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 3px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+  }
+  .note h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .note p { font-size: 11px; color: #64748b; line-height: 1.7; }
+  .note p strong { color: var(--accent2); }
+
+  /* MCP table */
+  .mcp-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .mcp-table th {
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted); padding: 8px 12px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .mcp-table td {
+    font-size: 11px; padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: #94a3b8; vertical-align: top;
+  }
+  .mcp-table td:first-child { color: var(--accent); font-weight: 500; }
+  .mcp-table td code { color: var(--accent2); font-size: 10px; }
+  .mcp-table tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="tag">gtm-autoresearch // feature/finetune-pipeline</div>
+    <h1>Phase 2: <span>Account State</span><br>Collector</h1>
+    <p>Pulls live client account data from GTM, Google Ads MCP, and Pipeboard Meta MCP. Normalizes into a versioned <code>AccountState</code> JSON object injected as system prompt context into every training record.</p>
+  </div>
+
+  <!-- AccountState schema ASCII -->
+  <div class="section-label">// AccountState Schema</div>
+  <div class="ascii" data-label="account_state.json — full schema">
+    <pre>
+<span class="hi">AccountState</span> {
+  <span class="b">client_id</span>:        <span class="dim">string</span>                <span class="dim">// "bioptimizers" | "teleios" | "rtt"</span>
+  <span class="b">snapshot_at</span>:      <span class="dim">ISO 8601 timestamp</span>    <span class="dim">// when this state was captured</span>
+  <span class="b">version</span>:          <span class="dim">semver string</span>         <span class="dim">// "1.0.0" → bump on meaningful change</span>
+
+  <span class="hi">gtm</span>: {
+    <span class="dim">container_id</span>:    <span class="dim">string</span>                <span class="dim">// "GTM-XXXXXXX"</span>
+    <span class="dim">workspace_id</span>:    <span class="dim">string</span>
+    <span class="dim">tags</span>: [{
+      <span class="dim">name, type, firing_triggers[], paused, notes</span>
+    }]
+    <span class="dim">triggers</span>: [{
+      <span class="dim">name, type, filter_conditions[], custom_event_filter</span>
+    }]
+    <span class="dim">variables</span>: [{
+      <span class="dim">name, type, parameter (dataLayer key, JS var, etc.)</span>
+    }]
+    <span class="dim">datalayer_schema</span>: <span class="dim">string[]</span>             <span class="dim">// inferred event names from triggers</span>
+    <span class="dim">published_vs_draft_diff</span>: <span class="dim">string</span>       <span class="dim">// summary of unpublished changes</span>
+  }
+
+  <span class="p">google_ads</span>: {
+    <span class="dim">account_id</span>:      <span class="dim">string</span>                <span class="dim">// "123-456-7890"</span>
+    <span class="dim">campaigns</span>: [{
+      <span class="dim">id, name, type (PMAX|SEARCH|DISPLAY|VIDEO), status, budget</span>
+    }]
+    <span class="dim">conversion_actions</span>: [{
+      <span class="dim">id, name, tag_snippet, category, value_settings, enhanced_conversions</span>
+    }]
+    <span class="dim">linked_gtm_containers</span>: <span class="dim">string[]</span>
+    <span class="dim">performance_flags</span>: <span class="dim">string[]</span>            <span class="dim">// known issues like "$0 value on PMAX"</span>
+  }
+
+  <span class="y">meta</span>: {
+    <span class="dim">pixel_id</span>:        <span class="dim">string</span>
+    <span class="dim">ad_account_id</span>:   <span class="dim">string</span>
+    <span class="dim">events_fired</span>: [{
+      <span class="dim">event_name, source (pixel|capi|both), last_received</span>
+    }]
+    <span class="dim">capi_config</span>: {
+      <span class="dim">enabled, access_token_set, stape_container_id, match_rate</span>
+    }
+    <span class="dim">custom_audiences</span>: [{
+      <span class="dim">id, name, size_range, source</span>
+    }]
+  }
+
+  <span class="b">memory_summary</span>:   <span class="dim">string</span>                <span class="dim">// top 5 past fixes from claude-mem Chroma</span>
+  <span class="b">known_issues</span>:     <span class="dim">string[]</span>             <span class="dim">// manually flagged or auto-detected</span>
+  <span class="b">system_prompt</span>:    <span class="dim">string</span>                <span class="dim">// pre-rendered, ready to inject into JSONL</span>
+}
+    </pre>
+  </div>
+
+  <!-- Three data sources -->
+  <div class="section-label">// Data Sources + Field Mapping</div>
+  <div class="source-grid">
+
+    <div class="source-card" style="--card-color: var(--accent2)">
+      <h4>GTM MCP (Stape)</h4>
+      <div class="subtitle">gtm-mcp.stape.ai/mcp<br>Container JSON export + workspace diff</div>
+      <div class="field-list">
+        <div class="field"><span class="fname">Container export JSON</span><span class="ftype">JSON</span></div>
+        <div class="field"><span class="fname">Tag list (name, type, triggers)</span><span class="ftype">array</span></div>
+        <div class="field"><span class="fname">Trigger filter conditions</span><span class="ftype">array</span></div>
+        <div class="field"><span class="fname">Variable definitions</span><span class="ftype">array</span></div>
+        <div class="field"><span class="fname">Workspace vs published diff</span><span class="ftype">string</span></div>
+        <div class="field"><span class="fname">Custom event names (inferred)</span><span class="ftype">string[]</span></div>
+      </div>
+    </div>
+
+    <div class="source-card" style="--card-color: var(--accent3)">
+      <h4>Google Ads MCP</h4>
+      <div class="subtitle">mcp.gaql.app<br>GAQL queries via TrueClicks MCP</div>
+      <div class="field-list">
+        <div class="field"><span class="fname">Campaign IDs, names, types</span><span class="ftype">array</span></div>
+        <div class="field"><span class="fname">Conversion action IDs + names</span><span class="ftype">array</span></div>
+        <div class="field"><span class="fname">Enhanced Conversions flag</span><span class="ftype">bool</span></div>
+        <div class="field"><span class="fname">Linked GTM container IDs</span><span class="ftype">string[]</span></div>
+        <div class="field"><span class="fname">Value settings per conversion</span><span class="ftype">object</span></div>
+        <div class="field"><span class="fname">Account-level currency + timezone</span><span class="ftype">string</span></div>
+      </div>
+    </div>
+
+    <div class="source-card" style="--card-color: var(--accent4)">
+      <h4>Pipeboard Meta MCP</h4>
+      <div class="subtitle">mcp.pipeboard.co/meta-ads-mcp<br>Pixel diagnostics + CAPI config</div>
+      <div class="field-list">
+        <div class="field"><span class="fname">Pixel ID + dataset ID</span><span class="ftype">string</span></div>
+        <div class="field"><span class="fname">Events fired (name, source)</span><span class="ftype">array</span></div>
+        <div class="field"><span class="fname">CAPI match rate estimate</span><span class="ftype">float</span></div>
+        <div class="field"><span class="fname">Stape container ID</span><span class="ftype">string</span></div>
+        <div class="field"><span class="fname">Ad account structure</span><span class="ftype">object</span></div>
+        <div class="field"><span class="fname">Custom audience list</span><span class="ftype">array</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MCP Tool Map -->
+  <div class="section-label">// MCP Tool Calls Per Source</div>
+  <table class="mcp-table">
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th>MCP Tool</th>
+        <th>Output Field</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>GTM</td>
+        <td><code>export_container</code></td>
+        <td>gtm.tags, triggers, variables</td>
+        <td>Parse JSON → normalize tag schema</td>
+      </tr>
+      <tr>
+        <td>GTM</td>
+        <td><code>list_workspaces</code></td>
+        <td>gtm.workspace_id</td>
+        <td>Always grab latest workspace</td>
+      </tr>
+      <tr>
+        <td>Google Ads</td>
+        <td>GAQL: <code>SELECT campaign.id, campaign.name, campaign.advertising_channel_type</code></td>
+        <td>google_ads.campaigns</td>
+        <td>Filter: status != REMOVED</td>
+      </tr>
+      <tr>
+        <td>Google Ads</td>
+        <td>GAQL: <code>SELECT conversion_action.id, conversion_action.name, conversion_action.tag_snippets</code></td>
+        <td>google_ads.conversion_actions</td>
+        <td>Include value_settings object</td>
+      </tr>
+      <tr>
+        <td>Meta</td>
+        <td><code>get_pixels</code></td>
+        <td>meta.pixel_id, events_fired</td>
+        <td>Pull last 7d event diagnostics</td>
+      </tr>
+      <tr>
+        <td>Meta</td>
+        <td><code>get_custom_audiences</code></td>
+        <td>meta.custom_audiences</td>
+        <td>Size + source only (no PII)</td>
+      </tr>
+      <tr>
+        <td>claude-mem</td>
+        <td>Chroma similarity query</td>
+        <td>memory_summary</td>
+        <td>Top 5 by relevance to client_id</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- GTM Transform Detail -->
+  <div class="section-label">// GTM Container JSON → Normalized Schema Transform</div>
+  <div class="transform-steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div>
+        <h5>Export Raw Container</h5>
+        <p>Call GTM MCP <code>export_container(containerId, workspaceId)</code>. Raw export is deeply nested Google format with numeric type codes. Save as <code>raw_gtm_{timestamp}.json</code> for versioning.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div>
+        <h5>Tag Normalization</h5>
+        <p>Map <code>tag.type</code> numeric codes → human labels (e.g. <code>ua</code>→"Universal Analytics", <code>gclidw</code>→"Google Ads Conversion", <code>html</code>→"Custom HTML"). Extract firing trigger names by joining on <code>firingTriggerId</code>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div>
+        <h5>Trigger Filter Extraction</h5>
+        <p>Parse <code>filter[]</code> conditions on each trigger. Custom Event triggers → extract <code>customEventFilter[].parameter.value</code> as the dataLayer event name. These become the <code>datalayer_schema[]</code> array.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div>
+        <h5>Variable Parameter Mapping</h5>
+        <p>For each variable: extract <code>type</code> (dlv/jsm/k/etc.) and <code>parameter</code> (the actual dataLayer key path like <code>ecommerce.value</code>). This tells the fine-tuned model exactly where data lives in the client's dataLayer schema.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">05</div>
+      <div>
+        <h5>Published vs Draft Diff</h5>
+        <p>Compare live container export against current workspace. Any tags/triggers added in workspace but not yet published get flagged in <code>published_vs_draft_diff</code>. Prevents training on configs that aren't live yet.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">06</div>
+      <div>
+        <h5>System Prompt Render</h5>
+        <p>Flatten the full AccountState into a compact string suitable for the <code>system</code> field in training JSONL. Target: under 800 tokens. Use abbreviation for large arrays (e.g. "27 tags including: GA4 Config, PMAX Conversion, [+25 more]").</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- System prompt output example -->
+  <div class="section-label">// Rendered System Prompt Output (HRE Example)</div>
+  <div class="code-block" data-label="account_state.system_prompt — rendered string">
+    <code><span class="str">You are a conversion tracking expert for HRE.
+
+GTM: GTM-XXXXXXX | Workspace: ws_4 | 31 tags, 18 triggers, 22 variables
+Key tags: GA4 Config, GA4 - Purchase, AW - All Purchases (PMAX), 
+          sGTM Bridge - Ecommerce, Custom HTML - DataLayer Push
+Key triggers: Page View, Purchase (dataLayer: 'purchase'), 
+              Lead Submit (dataLayer: 'generate_lead')
+dataLayer schema: page_view, view_item, add_to_cart, 
+                  begin_checkout, purchase, generate_lead
+DLV mappings: ecommerce.value, ecommerce.currency, 
+              ecommerce.items[].item_id, ecommerce.items[].price
+
+Google Ads: 123-456-7890 | Currency: USD
+Campaigns: PMAX - Core (PMAX), Brand - HRE (SEARCH),
+           Retargeting - Site Visitors (DISPLAY)
+Conversions: All Purchases (AW-xxx/yyy, value: ecommerce.value),
+             Lead Form Submit (AW-xxx/zzz, count-only)
+Enhanced Conversions: ENABLED
+
+Meta Pixel: HRE-pixel-id | Ad Account: act_12345
+Events (browser+CAPI): PageView, ViewContent, AddToCart, 
+                       InitiateCheckout, Purchase
+CAPI match rate: ~68% | Stape container: cnt_abc123
+
+Known issues: PMAX conversion shows $0 value — root cause: 
+sGTM purchase tag reads top-level ecommerce.value but 
+HRE pushes revenue inside items[].price * quantity.
+Past fix: updated sGTM variable to sum items array.
+
+Memory: Cart abandonment tracking fixed 2025-11, 
+        dataLayer conflict resolved 2025-09,
+        PMAX value fix deployed 2026-01</span></code>
+  </div>
+
+  <!-- Versioning -->
+  <div class="note">
+    <h4>Snapshot Versioning Strategy</h4>
+    <p>AccountState is versioned with semver. <strong>Patch bump</strong> (1.0.x): campaign names changed, new tag added. <strong>Minor bump</strong> (1.x.0): dataLayer schema changed, conversion action added. <strong>Major bump</strong> (x.0.0): platform migrated, GTM container rebuilt. Each experiment record stores the AccountState version it was generated under — if you need to retrain from scratch after a major account restructure, you can filter to only post-migration experiments by version range.</p>
+  </div>
+
+  <!-- Claude Code Prompt -->
+  <div class="section-label">// Claude Code Prompt</div>
+  <div class="prompt-block">
+    <code>claude --dangerously-skip-permissions
+
+# Phase 2: Account State Collector
+# Branch: feature/finetune-pipeline
+# Repo: github.com/Organized-AI/gtm-autoresearch
+
+## Context
+Phase 1 (ExperimentLogger) is complete. Now building the 
+Account State Collector that pulls live client data from 
+GTM, Google Ads, and Meta, normalizes it into a versioned 
+AccountState object, and renders a compact system prompt string.
+
+## Task
+
+Read AGENT-HANDOFF/ and PLANNING/ first. Then:
+
+1. Create packages/account-state-collector/
+
+   AccountState TypeScript interface (full schema):
+   - client_id, snapshot_at, version (semver)
+   - gtm: { container_id, workspace_id, tags[], triggers[], 
+            variables[], datalayer_schema[], draft_diff }
+   - google_ads: { account_id, campaigns[], conversion_actions[],
+                   enhanced_conversions, performance_flags[] }
+   - meta: { pixel_id, ad_account_id, events_fired[], 
+             capi_config{}, custom_audiences[] }
+   - memory_summary (string from Chroma top-5 query)
+   - known_issues (string[])
+   - system_prompt (pre-rendered, target ≤800 tokens)
+
+2. Collectors (one file per source):
+   - gtm-collector.ts → calls GTM MCP (gtm-mcp.stape.ai/mcp)
+     export_container + list_workspaces
+     Normalize: map tag type codes → labels, extract 
+     datalayer_schema from customEventFilter values
+   - google-ads-collector.ts → GAQL via TrueClicks MCP
+     Queries: campaigns + conversion_actions (see PLANNING/)
+   - meta-collector.ts → Pipeboard Meta MCP
+     get_pixels + get_custom_audiences
+   - memory-collector.ts → query Chroma :37777 by client_id,
+     return top 5 relevant memories as summary string
+
+3. system-prompt-renderer.ts
+   Flatten AccountState → compact string ≤800 tokens
+   Abbreviate large arrays: "27 tags including: X, Y, [+25 more]"
+   Include known_issues and memory_summary at bottom
+
+4. Versioning: 
+   - Compare new snapshot vs previous stored version
+   - Semver bump logic: schema change = minor, 
+     platform migration = major, minor changes = patch
+   - Store at: data/clients/{client_id}/account_state_v{N}.json
+
+5. CLI: `pnpm account-state collect --client bioptimizers`
+   Runs all collectors, renders system_prompt, saves versioned file
+
+6. Unit tests for:
+   - GTM tag normalization (type code → label)
+   - datalayer_schema extraction from trigger filters
+   - system_prompt token count guard (assert ≤800)
+   - semver bump logic
+
+## Env vars:
+GTM_MCP_URL=https://gtm-mcp.stape.ai/mcp
+GOOGLE_ADS_MCP_URL=https://mcp.gaql.app/sse/google-ads/...
+META_MCP_URL=https://mcp.pipeboard.co/meta-ads-mcp
+CHROMA_URL=http://localhost:37777
+CLIENT_DATA_DIR=./data/clients
+
+## Clients to test against:
+- hre (GTM-XXXXXXX, primary repo client)
+- teleios (GTM-WM5S3WSG)
+
+Do NOT build Phase 3 (training data pipeline) yet.</code>
+  </div>
+
+</div>
+</body>
+</html>
