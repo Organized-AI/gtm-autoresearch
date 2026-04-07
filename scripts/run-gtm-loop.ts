@@ -34,7 +34,9 @@ const PROJECT_ROOT = path.resolve(
 );
 
 const CLAUDE_PATH =
-  process.env.CLAUDE_PATH ?? "/Users/jordaaan/.local/bin/claude";
+  process.env.CLAUDE_PATH ?? "/Users/supabowl/.local/bin/claude";
+const CODEX_PATH =
+  process.env.CODEX_PATH ?? "codex";
 const MAX_ROUNDS = parseInt(process.env.MAX_ROUNDS ?? "30", 10);
 const PLATEAU_SCORE = 0.92;
 const PLATEAU_STREAK = 3;
@@ -43,10 +45,10 @@ const MAX_JSON_FAILURES = 5;
 const MUTATION_BUDGET = 3;
 
 // Mutation provider config
-const MUTATION_PROVIDER = process.env.MUTATION_PROVIDER ?? "claude"; // "claude" | "openai"
-const MUTATION_MODEL = process.env.MUTATION_MODEL ?? (MUTATION_PROVIDER === "openai" ? "gpt-4o" : "sonnet");
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+// "claude" = Claude Code CLI (authenticated via Claude plan)
+// "codex"  = OpenAI Codex CLI (authenticated via Codex plan)
+const MUTATION_PROVIDER = process.env.MUTATION_PROVIDER ?? "claude";
+const MUTATION_MODEL = process.env.MUTATION_MODEL ?? (MUTATION_PROVIDER === "codex" ? "o4-mini" : "sonnet");
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -280,57 +282,33 @@ function callClaudeCli(prompt: string): string | null {
   return result.stdout;
 }
 
-async function callOpenAi(prompt: string): Promise<string | null> {
-  if (!OPENAI_API_KEY) {
-    console.log("  [OpenAI] Missing OPENAI_API_KEY");
+function callCodexCli(prompt: string): string | null {
+  const env = { ...process.env };
+
+  // Codex CLI: codex -q --model <model> "prompt"
+  // -q = quiet mode (non-interactive, prints result only)
+  const result = spawnSync(
+    CODEX_PATH,
+    ["-q", "--model", MUTATION_MODEL, prompt],
+    {
+      encoding: "utf-8",
+      timeout: 180000,
+      maxBuffer: 5 * 1024 * 1024,
+      env,
+    },
+  );
+
+  if (result.status !== 0) {
+    console.log(`  [Codex] CLI error: ${result.stderr?.slice(0, 200)}`);
     return null;
   }
 
-  try {
-    const res = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: MUTATION_MODEL,
-        messages: [
-          {
-            role: "system",
-            content: "You are a GTM container optimization engine. Output ONLY valid JSON — no markdown fences, no commentary, no explanation. Your entire response must be parseable by JSON.parse().",
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 16384,
-      }),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      console.log(`  [OpenAI] API error ${res.status}: ${body.slice(0, 200)}`);
-      return null;
-    }
-
-    const json = await res.json();
-    const content = json.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.log("  [OpenAI] Empty response");
-      return null;
-    }
-
-    return content;
-  } catch (err) {
-    console.log(`  [OpenAI] Error: ${(err as Error).message}`);
-    return null;
-  }
+  return result.stdout;
 }
 
-function callMutation(prompt: string): string | null | Promise<string | null> {
-  if (MUTATION_PROVIDER === "openai") {
-    return callOpenAi(prompt);
+function callMutation(prompt: string): string | null {
+  if (MUTATION_PROVIDER === "codex") {
+    return callCodexCli(prompt);
   }
   return callClaudeCli(prompt);
 }
@@ -518,7 +496,7 @@ async function main(): Promise<void> {
     );
 
     console.log(`[Mutate] Calling ${MUTATION_PROVIDER}/${MUTATION_MODEL}...`);
-    const response = await callMutation(prompt);
+    const response = callMutation(prompt);
 
     if (!response) {
       console.log("[Mutate] No response from mutation provider");
