@@ -31,7 +31,7 @@ if (!configPath) {
   process.exit(1);
 }
 
-const templatePath = process.argv[3] || resolve(__dirname, "../content/gtm-templates/shopify-ecom-web.json");
+const templatePath = process.argv[3] || resolve(__dirname, "../content/gtm-templates/HRE/seed/shopify-ecom-web.json");
 const outputPath = process.argv[4] || resolve(__dirname, `../content/gtm-templates/output-${Date.now()}.json`);
 
 const config = JSON.parse(readFileSync(resolve(configPath), "utf-8"));

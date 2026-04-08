@@ -1,0 +1,115 @@
+{
+  "startTime": "2026-04-08T17:06:46.263Z",
+  "templatePath": "content/gtm-templates/shopify-ecom-web.json",
+  "rounds": 5,
+  "bestScore": 0.8427,
+  "startScore": 0.8427,
+  "finalScore": 0.8427,
+  "results": [
+    {
+      "round": 0,
+      "score": 0.8427,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 35,
+      "action": "json_fail",
+      "mutationSummary": "No response from mutation provider"
+    },
+    {
+      "round": 1,
+      "score": 0.8427,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 35,
+      "action": "json_fail",
+      "mutationSummary": "No response from mutation provider"
+    },
+    {
+      "round": 2,
+      "score": 0.8427,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 35,
+      "action": "json_fail",
+      "mutationSummary": "No response from mutation provider"
+    },
+    {
+      "round": 3,
+      "score": 0.8427,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 35,
+      "action": "json_fail",
+      "mutationSummary": "No response from mutation provider"
+    },
+    {
+      "round": 4,
+      "score": 0.8427,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 35,
+      "action": "json_fail",
+      "mutationSummary": "No response from mutation provider"
+    }
+  ]
+}

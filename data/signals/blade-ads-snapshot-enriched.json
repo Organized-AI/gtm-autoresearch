@@ -1,0 +1,35 @@
+{
+  "generated_at": "2026-04-08T00:00:00.000Z",
+  "partial": true,
+  "meta": {
+    "account_id": "act_1385707951714513",
+    "account_name": "BLADE",
+    "pixel_id": "311227299268737",
+    "currency": "USD",
+    "spend": 0,
+    "date_range": { "since": "2026-03-08", "until": "2026-04-07" },
+    "conversion_events": [
+      { "event": "page_view", "count_7d_click": 0, "count_1d_click": 0, "count_1d_view": 0, "value_7d_click": 0, "count_browser": 0, "count_server": 0, "dedup_rate": 0, "emq_score": -1 },
+      { "event": "view_content", "count_7d_click": 0, "count_1d_click": 0, "count_1d_view": 0, "value_7d_click": 0, "count_browser": 0, "count_server": 0, "dedup_rate": 0, "emq_score": -1 },
+      { "event": "add_to_cart", "count_7d_click": 0, "count_1d_click": 0, "count_1d_view": 0, "value_7d_click": 0, "count_browser": 0, "count_server": 0, "dedup_rate": 0, "emq_score": -1 },
+      { "event": "initiate_checkout", "count_7d_click": 0, "count_1d_click": 0, "count_1d_view": 0, "value_7d_click": 0, "count_browser": 0, "count_server": 0, "dedup_rate": 0, "emq_score": -1 },
+      { "event": "purchase", "count_7d_click": 0, "count_1d_click": 0, "count_1d_view": 0, "value_7d_click": 0, "count_browser": 0, "count_server": 0, "dedup_rate": 0, "emq_score": -1 },
+      { "event": "search", "count_7d_click": 0, "count_1d_click": 0, "count_1d_view": 0, "value_7d_click": 0, "count_browser": 0, "count_server": 0, "dedup_rate": 0, "emq_score": -1 },
+      { "event": "complete_registration", "count_7d_click": 0, "count_1d_click": 0, "count_1d_view": 0, "value_7d_click": 0, "count_browser": 0, "count_server": 0, "dedup_rate": 0, "emq_score": -1 },
+      { "event": "lead", "count_7d_click": 0, "count_1d_click": 0, "count_1d_view": 0, "value_7d_click": 0, "count_browser": 0, "count_server": 0, "dedup_rate": 0, "emq_score": -1 }
+    ]
+  },
+  "google_ads": {
+    "customer_id": "174-183-3734",
+    "customer_name": "BLADE",
+    "currency": "USD",
+    "conversion_actions": [
+      { "id": "1", "name": "Purchase-New", "category": "PURCHASE", "status": "ENABLED", "counting_type": "ONE_PER_CLICK", "click_through_lookback_window_days": 30, "conversion_count_30d": 0, "conversion_value_30d": 0, "tag_snippets": [] },
+      { "id": "2", "name": "Purchase-Repeat", "category": "PURCHASE", "status": "ENABLED", "counting_type": "ONE_PER_CLICK", "click_through_lookback_window_days": 30, "conversion_count_30d": 0, "conversion_value_30d": 0, "tag_snippets": [] },
+      { "id": "3", "name": "Add to Cart", "category": "ADD_TO_CART", "status": "ENABLED", "counting_type": "MANY_PER_CLICK", "click_through_lookback_window_days": 30, "conversion_count_30d": 0, "conversion_value_30d": 0, "tag_snippets": [] },
+      { "id": "4", "name": "Subscribe", "category": "SUBSCRIBE_PAID", "status": "ENABLED", "counting_type": "ONE_PER_CLICK", "click_through_lookback_window_days": 30, "conversion_count_30d": 0, "conversion_value_30d": 0, "tag_snippets": [] },
+      { "id": "5", "name": "Purchase 30d Window", "category": "PURCHASE", "status": "ENABLED", "counting_type": "ONE_PER_CLICK", "click_through_lookback_window_days": 30, "conversion_count_30d": 0, "conversion_value_30d": 0, "tag_snippets": [] }
+    ]
+  },
+  "funnel": []
+}

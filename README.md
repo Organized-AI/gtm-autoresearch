@@ -30,6 +30,7 @@ Run it overnight. Morning deliverables: a staging workspace ready to publish, a 
 | **Staging workspace** | GTM workspace with winning config — one-click publish when you're ready |
 | **Versioned JSON** | winning-config.json stored in R2 — rollback to any previous night's best |
 | **Experiment log** | Every patch tested, scored, and kept or reverted. Full audit trail with diffs |
+| **Data audit** | Automatic before/after markdown audit with Mermaid diagrams for opportunities identified and GTM changes made |
 | **Playwright QA** | Each experiment validated in staging preview — tag firing, parameters, dedup all checked |
 
 ~100 experiments over a weekend. Never publishes to live. You review the winner and decide.
@@ -107,19 +108,25 @@ npx tsx scripts/refresh-ads-snapshot.ts
 npx tsx scripts/run-gtm-loop.ts
 
 # run the eval standalone
-npx tsx evals/eval_gtm_signal_quality.ts content/gtm-templates/shopify-ecom-web.json
+npx tsx evals/eval_gtm_signal_quality.ts content/gtm-templates/HRE/seed/shopify-ecom-web.json
 
 # run eval with enriched snapshot
-npx tsx evals/eval_gtm_signal_quality.ts content/gtm-templates/shopify-ecom-web.json \
+npx tsx evals/eval_gtm_signal_quality.ts content/gtm-templates/HRE/seed/shopify-ecom-web.json \
   --enriched-snapshot data/signals/ads-snapshot-enriched.json
 
 # run eval with legacy Meta snapshot
-npx tsx evals/eval_gtm_signal_quality.ts content/gtm-templates/shopify-ecom-web.json \
+npx tsx evals/eval_gtm_signal_quality.ts content/gtm-templates/HRE/seed/shopify-ecom-web.json \
   --meta-snapshot data/signals/meta-ads-snapshot.json
 
 # hydrate a template with client values
 npx tsx scripts/hydrate-gtm-template.ts client-config.json
 ```
+
+Before importing a winning JSON into GTM, add one manual gate:
+
+- Compare the seed export to the candidate winning export and run the `data-audit` skill against the linked Meta account/pixel to verify event coverage, Pixel/CAPI health, and ads-side tracking integrity before upload.
+
+After a winning config is established, the loop now also writes a post-win data audit report under the client's `loop-results/data-audits/` directory. The report includes before/after scorecards, GTM entity diffs, and Mermaid diagrams for opportunities identified and changes made.
 
 ## Setup
 
@@ -146,6 +153,27 @@ The ads snapshot pipeline includes:
 - **NaN guards** — all metric parsing uses `safeParseFloat` to prevent NaN propagation
 - **Weight validation** — asserts dimension weights sum to 1.0 after profile selection
 - **Neutral empty scores** — missing data returns 0.5 (not 1.0) to prevent false confidence
+
+## Current gaps (as of 2026-04-07)
+
+First run: 5 rounds, **84.3% → 91.2%**. Two improvements accepted, three reverted.
+
+| Dimension | Score | Status |
+|---|---|---|
+| Tag coverage | 100% | Solved |
+| Parameter completeness | 100% | Solved |
+| Deduplication | 100% | Solved |
+| Trigger quality | 100% | Solved |
+| Folder organization | 100% | Solved |
+| Meta Ads alignment | 100% | Solved |
+| CAPI coverage | 99.4% | Solved |
+| Naming conventions | 97.6% | Near-ceiling |
+| Variable hygiene | 87.5% | Orphan/ref issues remain |
+| Google Ads alignment | 80% | Missing conversion tags for active GAds actions |
+| Funnel integrity | 70% | Drop-off ratios outside Shopify ecom norms — likely tracking gaps |
+| Consent settings | 60% | Consent init tag added, but not all tags have `consentStatus: NEEDED` yet |
+
+**Biggest levers for next run:** consent (60% → target 100%), funnel integrity (70%), Google Ads alignment (80%). A 30-round run should push past the 92% plateau target.
 
 ## Cost
 

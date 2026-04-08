@@ -1,130 +1,62 @@
 {
-  "generated_at": "2026-04-07T01:00:00.000Z",
-  "partial": false,
+  "generated_at": "2026-04-08T17:30:00.000Z",
+  "partial": true,
   "meta": {
     "account_id": "act_645790768357540",
     "account_name": "HRE Beauty",
     "pixel_id": "1029907382331846",
     "currency": "USD",
-    "spend": 51628.89,
-    "date_range": { "since": "2026-03-07", "until": "2026-04-05" },
+    "spend": 46908.69,
+    "date_range": { "since": "2026-03-09", "until": "2026-04-07" },
     "conversion_events": [
       {
         "event": "view_content",
-        "count_7d_click": 20777,
-        "count_1d_click": 20127,
-        "count_1d_view": 1306,
-        "value_7d_click": 566609.75,
-        "count_browser": 19500,
-        "count_server": 18200,
-        "dedup_rate": 0.82,
-        "emq_score": 7.2
+        "count_7d_click": 18152,
+        "count_1d_click": 17610,
+        "count_1d_view": 1227,
+        "value_7d_click": 488229.20
       },
       {
         "event": "add_to_cart",
-        "count_7d_click": 3537,
-        "count_1d_click": 3312,
-        "count_1d_view": 391,
-        "value_7d_click": 92008,
-        "count_browser": 3400,
-        "count_server": 3100,
-        "dedup_rate": 0.78,
-        "emq_score": 6.8
+        "count_7d_click": 3117,
+        "count_1d_click": 2932,
+        "count_1d_view": 369,
+        "value_7d_click": 79913.00
       },
       {
         "event": "initiate_checkout",
-        "count_7d_click": 2221,
-        "count_1d_click": 2050,
-        "count_1d_view": 351,
-        "value_7d_click": 27181.32,
-        "count_browser": 2100,
-        "count_server": 1950,
-        "dedup_rate": 0.75,
-        "emq_score": 6.5
+        "count_7d_click": 1948,
+        "count_1d_click": 1808,
+        "count_1d_view": 328,
+        "value_7d_click": 23498.13
       },
       {
         "event": "add_payment_info",
-        "count_7d_click": 343,
-        "count_1d_click": 320,
-        "count_1d_view": 63,
-        "value_7d_click": 14248,
-        "count_browser": 330,
-        "count_server": 0,
-        "dedup_rate": 0,
-        "emq_score": -1
+        "count_7d_click": 289,
+        "count_1d_click": 267,
+        "count_1d_view": 60,
+        "value_7d_click": 12008.55
       },
       {
         "event": "purchase",
-        "count_7d_click": 1231,
-        "count_1d_click": 1144,
-        "count_1d_view": 166,
-        "value_7d_click": 51062.94,
-        "count_browser": 1180,
-        "count_server": 1100,
-        "dedup_rate": 0.85,
-        "emq_score": 7.8
+        "count_7d_click": 1074,
+        "count_1d_click": 1000,
+        "count_1d_view": 154,
+        "value_7d_click": 43588.70
       },
       {
         "event": "search",
-        "count_7d_click": 67,
-        "count_1d_click": 60,
+        "count_7d_click": 57,
+        "count_1d_click": 50,
         "count_1d_view": 24,
-        "value_7d_click": 0,
-        "count_browser": 60,
-        "count_server": 0,
-        "dedup_rate": 0,
-        "emq_score": -1
+        "value_7d_click": 0
       },
       {
         "event": "lead",
-        "count_7d_click": 622,
-        "count_1d_click": 622,
+        "count_7d_click": 555,
+        "count_1d_click": 555,
         "count_1d_view": 0,
-        "value_7d_click": 0,
-        "count_browser": 600,
-        "count_server": 580,
-        "dedup_rate": 0.70,
-        "emq_score": 5.2
-      }
-    ]
-  },
-  "google_ads": {
-    "customer_id": "1234567890",
-    "customer_name": "HRE Beauty",
-    "currency": "USD",
-    "conversion_actions": [
-      {
-        "id": "100001",
-        "name": "Purchase",
-        "category": "PURCHASE",
-        "status": "ENABLED",
-        "counting_type": "ONE_PER_CLICK",
-        "click_through_lookback_window_days": 30,
-        "conversion_count_30d": 892,
-        "conversion_value_30d": 38250.00,
-        "tag_snippets": ["AW-17975061749/ete-CNm_gI8cEPXZlvtC"]
-      },
-      {
-        "id": "100002",
-        "name": "Begin Checkout",
-        "category": "BEGIN_CHECKOUT",
-        "status": "ENABLED",
-        "counting_type": "ONE_PER_CLICK",
-        "click_through_lookback_window_days": 30,
-        "conversion_count_30d": 1580,
-        "conversion_value_30d": 0,
-        "tag_snippets": ["AW-17975061749/chk-ABcd1234"]
-      },
-      {
-        "id": "100003",
-        "name": "Page View",
-        "category": "PAGE_VIEW",
-        "status": "ENABLED",
-        "counting_type": "MANY_PER_CLICK",
-        "click_through_lookback_window_days": 30,
-        "conversion_count_30d": 45000,
-        "conversion_value_30d": 0,
-        "tag_snippets": []
+        "value_7d_click": 0
       }
     ]
   },
@@ -132,7 +64,7 @@
     {
       "from_event": "view_content",
       "to_event": "add_to_cart",
-      "ratio": 0.1703,
+      "ratio": 0.1717,
       "expected_low": 0.08,
       "expected_high": 0.25,
       "status": "normal"
@@ -140,7 +72,7 @@
     {
       "from_event": "add_to_cart",
       "to_event": "initiate_checkout",
-      "ratio": 0.6280,
+      "ratio": 0.6250,
       "expected_low": 0.30,
       "expected_high": 0.75,
       "status": "normal"
@@ -148,7 +80,7 @@
     {
       "from_event": "initiate_checkout",
       "to_event": "add_payment_info",
-      "ratio": 0.1544,
+      "ratio": 0.1484,
       "expected_low": 0.40,
       "expected_high": 0.95,
       "status": "low"
@@ -156,7 +88,7 @@
     {
       "from_event": "add_payment_info",
       "to_event": "purchase",
-      "ratio": 3.5889,
+      "ratio": 3.7163,
       "expected_low": 0.50,
       "expected_high": 0.95,
       "status": "high"
@@ -164,7 +96,7 @@
     {
       "from_event": "initiate_checkout",
       "to_event": "purchase",
-      "ratio": 0.5543,
+      "ratio": 0.5514,
       "expected_low": 0.25,
       "expected_high": 0.70,
       "status": "normal"

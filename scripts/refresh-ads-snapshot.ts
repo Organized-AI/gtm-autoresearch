@@ -27,7 +27,7 @@ import type {
   FunnelRatio,
 } from "../evals/eval_gtm_signal_quality.js";
 
-const PROJECT_ROOT = path.resolve(new URL(".", import.meta.url).pathname, "..");
+const PROJECT_ROOT = path.resolve(decodeURIComponent(new URL(".", import.meta.url).pathname), "..");
 const OUTPUT_PATH = path.resolve(PROJECT_ROOT, "data/signals/ads-snapshot-enriched.json");
 
 const META_API_VERSION = "v21.0";

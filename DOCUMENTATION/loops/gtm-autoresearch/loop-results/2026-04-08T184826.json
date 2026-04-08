@@ -1,0 +1,325 @@
+{
+  "startTime": "2026-04-08T18:48:26.589Z",
+  "templatePath": "content/gtm-templates/BLADE/seed/blade-web.json",
+  "rounds": 15,
+  "bestScore": 0.7347,
+  "startScore": 0.6218,
+  "finalScore": 0.7347,
+  "results": [
+    {
+      "round": 0,
+      "score": 0.6218,
+      "dimensions": {
+        "tagCoverage": 0.2727272727272727,
+        "paramCompleteness": 0.8395061728395061,
+        "deduplication": 0.5,
+        "consentSettings": 0.5943396226415094,
+        "namingConventions": 0.3045977011494253,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8805970149253731,
+        "folderOrganization": 0.11173184357541899,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 332,
+      "action": "improved",
+      "mutationSummary": "Score 53.6% → 62.2%"
+    },
+    {
+      "round": 1,
+      "score": 0.6628,
+      "dimensions": {
+        "tagCoverage": 0.5454545454545454,
+        "paramCompleteness": 0.8555555555555555,
+        "deduplication": 0.5,
+        "consentSettings": 0.6,
+        "namingConventions": 0.3163841807909605,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8805970149253731,
+        "folderOrganization": 0.10989010989010989,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "improved",
+      "mutationSummary": "Score 62.2% → 66.3%"
+    },
+    {
+      "round": 2,
+      "score": 0.7209,
+      "dimensions": {
+        "tagCoverage": 0.6363636363636364,
+        "paramCompleteness": 0.8602150537634409,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.32222222222222224,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8840579710144928,
+        "folderOrganization": 0.11413043478260869,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "improved",
+      "mutationSummary": "Score 66.3% → 72.1%"
+    },
+    {
+      "round": 3,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "improved",
+      "mutationSummary": "Score 72.1% → 73.5%"
+    },
+    {
+      "round": 4,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 5,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 6,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 7,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 8,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.5% <= 73.5%, reverted"
+    },
+    {
+      "round": 9,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 10,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 11,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 12,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 13,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    },
+    {
+      "round": 14,
+      "score": 0.7347,
+      "dimensions": {
+        "tagCoverage": 0.7272727272727273,
+        "paramCompleteness": 0.8645833333333334,
+        "deduplication": 0.5,
+        "consentSettings": 1,
+        "namingConventions": 0.33516483516483514,
+        "variableHygiene": 0.9805825242718447,
+        "triggerQuality": 0.8873239436619719,
+        "folderOrganization": 0.10810810810810811,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.5,
+        "funnelIntegrity": 0.5,
+        "googleAdsAlignment": 1
+      },
+      "issueCount": 331,
+      "action": "reverted",
+      "mutationSummary": "73.3% <= 73.5%, reverted"
+    }
+  ]
+}
