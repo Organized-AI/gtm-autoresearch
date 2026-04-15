@@ -17,7 +17,7 @@ MacBook M1 Pro — username: supabowl
 - fswatch (already installed at /opt/homebrew/bin/fswatch)
 - Apify API (REST, no SDK needed)
 - Cloudflare Worker (webhook receiver only)
-- Anthropic API (claude-haiku-4-5 for self-eval gate)
+- Anthropic API — Claude Sonnet drives mutation rounds while score < 0.92; the loop escalates one-way to Claude Opus 4.6 the first time score crosses ≥ 0.92
 
 ## Key Paths (read-only references, never write to these)
 - Claude Code logs: `~/.claude/projects/**/*.jsonl`
