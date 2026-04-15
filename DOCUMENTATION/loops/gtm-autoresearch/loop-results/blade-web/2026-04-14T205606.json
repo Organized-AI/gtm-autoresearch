@@ -1,0 +1,561 @@
+{
+  "startTime": "2026-04-14T20:56:06.554Z",
+  "client": {
+    "id": "blade-web",
+    "label": "BLADE Web"
+  },
+  "templatePath": "content/clients/blade/web-GTM-W9S77T7.json",
+  "metaSnapshotPath": "data/clients/blade/meta-ads-snapshot.json",
+  "rounds": 30,
+  "bestScore": 0.7615616246498597,
+  "startScore": 0.752738095238095,
+  "finalScore": 0.7615616246498597,
+  "outcomes": {
+    "improved": 6,
+    "reverted": 24,
+    "valFails": 0,
+    "jsonFails": 0
+  },
+  "results": [
+    {
+      "round": 0,
+      "score": 0.752738095238095,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "improved",
+      "mutationSummary": "Score 71.3% → 75.3%"
+    },
+    {
+      "round": 1,
+      "score": 0.7545028011204479,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4176470588235294,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "improved",
+      "mutationSummary": "Score 75.3% → 75.5%"
+    },
+    {
+      "round": 2,
+      "score": 0.7545028011204479,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4176470588235294,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "75.5% <= 75.5%, reverted"
+    },
+    {
+      "round": 3,
+      "score": 0.7562675070028008,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.43529411764705883,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "improved",
+      "mutationSummary": "Score 75.5% → 75.6%"
+    },
+    {
+      "round": 4,
+      "score": 0.7580322128851539,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.45294117647058824,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "improved",
+      "mutationSummary": "Score 75.6% → 75.8%"
+    },
+    {
+      "round": 5,
+      "score": 0.7580322128851539,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.45294117647058824,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "75.8% <= 75.8%, reverted"
+    },
+    {
+      "round": 6,
+      "score": 0.7580322128851539,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.45294117647058824,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "75.8% <= 75.8%, reverted"
+    },
+    {
+      "round": 7,
+      "score": 0.7580322128851539,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.45294117647058824,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "75.8% <= 75.8%, reverted"
+    },
+    {
+      "round": 8,
+      "score": 0.7580322128851539,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.45294117647058824,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "75.8% <= 75.8%, reverted"
+    },
+    {
+      "round": 9,
+      "score": 0.7580322128851539,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.45294117647058824,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "75.8% <= 75.8%, reverted"
+    },
+    {
+      "round": 10,
+      "score": 0.7597969187675068,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.47058823529411764,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "improved",
+      "mutationSummary": "Score 75.8% → 76.0%"
+    },
+    {
+      "round": 11,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "improved",
+      "mutationSummary": "Score 76.0% → 76.2%"
+    },
+    {
+      "round": 12,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 13,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 14,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 15,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 16,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 17,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 18,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 19,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 20,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 21,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 22,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 23,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 24,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 25,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 26,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 27,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 28,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    },
+    {
+      "round": 29,
+      "score": 0.7615616246498597,
+      "dimensions": {
+        "leadCapture": 1,
+        "bookingConversion": 0.7,
+        "customConversionParity": 0.7,
+        "capiDedup": 0.5,
+        "consent": 0.4882352941176471,
+        "triggerQuality": 0.9047619047619048,
+        "variableHygiene": 0.95,
+        "naming": 0.5,
+        "googleAdsCoverage": 1
+      },
+      "issueCount": 13,
+      "action": "reverted",
+      "mutationSummary": "76.2% <= 76.2%, reverted"
+    }
+  ]
+}

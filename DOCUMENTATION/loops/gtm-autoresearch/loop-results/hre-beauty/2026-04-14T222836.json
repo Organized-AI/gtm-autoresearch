@@ -1,0 +1,111 @@
+{
+  "startTime": "2026-04-14T22:28:36.515Z",
+  "client": {
+    "id": "hre-beauty",
+    "label": "HRE Beauty"
+  },
+  "templatePath": "content/clients/hre-beauty/shopify-ecom-web.json",
+  "metaSnapshotPath": "data/clients/hre-beauty/meta-ads-snapshot.json",
+  "rounds": 5,
+  "bestScore": 0.974,
+  "startScore": 0.9189,
+  "finalScore": 0.974,
+  "outcomes": {
+    "improved": 5,
+    "reverted": 0,
+    "valFails": 0,
+    "jsonFails": 0
+  },
+  "results": [
+    {
+      "round": 0,
+      "score": 0.9189,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.47058823529411764,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851
+      },
+      "issueCount": 23,
+      "action": "improved",
+      "mutationSummary": "Score 85.8% → 91.9%"
+    },
+    {
+      "round": 1,
+      "score": 0.9327,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.5764705882352942,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851
+      },
+      "issueCount": 20,
+      "action": "improved",
+      "mutationSummary": "Score 91.9% → 93.3%"
+    },
+    {
+      "round": 2,
+      "score": 0.9464,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.6823529411764706,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851
+      },
+      "issueCount": 17,
+      "action": "improved",
+      "mutationSummary": "Score 93.3% → 94.6%"
+    },
+    {
+      "round": 3,
+      "score": 0.9602,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.7882352941176471,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851
+      },
+      "issueCount": 14,
+      "action": "improved",
+      "mutationSummary": "Score 94.6% → 96.0%"
+    },
+    {
+      "round": 4,
+      "score": 0.974,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.8941176470588235,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851
+      },
+      "issueCount": 11,
+      "action": "improved",
+      "mutationSummary": "Score 96.0% → 97.4%"
+    }
+  ]
+}

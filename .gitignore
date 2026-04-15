@@ -6,3 +6,7 @@ data/errors/
 data/pipeline.log
 *.log
 .DS_Store
+
+# Claude Code runtime state (per-machine)
+.claude/scheduled_tasks.lock
+.claude/settings.local.json

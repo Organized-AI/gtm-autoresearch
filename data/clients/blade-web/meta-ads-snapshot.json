@@ -1,0 +1,46 @@
+{
+  "account_id": "act_1385707951714513",
+  "account_name": "BLADE",
+  "pixel_id": "311227299268737",
+  "pixel_name": "BLADE - 1385707951714513's Pixel",
+  "date_range": { "since": "2026-03-15", "until": "2026-04-13" },
+  "currency": "USD",
+  "spend": 48168.28,
+  "conversion_events": [
+    {
+      "event": "add_to_cart",
+      "count_7d_click": 15,
+      "count_1d_click": 12,
+      "count_1d_view": 29,
+      "value_7d_click": 0
+    },
+    {
+      "event": "initiate_checkout",
+      "count_7d_click": 51,
+      "count_1d_click": 26,
+      "count_1d_view": 116,
+      "value_7d_click": 0
+    },
+    {
+      "event": "purchase",
+      "count_7d_click": 147,
+      "count_1d_click": 65,
+      "count_1d_view": 263,
+      "value_7d_click": 94258.66
+    },
+    {
+      "event": "search",
+      "count_7d_click": 41,
+      "count_1d_click": 36,
+      "count_1d_view": 71,
+      "value_7d_click": 0
+    },
+    {
+      "event": "lead",
+      "count_7d_click": 95,
+      "count_1d_click": 58,
+      "count_1d_view": 170,
+      "value_7d_click": 1970
+    }
+  ]
+}

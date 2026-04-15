@@ -62,7 +62,9 @@ gtm.importContainer(config)
 8. Folder organization
 9. Meta Ads alignment (weighted by conversion value)
 
-Each round: score → build prompt → mutate via Claude Haiku → validate → keep/revert → repeat.
+Each round: score → build prompt → mutate → validate → keep/revert → repeat.
+
+**Two-tier model strategy** — Claude Sonnet drives exploration while the score is still climbing. Once the combined score hits **0.92**, the loop escalates to **Claude Opus 4.6** to squeeze the last points out of an already-good config. This keeps token spend low during broad optimization and reserves the stronger model for the hard part.
 
 ## Usage
 
@@ -79,4 +81,9 @@ npx tsx scripts/hydrate-gtm-template.ts client-config.json
 
 ## Cost
 
-~30 rounds x ~3K tokens = ~90K tokens total. About $0.15 per full run on Claude Haiku.
+~30 rounds × ~3K tokens ≈ ~90K tokens total per client.
+
+- **Sonnet phase** (score < 0.92): ~$0.60 per client — this is where most rounds live
+- **Opus 4.6 phase** (score ≥ 0.92): only runs until plateau (≥0.92 for 3 rounds) or the round budget ends, so usually a small handful of rounds on top
+
+The escalation trigger means you only pay the Opus premium once Sonnet has already done the heavy lifting.

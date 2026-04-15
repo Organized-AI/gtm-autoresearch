@@ -1,0 +1,561 @@
+{
+  "startTime": "2026-04-14T21:21:01.726Z",
+  "client": {
+    "id": "blade-server",
+    "label": "BLADE Server"
+  },
+  "templatePath": "content/clients/blade/server-GTM-KJHX6KJ7.json",
+  "metaSnapshotPath": "data/clients/blade/meta-ads-snapshot.json",
+  "rounds": 30,
+  "bestScore": 0.8210714285714285,
+  "startScore": 0.48357142857142843,
+  "finalScore": 0.8210714285714285,
+  "outcomes": {
+    "improved": 5,
+    "reverted": 25,
+    "valFails": 0,
+    "jsonFails": 0
+  },
+  "results": [
+    {
+      "round": 0,
+      "score": 0.48357142857142843,
+      "dimensions": {
+        "dataClientCoverage": 0.5,
+        "capiConfig": 0.3999999999999999,
+        "piiHashing": 0.5,
+        "consentForwarding": 0,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 13,
+      "action": "improved",
+      "mutationSummary": "Score 38.4% → 48.4%"
+    },
+    {
+      "round": 1,
+      "score": 0.5960714285714285,
+      "dimensions": {
+        "dataClientCoverage": 0.5,
+        "capiConfig": 0.3999999999999999,
+        "piiHashing": 0.5,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 13,
+      "action": "improved",
+      "mutationSummary": "Score 48.4% → 59.6%"
+    },
+    {
+      "round": 2,
+      "score": 0.6710714285714285,
+      "dimensions": {
+        "dataClientCoverage": 0.5,
+        "capiConfig": 0.3999999999999999,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 12,
+      "action": "improved",
+      "mutationSummary": "Score 59.6% → 67.1%"
+    },
+    {
+      "round": 3,
+      "score": 0.7460714285714286,
+      "dimensions": {
+        "dataClientCoverage": 0.5,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 9,
+      "action": "improved",
+      "mutationSummary": "Score 67.1% → 74.6%"
+    },
+    {
+      "round": 4,
+      "score": 0.7460714285714286,
+      "dimensions": {
+        "dataClientCoverage": 0.5,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 9,
+      "action": "reverted",
+      "mutationSummary": "74.6% <= 74.6%, reverted"
+    },
+    {
+      "round": 5,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "improved",
+      "mutationSummary": "Score 74.6% → 82.1%"
+    },
+    {
+      "round": 6,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 7,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 8,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 9,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 10,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 11,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 12,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 13,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 14,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 15,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "82.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 16,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 17,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 18,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 19,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 20,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 21,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 22,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 23,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 24,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 25,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "82.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 26,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "75.1% <= 82.1%, reverted"
+    },
+    {
+      "round": 27,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 28,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "67.6% <= 82.1%, reverted"
+    },
+    {
+      "round": 29,
+      "score": 0.8210714285714285,
+      "dimensions": {
+        "dataClientCoverage": 1,
+        "capiConfig": 0.7,
+        "piiHashing": 1,
+        "consentForwarding": 0.75,
+        "eventNormalization": 0.55,
+        "templateSafety": 1,
+        "requestRouting": 1,
+        "variableHygiene": 1,
+        "naming": 0.5714285714285714
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "82.1% <= 82.1%, reverted"
+    }
+  ]
+}

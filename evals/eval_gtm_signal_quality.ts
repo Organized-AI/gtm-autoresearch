@@ -834,7 +834,11 @@ async function main(): Promise<void> {
   console.log("");
 }
 
-main().catch((err) => {
-  console.error("[EvalGTM] Error:", err.message);
-  process.exit(1);
-});
+import { pathToFileURL } from "node:url";
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error("[EvalGTM] Error:", err.message);
+    process.exit(1);
+  });
+}

@@ -1,0 +1,82 @@
+{
+  "startTime": "2026-04-14T16:57:13.257Z",
+  "templatePath": "content/gtm-templates/shopify-ecom-web.json",
+  "rounds": 4,
+  "bestScore": 0.938,
+  "startScore": 0.899,
+  "finalScore": 0.938,
+  "results": [
+    {
+      "round": 0,
+      "score": 0.899,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.3176470588235294,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851
+      },
+      "issueCount": 17,
+      "action": "improved",
+      "mutationSummary": "Score 85.8% → 89.9%"
+    },
+    {
+      "round": 1,
+      "score": 0.938,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.6,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 1
+      },
+      "issueCount": 8,
+      "action": "improved",
+      "mutationSummary": "Score 89.9% → 93.8%"
+    },
+    {
+      "round": 2,
+      "score": 0.938,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.6,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 1
+      },
+      "issueCount": 8,
+      "action": "json_fail",
+      "mutationSummary": "Invalid JSON: Expected ',' or '}' after property value in JSON at position 21855 (line 1 column 21856)"
+    },
+    {
+      "round": 3,
+      "score": 0.938,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.6,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 1
+      },
+      "issueCount": 8,
+      "action": "reverted",
+      "mutationSummary": "93.8% <= 93.8%, reverted"
+    }
+  ]
+}
