@@ -69,15 +69,32 @@ Each round: score → build prompt → mutate → validate → keep/revert → r
 ## Usage
 
 ```bash
-# run the loop
+# run the loop for all clients listed in program.md
 npx tsx scripts/run-gtm-loop.ts
 
+# run for a specific client
+npm run gtm-loop -- --client blade-web
+npm run gtm-loop -- --client hre-beauty
+
+# inspect drift between any two versions in KV
+npx tsx scripts/drift.ts <client> --runs
+npx tsx scripts/drift.ts <client> --seed-vs-best
+npx tsx scripts/drift.ts <client> <runId> <fromRound> <toRound>
+
 # run the eval standalone
-npx tsx evals/eval_gtm_signal_quality.ts content/gtm-templates/shopify-ecom-web.json
+npx tsx evals/eval_gtm_signal_quality.ts content/clients/hre-beauty/shopify-ecom-web.json
 
 # hydrate a template with client values
 npx tsx scripts/hydrate-gtm-template.ts client-config.json
 ```
+
+## Guide
+
+- **[gtm-autoresearch-guide.pages.dev](https://gtm-autoresearch-guide.pages.dev/)** — hosted guide site
+- **[Architecture](DOCUMENTATION/ARCHITECTURE.md)** — system diagram, per-round data flow, mutation protocol (RFC 6902 JSON Patch), KV schema, drift reconstruction, client onboarding, model escalation, and invariants
+- **[Run program](DOCUMENTATION/loops/gtm-autoresearch/program.md)** — client registry, strategy order, constraints, stop conditions
+- **Client profiles** — [HRE Beauty](content/clients/hre-beauty/profile.md) (Shopify ecom DTC) · [BLADE Web](content/clients/blade-web/profile.md) (lead-gen + high-ticket) · [BLADE Server](content/clients/blade-server/profile.md) (sGTM CAPI)
+- **[Client eval generator skill](.claude/skills/client-eval-generator/SKILL.md)** — workflow for onboarding a new client from Meta Ads + GTM/sGTM exports
 
 ## Cost
 
