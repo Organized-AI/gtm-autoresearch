@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MatchBox — Founder/VC Matching Engine</title>
+<meta name="description" content="MatchBox is a founder/VC matching engine. Forked from ClawBox, it adds a Signal feature that transcribes, scores, and coaches VC-founder calls. Forbes-first rollout with Crowley Capital as the seed node.">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bar:48px;--status:24px;--bg:#0c0b09;--bg-1:#0d1813;--bg-2:#12201a;--bg-3:#182a22;--border:#2a2520;--border-h:#3d3830;--orange:#f97316;--orange-dim:#c2590f;--amber:#fbbf24;--green:#4ade80;--red:#f87171;--blue:#60a5fa;--cyan:#22d3ee;--purple:#a78bfa;--text:#e8e0d0;--text-2:#a09888;--text-3:#6a6058;--text-4:#4a4238;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
+html{scroll-behavior:smooth}
+body{background:#0c0b09;color:var(--text-2);font-family:var(--sans);font-size:14px;line-height:1.7;overflow:hidden;height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(249,115,22,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(249,115,22,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+a{color:var(--orange);text-decoration:none;font-family:var(--mono);font-size:.9em;transition:color .2s}
+a:hover{color:var(--amber)}
+::selection{background:var(--orange-dim);color:var(--text)}
+code{font-family:var(--mono);font-size:.88em;background:var(--bg-3);padding:2px 6px;border-radius:3px;color:var(--amber)}
+.bar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--bar);background:rgba(12,11,9,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px}
+.logo{display:flex;align-items:center;gap:8px;padding-right:20px;border-right:1px solid var(--border);margin-right:4px;flex-shrink:0}
+.logo-badge{background:var(--orange);color:#000;font-family:var(--mono);font-weight:700;font-size:11px;padding:2px 7px;border-radius:3px;letter-spacing:.04em}
+.logo-text{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text);letter-spacing:.04em;white-space:nowrap}
+.logo-text span{color:var(--text-3);font-weight:400}
+.tabs{display:flex;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:0 14px;height:var(--bar);font-family:var(--mono);font-size:11px;color:var(--text-3);letter-spacing:.03em;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .15s;user-select:none}
+.tab:hover{color:var(--text-2);background:rgba(249,115,22,.04)}
+.tab.on{color:var(--orange);border-bottom-color:var(--orange)}
+.td{width:6px;height:6px;border-radius:50%;opacity:.3;background:currentColor}
+.tab.on .td{opacity:1;background:var(--orange)}
+.bar-end{display:flex;align-items:center;gap:12px;padding-left:12px;border-left:1px solid var(--border);margin-left:auto;flex-shrink:0}
+.bar-end a{font-family:var(--mono);font-size:11px;color:var(--text-3)}
+.bar-end a:hover{color:var(--orange)}
+.panels{position:fixed;top:var(--bar);bottom:var(--status);left:0;right:0;overflow-y:auto;z-index:1}
+.panel{display:none;padding:32px 0 80px}
+.panel.on{display:block}
+.pw{max-width:900px;margin:0 auto;padding:0 28px}
+.sh{margin-bottom:28px}
+.sh-eyebrow{font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
+.sh h1{font-family:var(--sans);font-size:clamp(26px,3.8vw,42px);font-weight:700;color:var(--text);line-height:1.15;letter-spacing:-.01em;margin-bottom:10px}
+.sh p{color:var(--text-2);max-width:640px;line-height:1.8}
+.doc{margin-top:32px}
+.doc h2{font-family:var(--sans);font-size:22px;font-weight:700;color:var(--text);margin:40px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.doc h3{font-family:var(--sans);font-size:17px;font-weight:700;color:var(--text);margin:28px 0 10px}
+.doc p{margin-bottom:14px;line-height:1.8}
+.doc ul,.doc ol{margin:10px 0 18px 20px;color:var(--text-2)}
+.doc li{margin-bottom:6px;line-height:1.7}
+.doc strong{color:var(--text);font-weight:600}
+.cb{background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:20px 24px;margin:16px 0 24px;font-family:var(--mono);font-size:12px;line-height:1.9;overflow-x:auto;white-space:pre;color:var(--text-2)}
+.cb .hl{color:var(--orange);font-weight:700}.cb .val{color:var(--amber)}.cb .cmt{color:var(--text-4)}.cb .kw{color:var(--cyan)}.cb .str{color:var(--green)}
+.arch{background:var(--bg);border:1px solid var(--border-h);border-radius:6px;padding:32px 36px;margin:24px 0;font-family:var(--mono);font-size:11px;line-height:1.9;overflow-x:auto;white-space:pre}
+.a-hl{color:var(--orange);font-weight:700}.a-box{color:var(--blue)}.a-arr{color:var(--green)}.a-lbl{color:var(--amber);font-size:10px;letter-spacing:.08em;text-transform:uppercase}.a-dim{color:var(--text-4)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:20px 0 28px}
+.info-card{background:var(--bg-2);border:1px solid var(--border);border-radius:4px;padding:20px;transition:border-color .2s}
+.info-card:hover{border-color:var(--orange)}
+.info-card h4{font-family:var(--mono);font-size:12px;color:var(--orange);margin-bottom:6px;letter-spacing:.06em}
+.info-card p{font-size:12px;color:var(--text-2);line-height:1.7}
+.cfg-table{width:100%;border-collapse:collapse;margin:16px 0 24px;font-size:12px}
+.cfg-table th{font-family:var(--mono);font-size:11px;color:var(--orange);text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);letter-spacing:.06em;text-transform:uppercase}
+.cfg-table td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text-2);font-family:var(--mono)}
+.cfg-table td:first-child{color:var(--text);font-size:12px}
+.cfg-table tr:hover td{background:var(--bg-2)}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.pill{display:flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border);padding:5px 12px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--text-2)}
+.pill-dot{width:6px;height:6px;border-radius:50%}
+.pill-dot.ok{background:var(--green)}.pill-dot.warn{background:var(--amber)}.pill-dot.off{background:var(--text-4)}
+.layer-stack{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin:20px 0}
+.layer{display:flex;justify-content:space-between;align-items:center;background:var(--bg-1);padding:14px 20px}
+.layer.active{background:var(--bg-2);border-left:3px solid var(--orange)}
+.layer-name{font-family:var(--mono);font-size:12px;color:var(--text)}
+.layer-detail{font-size:11px;color:var(--text-3)}
+.plain{background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.22);border-left:3px solid var(--blue);padding:12px 16px;margin:14px 0 18px;border-radius:0 4px 4px 0;font-size:12.5px;color:var(--text-2);line-height:1.7}
+.plain-lbl{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:700;color:var(--blue);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.plain-term{color:var(--text);font-weight:600}
+.oops{background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.2);border-left:3px solid var(--amber);border-radius:0 4px 4px 0;padding:18px 22px;margin:20px 0 26px}
+.oops-lbl{font-family:var(--mono);font-size:9.5px;font-weight:700;color:var(--amber);letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}
+.oops ul{margin:4px 0 0 0;list-style:none}
+.oops li{font-size:12.5px;color:var(--text-2);line-height:1.7;padding-left:22px;position:relative;margin-bottom:8px}
+.oops li::before{content:"⚠";position:absolute;left:0;top:0;color:var(--amber);font-weight:700}
+.sbar{position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--status);background:var(--bg-2);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:12px;font-family:var(--mono);font-size:9px;color:var(--text-4);letter-spacing:.04em}
+.si{display:flex;align-items:center;gap:5px}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.surl{margin-left:auto;color:var(--text-3)}
+@media(max-width:640px){.bar{padding:0 8px}.logo-text{display:none}.tab{padding:0 10px;font-size:10px}.pw{padding:0 16px}.info-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="logo">
+    <span class="logo-badge">MB</span>
+    <span class="logo-text">MatchBox <span>· founder/VC matching engine</span></span>
+  </div>
+  <div class="tabs">
+    <div class="tab on" data-p="home" onclick="show('home')"><span class="td"></span> Overview</div>
+    <div class="tab" data-p="strategy" onclick="show('strategy')"><span class="td"></span> Strategy</div>
+    <div class="tab" data-p="phases" onclick="show('phases')"><span class="td"></span> Product Phases</div>
+    <div class="tab" data-p="signal" onclick="show('signal')"><span class="td"></span> Signal (v1)</div>
+    <div class="tab" data-p="arch" onclick="show('arch')"><span class="td"></span> Architecture</div>
+    <div class="tab" data-p="delivery" onclick="show('delivery')"><span class="td"></span> Delivery</div>
+    <div class="tab" data-p="dev" onclick="show('dev')"><span class="td"></span> Dev</div>
+    <div class="tab" data-p="runtime" onclick="show('runtime')"><span class="td"></span> Runtime Choice</div>
+    <div class="tab" data-p="hillclimb" onclick="show('hillclimb')"><span class="td"></span> Hill-Climb (AA/AR)</div>
+    <div class="tab" data-p="ops" onclick="show('ops')"><span class="td"></span> Ops &amp; Next</div>
+    <div class="tab" data-p="stakeholders" onclick="show('stakeholders')"><span class="td"></span> Stakeholders</div>
+  </div>
+  <div class="bar-end">
+    <a href="https://github.com/Organized-AI/MatchBox" target="_blank">GitHub</a>
+    <a href="https://matchbox-wiki.pages.dev/" target="_blank">LLM Wiki</a>
+  </div>
+</div>
+
+<div class="panels">
+
+<!-- HOME -->
+<div id="p-home" class="panel on">
+<div class="pw">
+  <div class="sh">
+    <div class="sh-eyebrow">Organized AI · MatchBox</div>
+    <h1>MatchBox — strike the match between founders and VCs</h1>
+    <p>A matching layer that sits on top of a partner fund's existing deal flow. Listens to VC-founder calls, scores sentiment + fit, surfaces coaching notes for the founder and ratings for the VC, and turns high-confidence pairings into portable signal. Not another CRM — the engine that makes the next-best founder obvious.</p>
+  </div>
+
+  <div class="pills">
+    <div class="pill"><span class="pill-dot ok"></span> v1 Signal · shipping</div>
+    <div class="pill"><span class="pill-dot warn"></span> v2 Matching · planned</div>
+    <div class="pill"><span class="pill-dot off"></span> v3 Founder Prep · planned</div>
+    <div class="pill"><span class="pill-dot ok"></span> Forked from ClawBox (Tauri + Bun + React 18)</div>
+    <div class="pill"><span class="pill-dot warn"></span> Forbes-first rollout</div>
+    <div class="pill"><span class="pill-dot warn"></span> Revenue model in negotiation</div>
+  </div>
+
+  <div class="doc">
+    <h2>Product thesis</h2>
+    <p>The best founder–VC matches are obvious in the first 20 minutes of a call. MatchBox makes that signal <strong>legible</strong>, <strong>portable</strong>, and <strong>actionable</strong> — and, critically, <strong>durable</strong> and <strong>confidential</strong>. Memory is the cornerstone of the matching problem; the non-obvious connections between funds and founders only surface once a deep corpus exists. Transcripts are PII — so every analyzer call runs against a <strong>per-fund fine-tuned local Gemma</strong> on <code>claws-mac-mini</code>. Nothing sensitive crosses the Pi-harness boundary. See <a href="#runtime" onclick="show('runtime');return false;">Runtime Choice</a>.</p>
+
+    <h2>Four moves per call</h2>
+    <div class="info-grid">
+      <div class="info-card"><h4>listens</h4><p>Transcribes every VC-founder call and scores sentiment, fit, and red flags. Captures training data for v2 matching.</p></div>
+      <div class="info-card"><h4>matches</h4><p>Pairs founders with the right fund based on call signal plus intake data, not just thesis keywords. (v2 deliverable.)</p></div>
+      <div class="info-card"><h4>coaches</h4><p>Returns founder-ready coaching notes and VC-ready call ratings after each conversation. Closes the feedback loop.</p></div>
+      <div class="info-card"><h4>connects</h4><p>High-confidence deals get shared across a trusted VC network as the subscriber base grows. Network depth compounds.</p></div>
+    </div>
+
+    <h2>At-a-glance flow</h2>
+    <div class="arch"><span class="a-lbl">end-to-end · dual runtime from v1</span>
+
+          <span class="a-box">[Airtable intake]</span>     founders sign up
+                   <span class="a-arr">│</span>  sync
+                   <span class="a-arr">▼</span>
+  VC call ──▶ transcript ──▶ <span class="a-hl">SignalView</span> ──▶ POST /api/signal/calls
+                                                    <span class="a-arr">│</span>
+                               ┌────────────────────┼────────────────────┐
+                               <span class="a-arr">▼</span>                    <span class="a-arr">▼</span>                    <span class="a-arr">▼</span>
+                      <span class="a-hl">[OpenClaw]</span>           <span class="a-hl">[Hermes]</span>            <span class="a-box">[local store]</span>
+                      <span class="a-dim">analyzer</span>            <span class="a-dim">memory + delivery</span>   <span class="a-dim">CallSignal[]</span>
+                      one-shot JSON      Honcho · skills     FundProfile[]
+                               <span class="a-arr">│</span>                    <span class="a-arr">│</span>
+                               <span class="a-arr">▼</span>                    ├──▶ Slack
+                        <span class="a-box">CallSignal</span>              ├──▶ WhatsApp
+                               <span class="a-arr">│</span>                    ├──▶ email
+                               └────────────────────┴──▶ nightly digest</div>
+
+    <div class="plain">
+      <div class="plain-lbl">Seed node</div>
+      <a href="https://crowley-capital.com/" target="_blank">Crowley Capital</a> is the seed node for the curated VC network. Partner contact: <span class="plain-term">Jon Forbes</span>.
+    </div>
+
+    <h2>At a glance</h2>
+    <table class="cfg-table">
+      <tr><th>Key</th><th>Value</th></tr>
+      <tr><td>Repo</td><td>Organized-AI/MatchBox (private · MIT)</td></tr>
+      <tr><td>Default branch</td><td><code>claude/founder-fund-matching-urzts</code></td></tr>
+      <tr><td>Base project</td><td>Forked from <a href="https://github.com/Organized-AI/ClawBox" target="_blank">ClawBox</a> (still reports <code>clawbox</code> in package.json)</td></tr>
+      <tr><td>Shipping surface</td><td>Signal · <code>src/components/SignalView.tsx</code></td></tr>
+      <tr><td>Founder intake</td><td><a href="https://airtable.com/appQJ4zSchyLKGYd4/shrVPWhw0QnhgIaDs" target="_blank">Airtable form</a></td></tr>
+      <tr><td>Strategy call</td><td><a href="https://notes.granola.ai/t/b9784c0c-7577-496c-adf7-ede70daf9699" target="_blank">Granola notes</a></td></tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- STRATEGY -->
+<div id="p-strategy" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 01 · Strategy</div><h1>Strategy</h1><p>Upgrade a working 7/10 VC workflow into the 10/10 industry benchmark by wiring MatchBox into a partner fund's existing process. No forced platform migration.</p></div>
+  <div class="doc">
+    <h2>Forbes-first rollout</h2>
+    <div class="layer-stack">
+      <div class="layer active"><span class="layer-name">Primary · Jon Forbes</span><span class="layer-detail">Proven software funding pipeline · wants ambiguous-industry expansion</span></div>
+      <div class="layer"><span class="layer-name">Non-exclusive</span><span class="layer-detail">Forbes is the case study; same system offered to other funds once proven</span></div>
+    </div>
+    <h2>Why Forbes first</h2>
+    <ul>
+      <li>MatchBox slots in as the matching + signal layer on top of existing deal flow — no CRM migration.</li>
+      <li>Forbes's proven pipeline + infrastructure means integration is additive, not invasive.</li>
+      <li>Ambiguous-industry expansion is the explicit thesis he wants — matches MatchBox's core capability.</li>
+      <li>A reference customer earlier means the subscription tier is easier to price on real outcomes.</li>
+    </ul>
+    <h2>Revenue model — in negotiation</h2>
+    <p>Jake meets Jon Forbes this Friday to lock compensation terms before broader rollout. Options on the table:</p>
+    <ul>
+      <li><strong>Revenue share</strong> on existing portfolio companies uplifted by MatchBox.</li>
+      <li><strong>Deal participation</strong> in successful post-implementation investments.</li>
+      <li><strong>Subscription</strong> for other funds accessing the MatchBox network.</li>
+    </ul>
+    <div class="oops">
+      <div class="oops-lbl">Open question</div>
+      <ul>
+        <li>Terms are not locked yet. All downstream rollout plans depend on the Friday meeting landing.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- PHASES -->
+<div id="p-phases" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 02 · Roadmap</div><h1>Product Phases</h1><p>Three product versions, compounding value — signal captures the training data for matching, matching's ranking signals feed founder prep.</p></div>
+  <div class="doc">
+    <div class="info-grid">
+      <div class="info-card"><h4>v1 · Signal · shipping</h4><p>Turns each VC-founder call into structured signal. Transcribe → sentiment + fit + red flags → coaching notes for the founder + ratings for the VC. Captures training data for v2.</p></div>
+      <div class="info-card"><h4>v2 · Matching · next</h4><p>High-confidence founder ↔ fund pairings. Cross-network deal sharing between subscribed funds. Match quality improves fund-over-fund as the data pool grows.</p></div>
+      <div class="info-card"><h4>v3 · Founder Prep · later</h4><p>AI avatar conducts the initial founder interview. Automated screening before the VC meeting. Due-diligence layer that cuts fraudulent claims and wasted partner time.</p></div>
+    </div>
+
+    <div class="arch"><span class="a-lbl">phases compound · each one produces the training input for the next</span>
+
+  <span class="a-hl">[v1 · SIGNAL]</span>                   <span class="a-hl">[v2 · MATCHING]</span>                  <span class="a-hl">[v3 · FOUNDER PREP]</span>
+   transcribe                      founder ↔ fund pairings             AI avatar interview
+   sentiment · fit · flags         cross-network deal share            automated screening
+   coaching notes                  match quality compounds             due-diligence layer
+        <span class="a-arr">│</span>                                <span class="a-arr">▲</span>                                <span class="a-arr">▲</span>
+        <span class="a-arr">│</span>  every CallSignal                <span class="a-arr">│</span>  ranked matches + reasons         <span class="a-arr">│</span>  founder-side facts
+        <span class="a-arr">│</span>  writes to Hermes memory         <span class="a-arr">│</span>  inform next prep cycle             <span class="a-arr">│</span>  (avatar-interview output)
+        <span class="a-arr">▼</span>                                │                                │
+        └──────────────────▶ <span class="a-box">HERMES HONCHO · fact graph</span> ◀──────────────────┘
+                                  <span class="a-dim">fund · founder · sector · stage · red-flag patterns · coaching tone</span>
+                                  <span class="a-dim">lives on claws-mac-mini at ~/.hermes/memories/</span></div>
+
+    <h2>v1 surface (today)</h2>
+    <ul>
+      <li><code>src/components/SignalView.tsx</code> — the operator UI.</li>
+      <li><code>src/types/signal.ts</code> — <code>FundProfile</code> · <code>CallSignal</code> · <code>SentimentScores</code> · <code>RedFlagHit</code> · <code>AirtableConfigView</code> · <code>AnalyzeCallInput</code>.</li>
+      <li><code>src/services/signal.ts</code> — fetch client against the local backend at <code>http://127.0.0.1:13000</code>.</li>
+      <li><code>src/store/signal.ts</code> — Zustand state: funds, calls, Airtable config, loading/syncing/analyzing flags.</li>
+      <li><code>internal/routes/signal.ts</code> — Hono routes (Airtable config, sync, funds CRUD, analyzer).</li>
+      <li><code>internal/signal/{index,airtable,analyzer}.ts</code> — store + Airtable sync + LLM analyzer.</li>
+    </ul>
+
+    <h2>What Signal is <em>not</em></h2>
+    <ul>
+      <li>Not a recording tool — works off transcripts you already have.</li>
+      <li>Not a standalone SaaS — it's an internal operator surface plus agent delivery into the VC's existing tools.</li>
+      <li>Not yet the matching engine — v1 captures the training signal for v2.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- SIGNAL -->
+<div id="p-signal" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 03 · Signal</div><h1>Signal — the v1 shipping surface</h1><p>Signal turns a call into a structured <code>CallSignal</code>: rating, sentiment scores, red flags with quoted evidence, fact-finding prompts, and coaching notes for the VC.</p></div>
+  <div class="doc">
+    <h2>Data model</h2>
+    <div class="cb"><span class="kw">interface</span> <span class="hl">FundProfile</span> {
+  id, name, thesis, stage, checkSize, sectors[], redFlags, notes
+  source: <span class="str">'manual' | 'airtable'</span>
+  airtableRecordId?, createdAtMs, updatedAtMs
+}
+
+<span class="kw">interface</span> <span class="hl">CallSignal</span> {
+  id, fundId, fundName, founderName, callDate
+  transcriptExcerpt, rating (0-10)
+  sentiment: { enthusiasm, thesisAlignment, concern }   <span class="cmt">// each 0-10</span>
+  redFlags: [{ quote, reason }]
+  factFindingPrompts: string[]
+  coachingForVc, summary
+  model?, createdAtMs
+}
+
+<span class="kw">interface</span> <span class="hl">AirtableConfigView</span> {
+  apiKey (masked), hasApiKey, baseId, tableName, viewName
+}</div>
+
+    <h2>Backend routes — <code>internal/routes/signal.ts</code></h2>
+    <table class="cfg-table">
+      <tr><th>Method + path</th><th>Role</th></tr>
+      <tr><td>GET /api/signal/airtable</td><td>Current Airtable config (API key masked to last 4)</td></tr>
+      <tr><td>PUT /api/signal/airtable</td><td>Patch config · supports <code>clearApiKey</code></td></tr>
+      <tr><td>POST /api/signal/airtable/sync</td><td>Pull <code>FundProfile</code> rows from Airtable</td></tr>
+      <tr><td>GET · POST · PUT · DELETE /api/signal/funds</td><td>Manual fund CRUD (coexists with Airtable-sourced rows)</td></tr>
+      <tr><td>GET · POST · DELETE /api/signal/calls</td><td>Call list + analyze + delete</td></tr>
+    </table>
+
+    <h2>Per-call flow</h2>
+    <div class="arch"><span class="a-lbl">one POST → one CallSignal + two Hermes side-effects</span>
+
+  <span class="a-hl">SignalView</span>  ──▶  POST /api/signal/calls { fundId, founderName, callDate, transcript }
+                                          <span class="a-arr">│</span>
+                                          <span class="a-arr">▼</span>
+                          <span class="a-box">internal/routes/signal.ts</span>
+                                          <span class="a-arr">│</span>
+                                          <span class="a-arr">▼</span>
+              <span class="a-hl">analyzeTranscript(fund, transcript)</span>   <span class="a-dim">internal/signal/analyzer.ts</span>
+                                          <span class="a-arr">│</span>
+                                          <span class="a-arr">▼</span>
+          <span class="a-hl">callOpenclawDefaultModelChatCompletion()</span>   <span class="a-dim">OpenClaw gateway</span>
+                                          <span class="a-arr">│</span>
+                                          <span class="a-arr">▼</span>
+      parse JSON · clampScore · parseRedFlags(max 8) · parsePrompts(max 8)
+                                          <span class="a-arr">│</span>
+                                          <span class="a-arr">▼</span>
+                   <span class="a-box">CallSignal</span> { rating · sentiment · redFlags ·
+                               factFindingPrompts · coachingForVc ·
+                               summary · transcriptExcerpt ≤4000 }
+                                          <span class="a-arr">│</span>
+        ┌─────────────────────────────────┼─────────────────────────────────┐
+        <span class="a-arr">▼</span>                                 <span class="a-arr">▼</span>                                 <span class="a-arr">▼</span>
+  <span class="a-lbl">fire-and-forget</span>                 persist in                       <span class="a-lbl">fire-and-forget</span>
+  <span class="a-hl">Hermes memory write</span>             internal/signal/index            <span class="a-hl">Hermes delivery</span>
+  (signal-memory.ts)                                                 (delivery/hermes.ts)
+        <span class="a-arr">│</span>                                 <span class="a-arr">│</span>                                 <span class="a-arr">│</span>
+        <span class="a-arr">▼</span>                                 <span class="a-arr">▼</span>                                 <span class="a-arr">▼</span>
+  Honcho facts keyed by           200 { call: CallSignal }           Slack · WhatsApp ·
+  fund · founder · sector                                            email · digest
+                                          <span class="a-arr">│</span>
+                                          <span class="a-arr">▼</span>
+                       zustand store ──▶ SignalView re-render</div>
+
+    <h2>Analyzer — <code>internal/signal/analyzer.ts</code></h2>
+    <p>Builds the prompt from the <code>FundProfile</code> + transcript (truncated to <code>MAX_EXCERPT_CHARS = 20_000</code>), calls <code>callOpenclawDefaultModelChatCompletion</code>, validates the JSON response, and produces an <code>AnalyzeResult</code> that gets wrapped into a persisted <code>CallSignal</code>.</p>
+    <ul>
+      <li><strong>Score clamping</strong> — each numeric score rounded to 0.1 and bounded to [0, 10].</li>
+      <li><strong>Red flags cap</strong> — max 8 per call, each carrying a literal <code>quote</code> + <code>reason</code>.</li>
+      <li><strong>Fact-finding prompts</strong> — max 8; the next-call follow-up questions the VC should ask.</li>
+      <li><strong>Transcript truncation</strong> is explicit — appends <code>…[truncated N chars]</code> so the model knows.</li>
+    </ul>
+
+    <div class="plain">
+      <div class="plain-lbl">Why Airtable</div>
+      The founder intake form is already on Airtable — Jake runs the top of funnel there. Signal syncs fund profiles <em>from</em> Airtable rather than inventing a new schema. Base id + table name + view are all config.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ARCH -->
+<div id="p-arch" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 04 · System</div><h1>Architecture</h1><p>MatchBox inherits the ClawBox three-process split: Tauri shell · React 18 SPA · Bun/Hono backend. Signal adds one route module, one store, and one analyzer over that base.</p></div>
+  <div class="arch"><span class="a-lbl">Processes</span>
+
+  <span class="a-box">[Tauri v2 shell · Rust]</span>       <span class="a-dim">src-tauri/</span>  OS integration · autoupdate
+        <span class="a-arr">│</span>
+        <span class="a-arr">▼</span>
+  <span class="a-hl">[React 18 + Vite SPA]</span>         <span class="a-dim">src/</span>         Zustand · Tailwind · en / zh i18n
+        <span class="a-arr">│</span>  fetch http://127.0.0.1:13000
+        <span class="a-arr">▼</span>
+  <span class="a-hl">[Bun / Hono backend]</span>          <span class="a-dim">internal/</span>    routes incl. signal.ts
+        <span class="a-arr">│</span>
+        <span class="a-arr">├──▶</span> <span class="a-box">Airtable</span>              <span class="a-dim">fund intake sync</span>
+        <span class="a-arr">│</span>
+        <span class="a-arr">▼</span>  WebSocket RPC
+  <span class="a-box">[OpenClaw Gateway]</span>           <span class="a-dim">http://127.0.0.1:18789/v1</span>
+        <span class="a-arr">▼</span>
+  <span class="a-box">[LLM provider]</span>               <span class="a-dim">via callOpenclawDefaultModelChatCompletion</span></div>
+
+  <div class="arch"><span class="a-lbl">dual runtime · local Gemma for PII-bearing analysis · Hermes for memory + delivery · OpenClaw non-PII only</span>
+
+                         <span class="a-hl">Bun / Hono backend</span> (127.0.0.1:13000)
+                                    <span class="a-arr">│</span>
+         ┌──────────────────────────┼──────────────────────────┐
+         <span class="a-arr">▼</span>                          <span class="a-arr">▼</span>                          <span class="a-arr">▼</span>
+  <span class="a-box">[local Gemma · MLX]</span>         <span class="a-box">[Hermes Gateway]</span>          <span class="a-box">[OpenClaw Gateway]</span>
+  mlx_lm.server :8080         ai.hermes.gateway          :18789/v1
+  fund-&lt;id&gt;/ LoRA adapters    claws-mac-mini             non-PII tasks only
+  <span class="a-lbl">PII-sensitive analyzer</span>     <span class="a-lbl">memory + delivery</span>         <span class="a-lbl">title suggestions,
+         <span class="a-arr">│</span>                          <span class="a-arr">│</span>                           settings probes</span>
+         <span class="a-arr">▼</span>                          ├──▶ Honcho facts (~/.hermes/memories/)
+ <span class="a-hl">structured JSON</span>              ├──▶ Slack · WhatsApp · email · digest
+ analyzer output               └──▶ metadata-only delivery payloads
+         <span class="a-arr">│</span>                          <span class="a-arr">▲</span>
+         <span class="a-arr">▼</span>                          │
+<span class="a-dim">CallSignal persisted locally</span>  └── fire-and-forget write ◀── local analyzer output
+
+   <span class="a-lbl">degradation mode</span> — if Hermes is unreachable, memory + delivery skip silently;
+                       the analyzer path and the SignalView UX are unaffected.
+   <span class="a-lbl">PII invariant</span> — no transcript crosses the Pi-harness boundary. Lint-gated in code.</div>
+
+  <div class="doc">
+    <h2>Repo layout</h2>
+    <div class="cb">.
+├── <span class="hl">src/</span>
+│   ├── components/
+│   │   ├── <span class="hl">SignalView.tsx</span>        <span class="cmt"># v1 operator UI</span>
+│   │   ├── ChatView · OnboardView · SettingsView · …  <span class="cmt"># inherited from ClawBox</span>
+│   │   └── chat/ · layout/ · plugins/ · sidebar/ · skills/ · soul/ · ui/
+│   ├── services/<span class="hl">signal.ts</span>          <span class="cmt"># fetch client</span>
+│   ├── store/<span class="hl">signal.ts</span>             <span class="cmt"># zustand</span>
+│   └── types/<span class="hl">signal.ts</span>             <span class="cmt"># shared TS types</span>
+├── <span class="hl">internal/</span>
+│   ├── routes/<span class="hl">signal.ts</span>            <span class="cmt"># Hono routes</span>
+│   ├── signal/
+│   │   ├── <span class="hl">index.ts</span>                <span class="cmt"># store (funds + calls + airtable cfg)</span>
+│   │   ├── <span class="hl">airtable.ts</span>             <span class="cmt"># syncFundsFromAirtable</span>
+│   │   └── <span class="hl">analyzer.ts</span>             <span class="cmt"># analyzeTranscript via OpenClaw default model</span>
+│   ├── providers/openclaw-completions.ts  <span class="cmt"># model bridge</span>
+│   ├── channels · onboard · skills · titles · tool-call-summaries
+│   └── routes/{agents,channels,chat,config,cron,models,onboard,sessions,skills,soul,titles,tools}.ts
+├── <span class="hl">src-tauri/</span>                     <span class="cmt"># Tauri v2 Rust shell</span>
+├── <span class="hl">scripts/</span>                       <span class="cmt"># mock-gateway · sync-version · sign-win · …</span>
+├── <span class="hl">docs/</span>                          <span class="cmt"># dependency-policy · openclaw-compatibility · releases · releasing</span>
+├── public/ · test/ · index.html
+└── package.json (still named "clawbox" · v2026.3.17)</div>
+
+    <h2>Inherited from ClawBox</h2>
+    <ul>
+      <li>All 12 backend routes (<code>agents · channels · chat · config · cron · models · onboard · sessions · skills · soul · titles · tools</code>).</li>
+      <li>All non-Signal frontend views (Chat · Cron · Onboard · Plugins · Settings · Skills · Soul · Startup · etc.).</li>
+      <li>Onboarding wizard, Gateway-restart banner, language toggle, theme toggle, i18n en/zh.</li>
+      <li>Scripts: <code>mock-gateway.mjs</code>, <code>smoke-backend</code>, <code>sync-version</code>, Windows signing chain, macOS <code>.dmg</code> build.</li>
+      <li>See the <a href="https://clawbox-guide.pages.dev/" target="_blank">ClawBox guide</a> and <a href="https://clawbox-wiki.pages.dev/" target="_blank">ClawBox wiki</a> for the base surface.</li>
+    </ul>
+
+    <h2>What's new versus ClawBox</h2>
+    <ul>
+      <li><code>SignalView.tsx</code>, <code>signal.ts</code> type/service/store trio, <code>routes/signal.ts</code>, <code>internal/signal/*</code>.</li>
+      <li>MatchBox branding (README, banner.png, logo SVG), founder-intake Airtable hookup.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- DELIVERY -->
+<div id="p-delivery" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 05 · Delivery model</div><h1>Agent, not platform</h1><p>MatchBox ships as an agent. Each VC gets a custom GPT trained on their own process, reachable where they already work — not as a forced migration to a new app.</p></div>
+  <div class="doc">
+    <h2>Surfaces</h2>
+    <div class="info-grid">
+      <div class="info-card"><h4>Slack</h4><p>Coaching notes + call ratings posted directly into the fund's working channel.</p></div>
+      <div class="info-card"><h4>WhatsApp</h4><p>Same signal, delivered where the partner already texts with founders.</p></div>
+      <div class="info-card"><h4>Email</h4><p>Follow-up + next-call prompts surfaced alongside the VC's existing thread.</p></div>
+      <div class="info-card"><h4>Airtable form</h4><p>Founder intake — the <a href="https://airtable.com/appQJ4zSchyLKGYd4/shrVPWhw0QnhgIaDs" target="_blank">signup link</a>. Rows sync into MatchBox's fund store.</p></div>
+    </div>
+
+    <h2>Delivery fanout</h2>
+    <div class="arch"><span class="a-lbl">CallSignal → Hermes gateway → where partner funds actually see it</span>
+
+                              <span class="a-box">CallSignal</span>
+                                   <span class="a-arr">│</span>
+                                   <span class="a-arr">▼</span>
+                     <span class="a-hl">internal/delivery/hermes.ts</span>
+                                   <span class="a-arr">│</span>
+                                   <span class="a-arr">▼</span>
+                   <span class="a-hl">Hermes gateway</span> (claws-mac-mini)
+                   ai.hermes.gateway · launchd-supervised
+                                   <span class="a-arr">│</span>
+    ┌────────────┬────────────┬────┼────────────┬──────────────────┐
+    <span class="a-arr">▼</span>            <span class="a-arr">▼</span>            <span class="a-arr">▼</span>            <span class="a-arr">▼</span>            <span class="a-arr">▼</span>                  <span class="a-arr">▼</span>
+  <span class="a-box">Slack</span>        <span class="a-box">WhatsApp</span>     <span class="a-box">Telegram</span>     <span class="a-box">email</span>         <span class="a-box">SMS</span>            <span class="a-lbl">cron digest</span>
+ Socket Mode    Business API  bot gateway   SMTP/Gmail MCP provider bridge    nightly → Crowley
+@claude_code_                                                                 Capital channel
+   slack
+
+                                   <span class="a-arr">▲</span>
+                                   <span class="a-arr">│</span>
+                          <span class="a-dim">Hermes cron scheduler</span>
+                   <span class="a-dim">0 9 * * * · per-run cost cap · pause/resume</span></div>
+
+    <div class="plain">
+      <div class="plain-lbl">Desktop shell is optional</div>
+      The Tauri desktop app in this repo is the <span class="plain-term">internal operator surface</span>. Partner funds don't have to adopt it to get value — the agent can run headlessly and reach them through the channels above.
+    </div>
+
+    <h2>Network effects</h2>
+    <ul>
+      <li>A curated VC network grows as more funds subscribe.</li>
+      <li>Cross-fund deal sharing for premium members (v2).</li>
+      <li><a href="https://crowley-capital.com/" target="_blank">Crowley Capital</a> seeds network depth.</li>
+      <li>Closes the industry due-diligence gap: fewer fraudulent claims, better fit, less wasted time on poor matches.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- DEV -->
+<div id="p-dev" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 06 · Running from source</div><h1>Dev</h1><p>Engine-identical to ClawBox. Same <code>npm ci → npm run dev</code> loop.</p></div>
+  <div class="doc">
+    <h2>Install + run</h2>
+    <div class="cb"><span class="kw">npm</span> ci
+<span class="kw">npm</span> run dev              <span class="cmt"># frontend (Vite :14200) + backend (Bun :13000)</span>
+<span class="kw">npm</span> run tauri:dev        <span class="cmt"># desktop shell</span></div>
+
+    <h2>OpenClaw for the analyzer</h2>
+    <div class="cb"><span class="kw">npm</span> install -g openclaw@latest
+<span class="kw">openclaw</span> gateway run --dev --auth none --bind loopback --port 18789</div>
+
+    <h2>Build + verify</h2>
+    <div class="cb"><span class="kw">npm</span> run build:frontend
+<span class="kw">npm</span> run build:backend
+<span class="kw">cargo</span> check --manifest-path src-tauri/Cargo.toml</div>
+
+    <h2>Repo hygiene</h2>
+    <div class="cb"><span class="kw">npm</span> run scan:repo
+<span class="kw">npm</span> run audit:licenses
+<span class="kw">npm</span> run audit:deps
+<span class="kw">npm</span> run smoke:backend       <span class="cmt"># against mock-gateway.mjs</span></div>
+
+    <h2>Branch note</h2>
+    <p>Default branch today: <code>claude/founder-fund-matching-urzts</code>. No <code>main</code> at repo root yet — signal + matching work land on topic branches.</p>
+  </div>
+</div>
+</div>
+
+<!-- RUNTIME -->
+<div id="p-runtime" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 07 · Runtime choice · memory-first</div><h1>OpenClaw + Hermes — dual runtime from v1</h1><p>Memory is the cornerstone of MatchBox. Matching funds to founders requires connections that only surface after the corpus is deep enough — unforeseen pattern matches across sectors, stages, and partner appetites. That means Hermes can't wait until v3. It lands alongside OpenClaw in v1, as the memory substrate.</p></div>
+  <div class="doc">
+    <h2>The only real coupling</h2>
+    <p>MatchBox calls <code>callOpenclawDefaultModelChatCompletion</code> in <code>internal/providers/openclaw-completions.ts</code>. That's the sole tight link to OpenClaw. Everything else — the Tauri shell, React frontend, Bun backend, <code>SignalView</code>, the Airtable sync, the analyzer's validation layer — is provider-agnostic. A swap is a provider-module rewrite; an <em>addition</em> (what we're doing) is even cheaper.</p>
+
+    <div class="plain">
+      <div class="plain-lbl">The strategic bet</div>
+      <span class="plain-term">Memory-as-cornerstone.</span> A matching engine without durable cross-call memory is just a sentiment scorer. Founder ↔ fund fit depends on patterns that only emerge over time — "fund X likes early fintech but balks at regulatory risk," "founder Y's second call went better than their first," "these three founders all flagged the same market signal." None of that is visible in a single call. All of it is visible if we write to Hermes memory from call one.
+    </div>
+
+    <h2>Dual-runtime plan (adopted)</h2>
+    <div class="info-grid">
+      <div class="info-card"><h4>OpenClaw · analyzer</h4><p>Keeps doing what it's best at — one-shot structured-JSON analysis of a transcript. Fast, low-latency, mock-testable, Forbes-demo safe. No changes.</p></div>
+      <div class="info-card"><h4>Hermes · memory + delivery</h4><p>Writes every <code>CallSignal</code> into Honcho/Mem0 keyed by fund + founder + sector + stage. Queries return cross-call pattern matches. Same runtime also handles Slack/WhatsApp/email delivery.</p></div>
+    </div>
+
+    <h2>Hermes pros</h2>
+    <ul>
+      <li><strong>Platform delivery is native.</strong> The "agent, not platform" drop into Slack / WhatsApp / email / Telegram is Hermes's core design. MatchBox's stated delivery model maps 1:1.</li>
+      <li><strong>Already running on <code>claws-mac-mini</code>.</strong> Reuse the Pi harness — inherit the launchd supervision, Codex OAuth primary, Gemma-4 self-heal fallback, <code>repo-digest</code> tool surface.</li>
+      <li><strong>Entitlement-funded inference.</strong> Codex OAuth means marginal cost can trend to zero when a ChatGPT subscription covers it. Gemma fallback keeps the analyzer working when Codex blips.</li>
+      <li><strong>Memory system (Honcho / Mem0).</strong> v2 Matching is a learning problem — durable per-partner-fund context across calls comes for free rather than being a custom build.</li>
+      <li><strong>MCP-native.</strong> Airtable MCP, Gmail MCP, CRM MCPs plug in without code changes. Lines up with v3 Founder Prep nicely.</li>
+      <li><strong>Skills hub + learning loop.</strong> v3's AI-avatar interview maps onto Hermes's skill-extraction pattern cleanly.</li>
+      <li><strong>Cron scheduler</strong> built in — scheduled weekly digest emails to partner funds, no custom scheduler needed.</li>
+    </ul>
+
+    <h2>Hermes cons</h2>
+    <ul>
+      <li><strong>Rewrites ClawBox inheritance.</strong> Onboarding wizard, <code>SettingsView</code>, <code>PluginsView</code>, <code>GatewayRestartBanner</code>, <code>internal/compatibility.json</code> all assume OpenClaw. Touches most of them.</li>
+      <li><strong>API shape mismatch.</strong> Hermes is an <em>agent runtime</em> — you talk to session loops, not a raw chat-completion endpoint. The analyzer wants one-shot structured JSON, which is exactly OpenClaw's sweet spot. Bridging requires either a thin wrapper around Hermes's model-normalize layer or framing each call as a fresh session.</li>
+      <li><strong>Loses dev ergonomics.</strong> <code>scripts/mock-gateway.mjs</code> + <code>smoke:backend</code> only exist because OpenClaw has a defined minimum RPC surface. Hermes has no equivalent mock — smoke tests get more expensive.</li>
+      <li><strong>Support boundary blurs.</strong> OpenClaw cleanly splits "client bug vs gateway bug." Swapping means MatchBox inherits Pi-harness operational concerns (self-heal, Codex-OAuth expiry, Gemma fallback).</li>
+      <li><strong>Forbes-rollout risk.</strong> Swap delays the first partner-facing demo. Not a technical risk; a delivery risk — Jake's Friday meeting is the gate.</li>
+      <li><strong>Harder self-host for partners.</strong> OpenClaw: <code>npm i -g openclaw@latest</code>. Hermes: Python venv + service supervisor. If partner funds ever self-host, OpenClaw is a gentler ask.</li>
+    </ul>
+
+    <h2>OpenClaw pros (reasons to stay)</h2>
+    <ul>
+      <li><strong>Already working.</strong> MatchBox is a ClawBox fork; every wire is already run.</li>
+      <li><strong>Purpose-built for this pattern.</strong> Desktop client + portable-vs-system local runtime is OpenClaw's explicit design. Hermes doesn't have that shape.</li>
+      <li><strong>Consistent with the portfolio.</strong> ClawBox, OpenClaw, MatchBox, and future OpenClaw-family desktop products share a single backend contract.</li>
+      <li><strong>Defined minimum RPC surface.</strong> <code>models.list</code>, <code>sessions.*</code>, <code>chat.*</code>, <code>config.*</code> — testable against a mock, easy to reason about.</li>
+    </ul>
+
+    <h2>OpenClaw cons</h2>
+    <ul>
+      <li><strong>Delivery channels not as mature.</strong> Supported, but not deployed through them at Hermes's scale.</li>
+      <li><strong>No persistent memory out of the box.</strong> v2 Matching + v3 Founder Prep both lean on "remember across calls" — more custom work under OpenClaw.</li>
+      <li><strong>No entitlement-funded inference path.</strong> OpenClaw bills through whatever provider you configure. Hermes on the Pi harness has the Codex OAuth escape hatch.</li>
+    </ul>
+
+    <h2>Phased recommendation (memory-first)</h2>
+    <div class="layer-stack">
+      <div class="layer active"><span class="layer-name">v1 Signal · dual runtime from day one</span><span class="layer-detail">OpenClaw analyzer unchanged. Add Hermes memory writes + delivery peer. Memory corpus starts accumulating from call one.</span></div>
+      <div class="layer"><span class="layer-name">v2 Matching</span><span class="layer-detail">Matching engine queries the Hermes memory graph. By now the corpus is deep — surfaces unforeseen fund/founder pairings across sectors and stages.</span></div>
+      <div class="layer"><span class="layer-name">v3 Founder Prep</span><span class="layer-detail">AI avatar interview uses the same memory graph. Founder side of the map populates, not just the VC side.</span></div>
+    </div>
+
+    <div class="plain">
+      <div class="plain-lbl">Revised heuristic</div>
+      <span class="plain-term">Start writing to memory before you need it.</span> You can't retroactively populate Honcho with calls that already happened. Every day MatchBox runs without Hermes memory is a day of corpus loss. OpenClaw stays because it works; Hermes joins because memory is the whole product thesis.
+    </div>
+
+    <h2>PII policy — per-fund local fine-tunes</h2>
+    <p>Transcripts contain named founders, named funds, named partners, financial figures, and confidential thesis signal. None of it leaves the Pi harness. The analyzer runs against a <strong>per-fund fine-tuned local Gemma</strong> served by <strong>MLX</strong> (Apple's Metal-accelerated ML framework); the base Gemma-4 4-bit quant serves as the fallback for funds without a fine-tune yet, via <code>mlx_lm.server</code> on <code>:8080</code>.</p>
+
+    <div class="plain">
+      <div class="plain-lbl">Why MLX on the Mac mini</div>
+      <code>claws-mac-mini</code> is Apple silicon (M-series). MLX is native Metal — better memory efficiency than llama.cpp for fine-tuning, first-class LoRA tooling via <code>mlx_lm.lora</code>, single-framework stack for both inference and training. The <code>mlx_lm.server</code> exposes an OpenAI-compatible <code>/v1/chat/completions</code> endpoint so client code (<code>local-gemma.ts</code>) doesn't care that the runtime changed under it.
+    </div>
+
+    <div class="plain">
+      <div class="plain-lbl">The hard rule</div>
+      <span class="plain-term">No transcript ever crosses the Pi-harness boundary.</span> Codex OAuth, the ChatGPT backend, any external inference path — all barred from seeing call content. Metadata (fund id, call id, rating) can travel over the wire for delivery purposes. Transcript bytes cannot.
+    </div>
+
+    <div class="arch"><span class="a-lbl">PII-safe analyzer routing · everything inside the dashed border stays local</span>
+
+   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+                       claws-mac-mini · Tailnet-only
+   │                                                                     │
+       <span class="a-hl">analyzer(fund, transcript)</span>
+   │            <span class="a-arr">│</span>                                                        │
+                <span class="a-arr">▼</span>
+   │    lookup fund model                                                │
+        <span class="a-arr">│</span>
+   │    ├──▶ fine-tune exists?                                           │
+        │      <span class="a-arr">│</span>
+   │    │      <span class="a-arr">▼</span>                                                      │
+        │   <span class="a-box">mlx_lm.server · fund-N/ + LoRA</span>  fine-tuned on that fund's
+   │    │   ~/.hermes/models/fund-N/         prior CallSignal corpus     │
+        │      <span class="a-arr">│</span>
+   │    │      <span class="a-arr">▼</span>                                                      │
+        │   structured JSON
+   │    │                                                                │
+        └──▶ no fine-tune yet?
+   │           <span class="a-arr">│</span>                                                         │
+               <span class="a-arr">▼</span>
+   │    <span class="a-box">mlx_lm.server · mlx-community/gemma-4-it-4bit</span>  (base, :8080)    │
+            <span class="a-arr">│</span>
+   │        <span class="a-arr">▼</span>                                                          │
+        structured JSON
+   │        <span class="a-arr">│</span>                                                          │
+            ▼
+   │    CallSignal persists locally ──▶ Hermes Honcho (fact writes)      │
+                                               <span class="a-arr">│</span>
+   └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+                                                      <span class="a-arr">▼</span>  metadata only
+                              <span class="a-hl">Hermes delivery</span> · Slack · email · digest
+                              <span class="a-dim">fund id · call id · rating · summary headline</span>
+                              <span class="a-dim">NEVER the raw transcript or red-flag quotes</span></div>
+
+    <h2>Fine-tune pipeline (MLX)</h2>
+    <ol>
+      <li><strong>Corpus.</strong> Each fund's <code>CallSignal</code> history (analyzer inputs + outputs) is the training set. Stored locally under <code>~/.hermes/corpora/fund-&lt;id&gt;/</code> in JSONL. Never exported.</li>
+      <li><strong>Base model.</strong> <code>mlx-community/gemma-4-it-4bit</code> — Gemma 4 instruction-tuned, 4-bit MLX quantisation. Converted once via <code>mlx_lm.convert</code> and cached at <code>~/.hermes/models/gemma-base/</code>.</li>
+      <li><strong>Training.</strong> LoRA adapters via <code>mlx_lm.lora --model gemma-base --train --data &lt;fund-jsonl&gt; --adapter-path &lt;fund-dir&gt;</code>. Runs on-host; the M-series GPU handles it in minutes-to-hours depending on corpus size.</li>
+      <li><strong>Trigger.</strong> Automatic when a fund's corpus crosses a call-count threshold (e.g. 25 analysed calls), or manual via the CLI <code>matchbox finetune &lt;fundId&gt;</code>.</li>
+      <li><strong>Output.</strong> Per-fund directory at <code>~/.hermes/models/fund-&lt;id&gt;/</code> containing the LoRA adapter + config. <code>mlx_lm.server</code> loads by path; optionally <code>mlx_lm.fuse</code> bakes the adapter into a standalone fund model for faster cold loads.</li>
+      <li><strong>Rotation.</strong> Retrain periodically (monthly cadence to start) as the corpus grows. Prior directory preserved as <code>fund-&lt;id&gt;.v&lt;N&gt;/</code> for rollback.</li>
+      <li><strong>Tenancy.</strong> One adapter per fund. A fund's adapter never sees another fund's calls.</li>
+    </ol>
+
+    <h2>What the analyzer provider module looks like</h2>
+    <div class="cb"><span class="cmt">// internal/providers/local-gemma.ts  (replaces the OpenClaw path for PII-bearing calls)</span>
+<span class="cmt">// backed by mlx_lm.server — OpenAI-compatible, so the client shape is unchanged</span>
+
+<span class="kw">export async function</span> <span class="hl">analyzeWithFundModel</span>(fundId, messages) {
+  <span class="kw">const</span> modelAlias = <span class="str">`fund-${fundId}`</span>       <span class="cmt">// e.g. fund-f123</span>
+  <span class="kw">const</span> hasFineTune = <span class="kw">await</span> <span class="hl">adapterExists</span>(modelAlias)
+  <span class="kw">const</span> model = hasFineTune ? modelAlias : <span class="str">'gemma-base'</span>
+
+  <span class="kw">return</span> <span class="hl">fetch</span>(<span class="str">'http://127.0.0.1:8080/v1/chat/completions'</span>, {
+    method: <span class="str">'POST'</span>,
+    headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+    body: JSON.<span class="hl">stringify</span>({ model, messages, temperature: <span class="val">0.2</span> }),
+  })
+}
+
+<span class="cmt">// one-time host setup · done during Phase 0 scaffolding</span>
+<span class="cmt">//   brew install python@3.11</span>
+<span class="cmt">//   pip install mlx-lm</span>
+<span class="cmt">//   mlx_lm.convert --hf-path google/gemma-4-it -q --q-bits 4 --mlx-path ~/.hermes/models/gemma-base</span>
+<span class="cmt">//   mlx_lm.server --model ~/.hermes/models/gemma-base --port 8080 --adapter-path ~/.hermes/models</span></div>
+
+    <h2>Policy invariants (enforced in code)</h2>
+    <ul>
+      <li><code>analyzeTranscript</code> may only call providers whose base URL is <code>127.0.0.1</code> or a Tailnet-scoped host. Lint-gated.</li>
+      <li><code>internal/providers/openclaw-completions.ts</code> is reserved for non-PII tasks (title suggestions, settings probes). An explicit <code>allowExternal: false</code> flag gates every call path.</li>
+      <li>Delivery payloads pass through a sanitiser (<code>internal/delivery/sanitiser.ts</code>) that strips <code>transcriptExcerpt</code> and the <code>redFlags[].quote</code> literal text. Only <code>reason</code> and structured scores travel.</li>
+      <li>Memory writes stay on the Pi harness — Honcho is local; no Mem0 cloud ingestion for fund/founder facts.</li>
+    </ul>
+
+    <h2>Memory write + query</h2>
+    <div class="arch"><span class="a-lbl">how a CallSignal becomes a matchable fact graph · write path + read path</span>
+
+  <span class="a-hl">WRITE PATH</span> — every analysed call
+
+     CallSignal (id=c789, fundId=f123, founderName="Alice Kim", rating=7.8)
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+     <span class="a-hl">signal-memory.write(signal)</span>          <span class="a-dim">internal/memory/signal-memory.ts</span>
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+     structured facts ──────▶ <span class="a-box">Hermes Honcho</span>
+       fund:f123/thesisAlignment/sector:fintech/stage:seed = 8.2
+       fund:f123/coachingTone = "pragmatic-over-visionary"
+       founder:"Alice Kim"/redFlagPattern/regulatory = "we'll ignore SOC2 until Series A"
+       founder:"Alice Kim"/enthusiasm = 9.1
+       call:c789/summary · /rating=7.8 · /model=gpt-4 · /callDate=2026-04-22
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+     persisted in ~/.hermes/memories/  on claws-mac-mini
+
+
+  <span class="a-hl">READ PATH</span> — later, when v2 matching (or a v1 suggestion panel) asks
+
+     GET /api/signal/memory/suggestions?founderName=Alice Kim
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+     <span class="a-box">Hermes Honcho</span> query — "which funds:
+       • have thesisAlignment[sector:fintech][stage:seed] > 7
+       • AND coachingTone compatible with founder's enthusiasm style
+       • AND do NOT flag regulatory risk as blocker
+       • AND haven't seen Alice in the last 30 days"
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+     ranked match candidates  [{ fund, score, reason-chain }, …]
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+     <span class="a-hl">SignalView</span> panel — "What else does this fund care about?"
+     <span class="a-dim">visible in v1 before v2 formally ships</span></div>
+
+    <h2>Integration plan — concrete file map</h2>
+    <h3>Phase 0 · scaffolding (days)</h3>
+    <ul>
+      <li><code>internal/providers/hermes-client.ts</code> — thin client to the Hermes gateway on <code>claws-mac-mini</code>. Mirrors the shape of <code>openclaw-completions.ts</code> but targets <code>ai.hermes.gateway</code>'s HTTP surface. Bearer-auth via a token stored alongside the existing gateway secrets.</li>
+      <li><code>internal/memory/signal-memory.ts</code> — the memory write layer. Every completed <code>CallSignal</code> emits a set of structured facts to Hermes Honcho, keyed by fund id, founder name, sector, stage, and call date.</li>
+      <li><code>internal/delivery/hermes.ts</code> — routes a <code>CallSignal</code> into Slack / WhatsApp / email via Hermes platform adapters. Reuses the same client.</li>
+      <li>Settings: new fields for Hermes gateway URL + per-fund delivery channel id. Backwards-compat — if unset, delivery is skipped and memory writes are a no-op (preserves the current OpenClaw-only flow for tests).</li>
+    </ul>
+
+    <h3>Phase 1 · memory writes during v1 (weeks)</h3>
+    <ul>
+      <li>Hook into <code>POST /api/signal/calls</code>. After the analyzer returns a <code>CallSignal</code>, fire-and-forget a memory write with facts like:
+        <ul>
+          <li><em>fund<code>:&lt;id&gt;</code>/thesisAlignment/<code>sector:&lt;s&gt;</code>/<code>stage:&lt;t&gt;</code> = N</em></li>
+          <li><em>founder<code>:&lt;name&gt;</code>/redFlagPattern/<code>&lt;pattern&gt;</code> = quote</em></li>
+          <li><em>fund<code>:&lt;id&gt;</code>/coachingTone/<code>&lt;style&gt;</code></em></li>
+          <li><em>call<code>:&lt;id&gt;</code>/summary · /rating · /model · /callDate</em></li>
+        </ul>
+      </li>
+      <li>Write errors must not block the user — Hermes is additive, not on the critical path for v1 demo.</li>
+      <li>Log memory-write failures to <code>internal/logger</code>; expose a health indicator in <code>SettingsView</code> so operators know when the memory substrate is stale.</li>
+    </ul>
+
+    <h3>Phase 2 · reads + UI surfacing (follow-up)</h3>
+    <ul>
+      <li><code>GET /api/signal/memory/suggestions?fundId=&amp;founderName=</code> — queries Hermes Honcho for cross-call patterns and returns ranked match candidates.</li>
+      <li>New panel in <code>SignalView</code>: "What else does this fund care about?" powered by memory queries — visible insight even before v2 matching ships.</li>
+      <li>Nightly cron on the Pi harness runs a memory-graph digest that gets posted into the Crowley Capital Slack channel.</li>
+    </ul>
+
+    <h3>Phase 3 · promotion to primary runtime (v3)</h3>
+    <ul>
+      <li>v3 Founder Prep lands. AI avatar interview writes founder-side facts into the same graph.</li>
+      <li>At this point a full OpenClaw → Hermes analyzer swap is cheap (the memory graph is already populated, the client module is already the same shape). Decide then whether to keep the hybrid or consolidate.</li>
+    </ul>
+
+    <h2>What this preserves</h2>
+    <ul>
+      <li><strong>Forbes-demo safety.</strong> OpenClaw analyzer path is unchanged. If Hermes is unavailable, MatchBox degrades gracefully to the current behaviour.</li>
+      <li><strong>Mock-gateway dev loop.</strong> Still works. Hermes writes are no-ops when the URL isn't configured.</li>
+      <li><strong>ClawBox inheritance.</strong> Onboarding wizard, SettingsView, PluginsView all stay wired to OpenClaw. Hermes config lives in an additive settings section.</li>
+      <li><strong>Support boundary clarity.</strong> OpenClaw bugs = client path. Hermes bugs = memory path. Keep them split during the dual-runtime phase.</li>
+    </ul>
+
+    <h2>Risks to watch</h2>
+    <ul>
+      <li><strong>Memory schema drift.</strong> What you write in v1 is what v2 matching has to read. Lock a minimum schema before the first production call. Version it.</li>
+      <li><strong>PII + confidentiality.</strong> Hermes memory now holds partner-fund + founder data. The Pi harness is on a Tailnet, but the memory layer is a new data surface — audit the storage + access paths.</li>
+      <li><strong>Hermes gateway availability.</strong> Memory writes are fire-and-forget, but a silent back-pressure problem could cost you training data. Monitor the Hermes errors log as part of MatchBox ops.</li>
+      <li><strong>Cost of cross-runtime calls.</strong> Analyzer stays on OpenClaw; memory on Hermes. Two gateway auth paths, two config sections, two failure modes. Document them explicitly in <code>SettingsView</code>.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- HILL-CLIMB -->
+<div id="p-hillclimb" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 08 · Hill-climb loops</div><h1>AutoAgent × AutoResearch — two loops, both local</h1><p>MatchBox uses two hill-climb loops that never leave <code>claws-mac-mini</code>. <strong>AutoAgent</strong> evolves the MatchBox harness itself — prompt, validator, tool chain — against a held-out benchmark of real calls. <strong>AutoResearch</strong> evolves each fund's local fine-tune as its corpus grows. Both honour the PII invariant: no transcript crosses the Pi-harness boundary.</p></div>
+  <div class="doc">
+
+    <div class="plain">
+      <div class="plain-lbl">The split in one line</div>
+      <span class="plain-term">AutoAgent</span> mutates <em>what runs</em> (<code>internal/signal/analyzer.ts</code> + prompt + validators). <span class="plain-term">AutoResearch</span> mutates <em>what gets run against</em> (the per-fund Gemma fine-tune). Same closed loop (ρ · σ · ι · ε · κ), different target, different score function.
+    </div>
+
+    <h2>Composition — how the two loops compound</h2>
+    <div class="arch"><span class="a-lbl">the two loops feed each other · everything inside the dashed border stays on claws-mac-mini</span>
+
+   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+
+   │         <span class="a-hl">AUTOAGENT</span> — harness engineering loop                        │
+              <span class="a-arr">│</span>
+   │          <span class="a-arr">▼</span>                                                          │
+          mutates analyzer.ts · prompt · validators
+   │          <span class="a-arr">│</span>                                                          │
+              <span class="a-arr">▼</span>
+   │    better CallSignal quality                                         │
+              <span class="a-arr">│</span>
+   │          <span class="a-arr">▼</span>                                                          │
+        richer Honcho fact graph  (fund · founder · sector · stage)
+   │          <span class="a-arr">│</span>                                                          │
+              <span class="a-arr">▼</span>
+   │    deeper per-fund corpus at ~/.hermes/corpora/fund-&lt;id&gt;/            │
+              <span class="a-arr">│</span>
+   │          <span class="a-arr">▼</span>                                                          │
+          <span class="a-hl">AUTORESEARCH</span> — per-fund fine-tune loop
+   │          <span class="a-arr">│</span>                                                          │
+              <span class="a-arr">▼</span>
+   │   mutates LoRA config · prompt template · hyperparameters            │
+              <span class="a-arr">│</span>
+   │          <span class="a-arr">▼</span>                                                          │
+        retrained fund-&lt;id&gt;/ (MLX LoRA adapter)
+   │          <span class="a-arr">│</span>                                                          │
+              <span class="a-arr">▼</span>
+   │    even better CallSignals for that fund                             │
+              └────────────────▶  back to AutoAgent (next round)
+   │                                                                      │
+
+   └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘</div>
+
+    <h2>Loop A · AutoAgent for the MatchBox harness</h2>
+    <p>The MatchBox analyzer itself is an agent harness. It has a prompt, a tool surface, a validator chain. AutoAgent treats it as the mutation target and hill-climbs against a benchmark of held-out calls.</p>
+
+    <div class="arch"><span class="a-lbl">AutoAgent loop · mutate the harness, score against held-out calls</span>
+
+  <span class="a-hl">program.md</span>  (human-authored directive)
+     <span class="a-dim">"MatchBox analyzer must score F1 ≥ 0.85 on held-out call set.</span>
+     <span class="a-dim"> No external inference. Red-flag quotes must be literal transcript excerpts."</span>
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  <span class="a-hl">Meta-agent</span>  (Claude Code · Codex · local — configured with allowExternal=false)
+            <span class="a-arr">│</span>
+            ├──▶ reads <span class="a-box">internal/signal/analyzer.ts</span>
+            ├──▶ reads <span class="a-box">tasks/</span> (held-out transcripts + expected CallSignals)
+            ├──▶ reads <span class="a-box">results.tsv</span> (prior rounds)
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">ρ · Reflect</span>  — diagnose failure clusters in last round's trajectories
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">σ · Select</span>   — propose prompt / validator / tool edits
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">ι · Improve</span>  — apply edits to analyzer.ts (candidate)
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">ε · Evaluate</span> — run candidate against tasks/ via LOCAL Gemma
+            <span class="a-arr">│</span>    <span class="a-dim">score = mean F1 over (sentiment · redflag-precision · coaching-quality · fit)</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">κ · Commit</span>   — keep if score improved, else revert
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  append { round, score, patch, trajectory-diff } to <span class="a-box">results.tsv</span>
+            <span class="a-arr">│</span>
+            └──▶ <span class="a-dim">loop until convergence or budget exhausted</span></div>
+
+    <h3>AutoAgent setup in the MatchBox repo</h3>
+    <ul>
+      <li><code>program.md</code> at repo root — the only file a human edits regularly. Directive + constraints (no external inference, preserve JSON shape, keep transcript-excerpt truncation).</li>
+      <li><code>tasks/</code> — held-out Harbor-format tasks. Each task: a transcript + an expected <code>CallSignal</code> shape (human-annotated rating, sentiment, red-flag categories).</li>
+      <li><code>results.tsv</code> — append-only round log (score · patch · kept/discarded). Gitignored.</li>
+      <li>Harbor runner points at the local Gemma via <code>--agent-import-path matchbox-analyzer:analyze</code> — never reaches out to an external LLM.</li>
+      <li>Meta-agent = Claude Code or Codex running <em>locally</em>, configured with <code>allowExternal=false</code> so it can't leak transcript fragments into an external provider's context.</li>
+    </ul>
+
+    <h2>Loop B · AutoResearch for per-fund fine-tunes (MLX)</h2>
+    <p>Each fund's LoRA adapter at <code>~/.hermes/models/fund-&lt;id&gt;/</code> is a living artefact. As the fund's corpus grows, the adapter gets retrained via <code>mlx_lm.lora</code>. AutoResearch mutates the fine-tune config (LoRA rank, target-modules, epochs, LR schedule, prompt template) via JSON Patch against a fund-scoped config, and hill-climbs against the fund's held-out eval suite.</p>
+
+    <div class="arch"><span class="a-lbl">AutoResearch loop · mutate fund-&lt;id&gt;/ adapter via mlx_lm.lora, score against the fund's own held-out corpus</span>
+
+  signal source: every new analysed call ──▶ <span class="a-box">~/.hermes/corpora/fund-&lt;id&gt;/</span>
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  significance check: did this fund's accuracy drift below threshold?
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>  yes ──▶
+  <span class="a-lbl">ρ · Reflect</span>   — inspect recent prediction errors vs ground-truth CallSignals
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">σ · Select</span>    — propose fine-tune mutations (RFC 6902 JSON Patch)
+            <span class="a-arr">│</span>    <span class="a-dim">ops: replace /lora_rank · add /prompt-template/section · replace /epochs · …</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">ι · Improve</span>   — apply patch to <span class="a-box">fund-&lt;id&gt;/finetune.config.json</span>
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  <span class="a-hl">mlx_lm.lora</span> --model gemma-base --train --data &lt;fund-jsonl&gt; --adapter-path &lt;candidate&gt;
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  candidate adapter at <span class="a-box">fund-&lt;id&gt;-candidate/</span>
+            <span class="a-arr">│</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">ε · Evaluate</span>  — run candidate against the fund's held-out calls
+            <span class="a-arr">│</span>    <span class="a-dim">score = fund-scoped F1 + coaching-tone-match + red-flag precision</span>
+            <span class="a-arr">▼</span>
+  <span class="a-lbl">κ · Commit</span>    — promote candidate to <span class="a-box">fund-&lt;id&gt;/</span> if better
+            <span class="a-arr">│</span>    archive old as <span class="a-box">fund-&lt;id&gt;.v&lt;N&gt;/</span> for rollback
+            <span class="a-arr">│</span>    optional: <span class="a-box">mlx_lm.fuse</span> to bake adapter into a standalone fused model
+            <span class="a-arr">▼</span>
+  version store: local git at <span class="a-box">~/.hermes/versions/fund-&lt;id&gt;/</span>
+                 + SQLite manifest at <span class="a-box">~/.hermes/versions/manifest.db</span>
+            <span class="a-arr">│</span>
+            └──▶ <span class="a-dim">append patch + score + model hash; never leaves the host</span></div>
+
+    <h3>Why local git + SQLite instead of Cloudflare KV</h3>
+    <p>The sibling <a href="https://autoagent-autoresearch-wiki.pages.dev/#autoresearch" target="_blank">GTM-autoresearch</a> deployment uses Cloudflare KV as the version store. For MatchBox, the version store would contain fund-scoped behaviour signal derived from transcripts — <strong>still PII-adjacent</strong>. So the drift history lives on-host:</p>
+    <ul>
+      <li><strong>Local git repo</strong> at <code>~/.hermes/versions/fund-&lt;id&gt;/</code> — one repo per fund, one commit per round. Each commit contains the applied JSON Patch plus the candidate config. Replayable.</li>
+      <li><strong>SQLite manifest</strong> at <code>~/.hermes/versions/manifest.db</code> — round log (round · fund · score · patch-sha · model-sha · kept/discarded). Queryable without checking out 47 fund repos.</li>
+      <li><strong>No Cloudflare KV for fund data.</strong> KV remains available for non-PII surfaces (the hub index, the public guide deploys) but fund-scoped training signal does not touch it.</li>
+    </ul>
+
+    <h2>Meta-agent sandboxing</h2>
+    <ul>
+      <li><strong>Claude Code or Codex</strong> runs locally against the MatchBox repo. OpenClaw's <code>allowExternal</code> gate is set to <code>false</code> on every meta-agent session.</li>
+      <li><strong>Tasks directory is gitignored.</strong> Held-out transcripts never reach the remote. If a contributor wants to share a benchmark task, they share a <em>synthetic</em> transcript that carries no real PII.</li>
+      <li><strong>Trajectory logs are sanitised</strong> before they land in <code>results.tsv</code>. The sanitiser strips any literal transcript excerpt the meta-agent pasted into its reflection notes.</li>
+      <li><strong>Fine-tune training</strong> runs on-host via <code>mlx_lm.lora</code> on the Mac mini's Metal GPU; no cloud training pipeline. Candidate evaluation and scoring also run via <code>mlx_lm.server</code> — the framework handles both inference and training in one Python environment.</li>
+    </ul>
+
+    <h2>Score functions</h2>
+    <table class="cfg-table">
+      <tr><th>Loop</th><th>Score</th><th>Threshold</th></tr>
+      <tr><td>AutoAgent (harness)</td><td>Mean F1 over sentiment dimensions + red-flag precision + coaching-quality + fit-accuracy · evaluated on the shared held-out task set</td><td>Ship when F1 ≥ 0.85 on the held-out set, with no regression &gt; 0.03 on any dimension</td></tr>
+      <tr><td>AutoResearch (fund fine-tune)</td><td>Fund-scoped F1 · coaching-tone match · red-flag precision against the fund's own held-out corpus</td><td>Promote candidate when &ge; current by &ge; 0.02, with fund-specific partner sign-off</td></tr>
+    </table>
+
+    <h2>Invariants across both loops</h2>
+    <ul>
+      <li>No transcript ever reaches an external LLM — score computation runs against the local Gemma only.</li>
+      <li>Per-fund tenancy — AutoResearch writes per fund; no fund's config sees another fund's data.</li>
+      <li>Reverse-patchable mutations — every AutoResearch patch has a canonical reverse. AutoAgent relies on git revert for rollback.</li>
+      <li>Score-gated commit — κ only promotes when the objective improves and safety invariants hold.</li>
+      <li>Evidence lives on-host — <code>results.tsv</code> (AutoAgent), <code>manifest.db</code> + per-fund git repos (AutoResearch). Both exportable as bundles if partners audit.</li>
+    </ul>
+
+    <div class="plain">
+      <div class="plain-lbl">Why do both loops need to exist</div>
+      <span class="plain-term">AutoAgent alone</span> improves the harness but leaves each fund's base Gemma undifferentiated — matching quality caps out at what the shared prompt can extract. <span class="plain-term">AutoResearch alone</span> improves per-fund models but can't fix a structurally bad analyzer. <span class="plain-term">Both together</span> give you a harness that extracts progressively sharper signal <em>and</em> a per-fund model that learns the fund's specific voice, so each round of each loop makes the other loop's next round easier.
+    </div>
+
+    <h2>What lands when</h2>
+    <div class="layer-stack">
+      <div class="layer active"><span class="layer-name">v1 Signal</span><span class="layer-detail">AutoAgent scaffolding in the repo (program.md · tasks/ · local Harbor runner). One synthetic-data round to prove the loop. No per-fund fine-tune yet.</span></div>
+      <div class="layer"><span class="layer-name">v1 + corpus growth</span><span class="layer-detail">First fund crosses the 25-call threshold → AutoResearch loop triggers → first real per-fund fine-tune. AutoAgent rounds resume against the new, harder tasks.</span></div>
+      <div class="layer"><span class="layer-name">v2 Matching</span><span class="layer-detail">Matching quality is now a direct function of both loops' output. Hermes Honcho queries run against the per-fund models.</span></div>
+      <div class="layer"><span class="layer-name">v3 Founder Prep</span><span class="layer-detail">AutoAgent target surface expands — the avatar-interview harness joins the analyzer as a mutation target. AutoResearch gets a third eval dimension (pre-call screening accuracy).</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- OPS -->
+<div id="p-ops" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 07 · Ops</div><h1>Next steps</h1><p>What's on the calendar, and what needs to land before Forbes rollout broadens.</p></div>
+  <div class="doc">
+    <h2>Open commitments</h2>
+    <table class="cfg-table">
+      <tr><th>Owner</th><th>Item</th></tr>
+      <tr><td>Jake</td><td>Meet Jon Forbes Friday — define compensation structure</td></tr>
+      <tr><td>Jordan</td><td>Create technical guides and development assets (this guide + wiki are the first two)</td></tr>
+      <tr><td>Jordan</td><td>Scaffold Hermes dual runtime — memory writes + delivery peer · start accumulating corpus before v2 matching</td></tr>
+      <tr><td>Team</td><td>Follow-up meeting scheduled for Wednesday or sooner</td></tr>
+      <tr><td>Focus</td><td>Finalize the Forbes partnership terms before broader rollout</td></tr>
+    </table>
+
+    <h2>Strategy artefacts</h2>
+    <ul>
+      <li><a href="https://notes.granola.ai/t/b9784c0c-7577-496c-adf7-ede70daf9699" target="_blank">Granola strategy call notes</a> — canonical source for positioning.</li>
+      <li><a href="https://airtable.com/appQJ4zSchyLKGYd4/shrVPWhw0QnhgIaDs" target="_blank">Airtable founder-intake form</a> — live funnel.</li>
+      <li><a href="https://crowley-capital.com/" target="_blank">Crowley Capital</a> — seed node + reference anchor.</li>
+    </ul>
+
+    <h2>Follow-ups</h2>
+    <ul>
+      <li>Clean up the <code>package.json</code> name + repo URL (still inherited from ClawBox fork).</li>
+      <li>Rename default branch to something durable once Forbes terms are locked.</li>
+      <li>Promote Signal from operator-only to Slack delivery once the analyzer output stabilises.</li>
+      <li>Draft the v2 Matching spec after the v1 corpus has enough calls to validate the prompt.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- STAKEHOLDERS -->
+<div id="p-stakeholders" class="panel">
+<div class="pw">
+  <div class="sh"><div class="sh-eyebrow">Phase 08 · People</div><h1>Stakeholders</h1><p>Who's involved and what they own.</p></div>
+  <div class="doc">
+    <div class="info-grid">
+      <div class="info-card"><h4>Jake</h4><p>Business lead. Owns the Forbes relationship and the Friday compensation meeting. Runs founder intake through Airtable.</p></div>
+      <div class="info-card"><h4>Jordan</h4><p>Technical lead. Owns technical guides, development assets, and the Signal / Matching delivery surface.</p></div>
+      <div class="info-card"><h4>Jon Forbes (Crowley Capital)</h4><p>Primary partner. Proven software funding pipeline; wants expansion into ambiguous industries. MatchBox plugs into his existing deal flow.</p></div>
+      <div class="info-card"><h4>Crowley Capital</h4><p>Seed node for network depth. Anchor fund for the case study.</p></div>
+      <div class="info-card"><h4>Organized AI</h4><p>Parent org. Ships MatchBox alongside ClawBox, OpenClaw, and the broader market projects.</p></div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<div class="sbar">
+  <div class="si"><span class="sdot"></span> matchbox-guide</div>
+  <div class="si">Organized-AI/MatchBox · private</div>
+  <div class="si">Tauri v2 · Bun · React 18</div>
+  <div class="surl" id="surl">matchbox-guide.pages.dev/#home</div>
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  const tab=document.querySelector(`.tab[data-p="${id}"]`);
+  const panel=document.getElementById('p-'+id);
+  if(tab)tab.classList.add('on');
+  if(panel){panel.classList.add('on');panel.scrollTop=0;}
+  document.getElementById('surl').textContent='matchbox-guide.pages.dev/#'+id;
+  history.replaceState(null,null,'#'+id);
+}
+const hash=location.hash.replace('#','');
+if(hash&&document.getElementById('p-'+hash)){show(hash)}
+window.addEventListener('popstate',()=>{
+  const h=location.hash.replace('#','');
+  if(h&&document.getElementById('p-'+h)){show(h)}
+});
+</script>
+
+</body>
+</html>
