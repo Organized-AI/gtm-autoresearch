@@ -1,0 +1,4 @@
+{
+  "name": "wrangler-cli-wiki",
+  "pages_build_output_dir": "../dist/wrangler"
+}
