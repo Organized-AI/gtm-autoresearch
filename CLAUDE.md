@@ -60,6 +60,7 @@ MAX_ROUNDS=30                     # rounds per run
 ### Outputs
 - Winning config: `content/gtm-templates/{CLIENT}/winning/`
 - Experiment log: `content/gtm-templates/{CLIENT}/loop-results/{timestamp}.json`
+- Linear issue (if `LINEAR_API_KEY` is set): one per run in the configured project; titled `Autoresearch · {client} · {bestScore}% (Δpp) · {date}`, body includes run notes + GitHub blob links to all four artifacts. See `scripts/post-to-linear.ts` and the `LINEAR_*` block in `.env.example`.
 
 ### Stop Conditions
 - Score >= 92% sustained for 3 rounds (plateau)

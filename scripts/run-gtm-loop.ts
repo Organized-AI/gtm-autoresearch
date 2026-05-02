@@ -19,6 +19,7 @@ import "dotenv/config";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
+import { postAutoresearchRun } from "./post-to-linear.js";
 import {
   evaluateGtmSignalQuality,
   type GtmContainer,
@@ -1479,6 +1480,24 @@ ${manualSteps.length > 0 ? manualSteps.join("\n") : "All dimensions above 50%. C
   });
   await writeFile(auditPath, auditContent);
   console.log(`[Save] Data audit → ${auditPath}`);
+
+  // ── Post to Linear (no-op if LINEAR_API_KEY unset) ──
+
+  await postAutoresearchRun({
+    client: path.basename(clientDir),
+    template: path.basename(templatePath),
+    startScore: baselineScores.combinedScore,
+    bestScore,
+    rounds: results.length,
+    improved: results.filter((r) => r.action === "improved").length,
+    reverted: results.filter((r) => r.action === "reverted").length,
+    notesPath,
+    logPath,
+    auditPath,
+    winningPath,
+    projectRoot: PROJECT_ROOT,
+    timestamp,
+  });
 
   // ── Summary ──
 
