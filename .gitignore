@@ -4,5 +4,8 @@ dist/
 data/actor-runs/
 data/errors/
 data/pipeline.log
+data/experiments.sqlite
 *.log
 .DS_Store
+docs/
+content/gtm-templates/winning/

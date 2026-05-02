@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLADE — GTM Audit | OrganizedAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #0c0b09;
+  --bg-secondary: #141210;
+  --bg-card: #1a1814;
+  --bg-card-hover: #211e18;
+  --border: #2a2520;
+  --border-hover: #3a3428;
+  --gold: #F5D623;
+  --gold-dim: #8B7A12;
+  --gold-bright: #FFE94A;
+  --gold-glow: rgba(245, 214, 35, 0.06);
+  --gold-glow-strong: rgba(245, 214, 35, 0.12);
+  --rust: #C4943D;
+  --metal: #8a8a8a;
+  --metal-light: #b0b0b0;
+  --text-primary: #f0ece4;
+  --text-secondary: #a09888;
+  --text-muted: #605848;
+  --green: #4ade80;
+  --green-dim: #166534;
+  --red: #f87171;
+  --red-dim: #7f1d1d;
+  --amber: #fbbf24;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --max-width: 1100px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--gold); text-decoration: none; font-family: var(--font-mono); font-size: 0.9em; transition: color 0.2s; }
+a:hover { color: var(--gold-bright); }
+::selection { background: var(--gold-dim); color: var(--text-primary); }
+
+.container { max-width: var(--max-width); margin: 0 auto; padding: 0 2rem; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(12, 11, 9, 0.9);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 0;
+}
+nav .container { display: flex; justify-content: space-between; align-items: center; }
+.nav-logo {
+  font-family: var(--font-mono); font-weight: 800; font-size: 0.85rem;
+  color: var(--text-primary); letter-spacing: 0.18em; text-transform: uppercase;
+}
+.nav-logo span { color: var(--gold); }
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a {
+  font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);
+  letter-spacing: 0.06em; text-transform: uppercase; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text-secondary); }
+.nav-links a.active { color: var(--gold); border-bottom: 1px solid var(--gold); }
+
+/* HERO */
+.audit-hero {
+  margin-top: 60px;
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.audit-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-mono); font-size: 0.7rem; color: var(--gold);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  border: 1px solid var(--gold-dim); padding: 0.35rem 0.85rem;
+  margin-bottom: 1.5rem;
+}
+.audit-badge::before {
+  content: ''; width: 6px; height: 6px; background: var(--gold);
+  border-radius: 50%; animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.audit-hero h1 {
+  font-family: var(--font-mono); font-weight: 800;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  color: var(--text-primary); line-height: 1.15;
+  margin-bottom: 0.8rem;
+}
+.audit-hero h1 em { font-style: normal; color: var(--gold); }
+.audit-hero .subtitle {
+  font-size: 1rem; color: var(--text-secondary); margin-bottom: 1.5rem;
+  max-width: 600px;
+}
+.meta-row {
+  display: flex; gap: 2rem; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);
+}
+.meta-row .label { color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.meta-row .value { color: var(--text-secondary); margin-left: 0.4rem; }
+
+/* SECTIONS */
+section { padding: 3rem 0; }
+.section-border { border-top: 1px solid var(--border); }
+.section-header {
+  font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700;
+  color: var(--gold); letter-spacing: 0.14em; text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+/* METRIC CARDS */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+.metric-card:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
+.metric-label {
+  font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600;
+  color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.metric-value {
+  font-family: var(--font-mono); font-size: 1.6rem; font-weight: 800;
+  color: var(--text-primary); margin-bottom: 0.3rem;
+}
+.metric-value.gold { color: var(--gold); }
+.metric-value.green { color: var(--green); }
+.metric-value.red { color: var(--red); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.muted { color: var(--text-muted); }
+.metric-sub {
+  font-size: 0.8rem; color: var(--text-muted);
+}
+.metric-sub .up { color: var(--green); }
+.metric-sub .down { color: var(--red); }
+.metric-sub .neutral { color: var(--text-muted); }
+
+/* STATUS DOT */
+.status-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 6px; vertical-align: middle;
+}
+.status-dot.green { background: var(--green); box-shadow: 0 0 8px rgba(74, 222, 128, 0.3); }
+.status-dot.red { background: var(--red); box-shadow: 0 0 8px rgba(248, 113, 113, 0.3); }
+.status-dot.amber { background: var(--amber); box-shadow: 0 0 8px rgba(251, 191, 36, 0.3); }
+.status-dot.muted { background: var(--text-muted); }
+
+/* PLATFORM TABLE */
+.platform-table {
+  width: 100%; border-collapse: collapse; font-size: 0.85rem;
+}
+.platform-table th {
+  font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700;
+  color: var(--gold-dim); letter-spacing: 0.1em; text-transform: uppercase;
+  text-align: left; padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+.platform-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.platform-table tr:hover td { background: var(--bg-card); }
+.platform-table .num { font-family: var(--font-mono); text-align: right; }
+.platform-table .currency { font-family: var(--font-mono); color: var(--text-primary); font-weight: 600; }
+
+/* DIMENSION BARS */
+.dim-list { list-style: none; }
+.dim-item {
+  display: grid; grid-template-columns: 180px 1fr 60px;
+  align-items: center; gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.dim-name {
+  font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);
+}
+.dim-bar {
+  height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;
+}
+.dim-bar-fill {
+  height: 100%; border-radius: 3px; transition: width 0.6s ease;
+}
+.dim-bar-fill.high { background: var(--green); }
+.dim-bar-fill.mid { background: var(--amber); }
+.dim-bar-fill.low { background: var(--red); }
+.dim-score {
+  font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
+  text-align: right;
+}
+.dim-score.high { color: var(--green); }
+.dim-score.mid { color: var(--amber); }
+.dim-score.low { color: var(--red); }
+
+/* ALERT */
+.alert {
+  background: var(--bg-card); border: 1px solid var(--border);
+  padding: 1rem 1.5rem; margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  font-size: 0.85rem;
+}
+.alert.warn { border-color: var(--gold-dim); background: var(--gold-glow); }
+.alert-icon { font-size: 1.2rem; }
+
+/* FOOTER */
+footer {
+  padding: 2rem 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .container { padding: 0 1rem; }
+  .metric-grid { grid-template-columns: 1fr 1fr; }
+  .dim-item { grid-template-columns: 140px 1fr 50px; }
+  .meta-row { gap: 1rem; }
+  .nav-links { gap: 1rem; }
+}
+@media (max-width: 480px) {
+  .metric-grid { grid-template-columns: 1fr; }
+  .dim-item { grid-template-columns: 1fr; gap: 0.3rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="container">
+    <div class="nav-logo">ORGANIZED<span>AI</span></div>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/bladeaudit" class="active">BLADE Audit</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="audit-hero">
+  <div class="container">
+    <div class="audit-badge">GTM Audit Report</div>
+    <h1><em>BLADE</em> — Data Collection Audit</h1>
+    <p class="subtitle">GTM container health, ad platform spend, and revenue signal analysis across Meta Ads and Google Ads.</p>
+    <div class="meta-row">
+      <div><span class="label">Container</span><span class="value">GTM-W9S77T7</span></div>
+      <div><span class="label">Score</span><span class="value">76.8%</span></div>
+      <div><span class="label">Snapshot</span><span class="value">2026-04-08</span></div>
+      <div><span class="label">Platforms</span><span class="value">13 integrated</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     LAST 30 DAYS SPEND
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section id="spend">
+  <div class="section-header">Last 30 Days Spend</div>
+
+  <div class="alert warn">
+    <span class="alert-icon">&#9888;</span>
+    <span>Snapshot marked <strong>partial</strong> — API tokens may not be configured. Run <code>refresh-ads-snapshot</code> with valid credentials to populate live data.</span>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-label">Total Ad Spend</div>
+      <div class="metric-value muted">$0.00</div>
+      <div class="metric-sub"><span class="neutral">Mar 8 – Apr 7, 2026</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Meta Ads Spend</div>
+      <div class="metric-value muted">$0.00</div>
+      <div class="metric-sub">act_1385707951714513</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Google Ads Spend</div>
+      <div class="metric-value muted">—</div>
+      <div class="metric-sub">174-183-3734</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Currency</div>
+      <div class="metric-value gold">USD</div>
+      <div class="metric-sub">Both platforms</div>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin:2rem 0 1rem;">Meta Ads — Spend by Event (7d click)</h3>
+  <table class="platform-table">
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th class="num">Conversions</th>
+        <th class="num">Value</th>
+        <th class="num">Browser</th>
+        <th class="num">Server</th>
+        <th class="num">Dedup Rate</th>
+        <th class="num">EMQ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>purchase</td><td class="num">0</td><td class="num currency">$0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num"><span class="status-dot muted"></span>—</td></tr>
+      <tr><td>add_to_cart</td><td class="num">0</td><td class="num currency">$0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num"><span class="status-dot muted"></span>—</td></tr>
+      <tr><td>initiate_checkout</td><td class="num">0</td><td class="num currency">$0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num"><span class="status-dot muted"></span>—</td></tr>
+      <tr><td>view_content</td><td class="num">0</td><td class="num currency">$0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num"><span class="status-dot muted"></span>—</td></tr>
+      <tr><td>page_view</td><td class="num">0</td><td class="num currency">$0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num"><span class="status-dot muted"></span>—</td></tr>
+      <tr><td>search</td><td class="num">0</td><td class="num currency">$0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num"><span class="status-dot muted"></span>—</td></tr>
+      <tr><td>complete_registration</td><td class="num">0</td><td class="num currency">$0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num"><span class="status-dot muted"></span>—</td></tr>
+      <tr><td>lead</td><td class="num">0</td><td class="num currency">$0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num"><span class="status-dot muted"></span>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin:2rem 0 1rem;">Google Ads — Conversion Actions (30d)</h3>
+  <table class="platform-table">
+    <thead>
+      <tr>
+        <th>Action</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th class="num">Conversions</th>
+        <th class="num">Value</th>
+        <th class="num">Window</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Purchase-New</td><td>PURCHASE</td><td><span class="status-dot green"></span>Enabled</td><td class="num">0</td><td class="num currency">$0</td><td class="num">30d</td></tr>
+      <tr><td>Purchase-Repeat</td><td>PURCHASE</td><td><span class="status-dot green"></span>Enabled</td><td class="num">0</td><td class="num currency">$0</td><td class="num">30d</td></tr>
+      <tr><td>Add to Cart</td><td>ADD_TO_CART</td><td><span class="status-dot green"></span>Enabled</td><td class="num">0</td><td class="num currency">$0</td><td class="num">30d</td></tr>
+      <tr><td>Subscribe</td><td>SUBSCRIBE_PAID</td><td><span class="status-dot green"></span>Enabled</td><td class="num">0</td><td class="num currency">$0</td><td class="num">30d</td></tr>
+      <tr><td>Purchase 30d Window</td><td>PURCHASE</td><td><span class="status-dot green"></span>Enabled</td><td class="num">0</td><td class="num currency">$0</td><td class="num">30d</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     REVENUE SIGNAL
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section id="revenue-signal" class="section-border">
+  <div class="section-header">Revenue Signal</div>
+
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-label">Total Revenue (7d click)</div>
+      <div class="metric-value muted">$0.00</div>
+      <div class="metric-sub"><span class="neutral">Meta + Google Ads combined</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Purchase Conversions</div>
+      <div class="metric-value muted">0</div>
+      <div class="metric-sub"><span class="neutral">Meta 7d click + GAds 30d</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">ROAS</div>
+      <div class="metric-value muted">—</div>
+      <div class="metric-sub"><span class="neutral">Revenue / Spend</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Avg. EMQ Score</div>
+      <div class="metric-value muted">—</div>
+      <div class="metric-sub"><span class="neutral">Event Match Quality (0-10)</span></div>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin:2rem 0 1rem;">Funnel Health</h3>
+
+  <div class="alert warn">
+    <span class="alert-icon">&#128200;</span>
+    <span>No funnel data available. Funnel ratios require active conversion events with non-zero counts across the purchase funnel (view_content &rarr; add_to_cart &rarr; checkout &rarr; purchase).</span>
+  </div>
+
+  <h3 style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin:2rem 0 1rem;">CAPI Coverage</h3>
+  <div class="metric-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="metric-card">
+      <div class="metric-label">Browser Events</div>
+      <div class="metric-value muted">0</div>
+      <div class="metric-sub">Pixel-side total</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Server Events</div>
+      <div class="metric-value muted">0</div>
+      <div class="metric-sub">CAPI server-side total</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Dedup Rate</div>
+      <div class="metric-value muted">—</div>
+      <div class="metric-sub">Browser/server overlap</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     GTM CONFIG HEALTH
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section id="config-health" class="section-border">
+  <div class="section-header">GTM Configuration Health</div>
+
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-label">Overall Score</div>
+      <div class="metric-value amber">76.8%</div>
+      <div class="metric-sub"><span class="up">&#9650; +23.2%</span> from seed (53.6%)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Tags</div>
+      <div class="metric-value gold">115</div>
+      <div class="metric-sub">+10 from seed</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Triggers</div>
+      <div class="metric-value gold">46</div>
+      <div class="metric-sub">+4 from seed</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Variables</div>
+      <div class="metric-value gold">72</div>
+      <div class="metric-sub">Unchanged</div>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin:2rem 0 1rem;">12-Dimension Breakdown</h3>
+  <ul class="dim-list">
+    <li class="dim-item"><span class="dim-name">Consent Settings</span><div class="dim-bar"><div class="dim-bar-fill high" style="width:100%"></div></div><span class="dim-score high">100%</span></li>
+    <li class="dim-item"><span class="dim-name">Meta Alignment</span><div class="dim-bar"><div class="dim-bar-fill high" style="width:100%"></div></div><span class="dim-score high">100%</span></li>
+    <li class="dim-item"><span class="dim-name">GAds Alignment</span><div class="dim-bar"><div class="dim-bar-fill high" style="width:100%"></div></div><span class="dim-score high">100%</span></li>
+    <li class="dim-item"><span class="dim-name">Variable Hygiene</span><div class="dim-bar"><div class="dim-bar-fill high" style="width:98%"></div></div><span class="dim-score high">98%</span></li>
+    <li class="dim-item"><span class="dim-name">Trigger Quality</span><div class="dim-bar"><div class="dim-bar-fill high" style="width:89%"></div></div><span class="dim-score high">89%</span></li>
+    <li class="dim-item"><span class="dim-name">Param Completeness</span><div class="dim-bar"><div class="dim-bar-fill high" style="width:86%"></div></div><span class="dim-score high">86%</span></li>
+    <li class="dim-item"><span class="dim-name">Tag Coverage</span><div class="dim-bar"><div class="dim-bar-fill mid" style="width:73%"></div></div><span class="dim-score mid">73%</span></li>
+    <li class="dim-item"><span class="dim-name">Deduplication</span><div class="dim-bar"><div class="dim-bar-fill mid" style="width:50%"></div></div><span class="dim-score mid">50%</span></li>
+    <li class="dim-item"><span class="dim-name">CAPI Coverage</span><div class="dim-bar"><div class="dim-bar-fill mid" style="width:50%"></div></div><span class="dim-score mid">50%</span></li>
+    <li class="dim-item"><span class="dim-name">Funnel Integrity</span><div class="dim-bar"><div class="dim-bar-fill mid" style="width:50%"></div></div><span class="dim-score mid">50%</span></li>
+    <li class="dim-item"><span class="dim-name">Naming Conventions</span><div class="dim-bar"><div class="dim-bar-fill low" style="width:34%"></div></div><span class="dim-score low">34%</span></li>
+    <li class="dim-item"><span class="dim-name">Folder Organization</span><div class="dim-bar"><div class="dim-bar-fill low" style="width:11%"></div></div><span class="dim-score low">11%</span></li>
+  </ul>
+
+  <h3 style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin:2rem 0 1rem;">Integrated Platforms</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:2rem;">
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">GA4</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">Meta Pixel</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">Meta CAPI</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">Google Ads</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">Bing Ads</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">LinkedIn</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">DoubleClick</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">Twitter/X</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">CTV</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">Everflow</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">AdTheorent</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">BlackCrow</span>
+    <span style="display:inline-block;font-family:var(--font-mono);font-size:0.75rem;padding:0.3rem 0.8rem;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);">Quantcast</span>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="container">
+    BLADE GTM Audit &middot; Generated from gtm-autoresearch &middot; Snapshot 2026-04-08
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "client_id": "hre",
+  "client_name": "HRE Beauty",
+  "meta": {
+    "ad_account_id": "act_645790768357540",
+    "pixel_id": "1029907382331846"
+  },
+  "google_ads": {
+    "customer_id": "",
+    "login_customer_id": ""
+  },
+  "gtm": {
+    "account_id": "",
+    "container_id": "",
+    "workspace_id": ""
+  },
+  "snapshot_path": "data/signals/ads-snapshot-enriched.json",
+  "template_path": "content/gtm-templates/HRE/seed/shopify-ecom-web.json",
+  "program_path": "content/gtm-templates/HRE/program.md"
+}

@@ -1,0 +1,73 @@
+{
+  "startTime": "2026-04-08T17:13:12.673Z",
+  "templatePath": "content/gtm-templates/shopify-ecom-web.json",
+  "rounds": 3,
+  "bestScore": 0.948,
+  "startScore": 0.9479,
+  "finalScore": 0.948,
+  "results": [
+    {
+      "round": 0,
+      "score": 0.9479,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 0.9666666666666667,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 0.975,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 19,
+      "action": "improved",
+      "mutationSummary": "Score 84.3% → 94.8%"
+    },
+    {
+      "round": 1,
+      "score": 0.9479,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 0.9666666666666667,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 0.975,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 19,
+      "action": "reverted",
+      "mutationSummary": "94.4% <= 94.8%, reverted"
+    },
+    {
+      "round": 2,
+      "score": 0.948,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 0.9666666666666667,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 0.9761904761904762,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 17,
+      "action": "improved",
+      "mutationSummary": "Score 94.8% → 94.8%"
+    }
+  ]
+}

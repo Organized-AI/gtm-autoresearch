@@ -1,0 +1,43 @@
+{
+  "client": "HRE Beauty",
+  "platform": "Shopify",
+  "container_type": "web",
+  "integrations": ["GA4", "Meta Pixel", "Google Ads", "sGTM (CAPI)"],
+  "seed": {
+    "file": "seed/shopify-ecom-web.json",
+    "score": 84.3,
+    "tags": 17,
+    "triggers": 8,
+    "variables": 14,
+    "description": "Original Shopify ecommerce web container before optimization"
+  },
+  "best": {
+    "file": "winning/best-95.7pct-2026-04-08.json",
+    "score": 95.7,
+    "tags": 21,
+    "triggers": 9,
+    "variables": 14,
+    "improvements": [
+      "Consent Mode v2 initialization tag added",
+      "consentStatus=NEEDED set on all 18 tracking tags",
+      "Meta AddPaymentInfo browser pixel tag added (fixes 15% funnel gap)",
+      "Meta Search browser pixel tag added (captures 67 untracked events)",
+      "CE - search trigger added",
+      "Meta Ads alignment reached 100%",
+      "Variable hygiene improved to 90%"
+    ],
+    "remaining_gaps": [
+      "funnelIntegrity at 70% (sGTM forwarding for add_payment_info needs server-side fix)",
+      "googleAdsAlignment at 80% (Begin Checkout GAds conversion tag needs manual setup)"
+    ]
+  },
+  "winning_configs": [
+    { "file": "winning/best-95.7pct-2026-04-08.json", "score": 95.7, "date": "2026-04-08" },
+    { "file": "winning/95.3pct-2026-04-08.json", "score": 95.3, "date": "2026-04-08" },
+    { "file": "winning/94.8pct-2026-04-08.json", "score": 94.8, "date": "2026-04-08" },
+    { "file": "winning/91.2pct-2026-04-07.json", "score": 91.2, "date": "2026-04-07" },
+    { "file": "winning/84.3pct-baseline-2026-04-08.json", "score": 84.3, "date": "2026-04-08", "note": "baseline - no consent, partial mutations only" }
+  ],
+  "ads_snapshot": "data/signals/ads-snapshot-enriched.json",
+  "last_updated": "2026-04-08"
+}

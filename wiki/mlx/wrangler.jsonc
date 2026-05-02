@@ -1,0 +1,4 @@
+{
+  "name": "mlx-guide",
+  "pages_build_output_dir": "../dist/mlx"
+}

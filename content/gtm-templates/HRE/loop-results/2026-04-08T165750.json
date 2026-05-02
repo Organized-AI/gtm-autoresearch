@@ -1,0 +1,73 @@
+{
+  "startTime": "2026-04-08T16:57:50.035Z",
+  "templatePath": "content/gtm-templates/shopify-ecom-web.json",
+  "rounds": 3,
+  "bestScore": 0.9527,
+  "startScore": 0.9527,
+  "finalScore": 0.9527,
+  "results": [
+    {
+      "round": 0,
+      "score": 0.9527,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 17,
+      "action": "improved",
+      "mutationSummary": "Score 84.3% → 95.3%"
+    },
+    {
+      "round": 1,
+      "score": 0.9527,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 17,
+      "action": "reverted",
+      "mutationSummary": "93.0% <= 95.3%, reverted"
+    },
+    {
+      "round": 2,
+      "score": 0.9527,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 17,
+      "action": "reverted",
+      "mutationSummary": "95.0% <= 95.3%, reverted"
+    }
+  ]
+}

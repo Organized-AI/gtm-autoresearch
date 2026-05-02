@@ -1,57 +1,71 @@
-# auto-research-engine
+# gtm-autoresearch
 
 ## What This Is
-A self-improvement engine that watches Claude Code session logs, extracts tool/MCP/package usage signals, fires the Apify plugin watcher actor, scores adjacency gaps, and auto-generates Obsidian experiment notes + skill stubs + plugin marketplace entries.
-
-This runs quietly in the background on the MacBook (supabowl). It is NOT part of OpenClaw. It is a personal dev intelligence tool.
-
-## Project Path
-`/Users/supabowl/Library/Mobile Documents/com~apple~CloudDocs/BHT Promo iCloud/Organized AI/Windsurf/Autoresearch Engine`
-
-## Machine
-MacBook M1 Pro — username: supabowl
+Karpathy-style autonomous optimization loop for GTM container configs. Scores across 12 dimensions (8 structural + 4 ads-driven), mutates via Claude CLI, validates, keeps or reverts.
 
 ## Tech Stack
 - TypeScript (tsx runner, no compile step needed for scripts)
 - Node.js 18+
-- fswatch (already installed at /opt/homebrew/bin/fswatch)
-- Apify API (REST, no SDK needed)
-- Cloudflare Worker (webhook receiver only)
-- Anthropic API (claude-haiku-4-5 for self-eval gate)
+- Claude CLI (mutation provider)
 
-## Key Paths (read-only references, never write to these)
-- Claude Code logs: `~/.claude/projects/**/*.jsonl`
-- Existing skills: `/mnt/skills/user/` (cross-reference only)
-- Plugin marketplace: `/Users/supabowl/Documents/repos/plugin-marketplace/`
-- Obsidian vault: `$OBSIDIAN_VAULT_PATH` (from .env)
+## GTM Autoresearch Loop
 
-## Output Paths (this engine writes here)
-- Obsidian experiments: `$OBSIDIAN_VAULT_PATH/Planning/experiments/`
-- Skill stubs: `.claude/skills/[tool-name]/SKILL.md`
-- Marketplace stubs: `/Users/supabowl/Documents/repos/plugin-marketplace/[tool-name]/`
+Karpathy-style autonomous optimization loop for GTM container configs. Scores across 12 dimensions (8 structural + 4 ads-driven), mutates via Claude CLI, validates, keeps or reverts.
 
-## Pipeline Order
-```
-fswatch → significance-check → run-actor (+ ad-hoc webhook) → [Cloudflare KV] → fetch-dataset → analyze-adjacency → generate-experiments
-```
+### Key Files
+- `scripts/run-gtm-loop.ts` — Core loop: score → mutate → validate → keep/revert
+- `evals/eval_gtm_signal_quality.ts` — 12-dimension scorer
+- `data/signals/ads-snapshot-enriched.json` — Live snapshot with conversion data
+- `content/gtm-templates/{CLIENT}/program.md` — Loop contract (dimensions, strategies, constraints)
+- `.claude/commands/refresh-ads-snapshot.md` — Slash command to refresh snapshot via MCP
+- `data/clients/{client_id}/config.json` — Per-client account IDs
 
-## Conventions
-- All scripts in `scripts/` run via `npx tsx scripts/[name].ts`
-- Errors logged to `data/errors/{timestamp}.log`, never crash silently
-- All outputs are idempotent — re-running never duplicates
-- Console logs use phase prefix: `[Phase0]`, `[Phase1]`, etc.
-- Every run writes a run manifest to `data/signals/run-history.json`
-- `scripts/run-all.sh` chains the full pipeline in order
+### Data Sources (MCP tools — no API keys needed)
 
-## Environment
-See `.env.example` for all required variables. Copy to `.env` before running.
+| Source | MCP Server | What it provides |
+|---|---|---|
+| Meta Ads | Pipeboard Meta | Conversion events, spend, pixel info, attribution windows |
+| Google Ads | TrueClicks | Conversion actions, counts, values, tag snippets (GAQL) |
+| GTM | google-tag-manager | Live container state (tags, triggers, variables) |
 
-## Phase Execution
+### Running the Loop
 ```bash
-cd /Users/supabowl/Library/Mobile\ Documents/com~apple~CloudDocs/BHT\ Promo\ iCloud/Organized\ AI/Windsurf/Autoresearch\ Engine
-claude --dangerously-skip-permissions
-# Then: "Read PLANNING/CLAUDE-CODE-EXECUTION-RUNBOOK.md and execute the next phase"
+# 1. Refresh snapshot via slash command (uses MCP — no API keys)
+/refresh-ads-snapshot hre
+
+# 2. Run the optimization loop
+npx tsx scripts/run-gtm-loop.ts
 ```
+
+### Per-Client Config
+Each client has `data/clients/{client_id}/config.json`:
+```json
+{
+  "client_id": "hre",
+  "meta": { "ad_account_id": "act_...", "pixel_id": "..." },
+  "google_ads": { "customer_id": "...", "login_customer_id": "..." },
+  "gtm": { "account_id": "...", "container_id": "...", "workspace_id": "..." },
+  "snapshot_path": "data/signals/ads-snapshot-enriched.json",
+  "template_path": "content/gtm-templates/HRE/seed/shopify-ecom-web.json"
+}
+```
+
+### Environment (.env)
+```
+MUTATION_PROVIDER=claude          # or "codex"
+CLAUDE_PATH=/path/to/claude       # claude CLI binary
+MAX_ROUNDS=30                     # rounds per run
+```
+
+### Outputs
+- Winning config: `content/gtm-templates/{CLIENT}/winning/`
+- Experiment log: `content/gtm-templates/{CLIENT}/loop-results/{timestamp}.json`
+
+### Stop Conditions
+- Score >= 92% sustained for 3 rounds (plateau)
+- 3 consecutive regressions
+- 5 consecutive JSON parse failures
+- Max rounds reached
 
 ## Agent Conventions
 - Read this file first on every session

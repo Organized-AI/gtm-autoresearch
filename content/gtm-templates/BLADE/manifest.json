@@ -1,0 +1,52 @@
+{
+  "client": "BLADE",
+  "platform": "Custom (blade.com)",
+  "container_type": "web",
+  "container_public_id": "GTM-W9S77T7",
+  "integrations": ["GA4", "Meta Pixel", "Meta CAPI", "Google Ads", "Bing/Microsoft Ads", "LinkedIn", "DoubleClick", "Twitter/X", "CTV", "Everflow", "AdTheorent", "BlackCrow", "Quantcast"],
+  "meta_ad_account_id": "act_1385707951714513",
+  "meta_pixel_id": "311227299268737",
+  "google_ads_customer_id": "174-183-3734",
+  "seed": {
+    "file": "seed/blade-web.json",
+    "score": 53.6,
+    "tags": 105,
+    "triggers": 42,
+    "variables": 72,
+    "folders": 4,
+    "description": "Original BLADE web container — multi-platform tracking (Meta, Google, Bing, LinkedIn, DoubleClick, Twitter, CTV)"
+  },
+  "sgtm": {
+    "file": "seed/blade-sgtm.json",
+    "description": "BLADE server-side GTM container (not optimized in this loop)"
+  },
+  "best": {
+    "file": "winning/best-76.8pct-2026-04-08.json",
+    "score": 76.8,
+    "tags": 115,
+    "improvements": [
+      "Consent Mode v2 initialization tag added (googtag_init_consent)",
+      "consentStatus=NEEDED set on all 105+ tracking tags",
+      "GA4 Config tag added (was completely missing)",
+      "8 GA4 ecommerce event tags added (view_item, view_item_list, select_item, add_to_cart, view_cart, begin_checkout, add_payment_info, purchase)",
+      "Tag coverage improved from 18% to 100%",
+      "0 errors remaining (down from 115)",
+      "Naming conventions improved from 16% to 20%",
+      "Folder organization improved from 14% to 15%"
+    ],
+    "remaining_gaps": [
+      "namingConventions at 20% — 85+ legacy tags don't follow 'Platform - Event' convention (renaming risk)",
+      "folderOrganization at 13-15% — 90+ tags not assigned to logical folders",
+      "deduplication at 50% — event ID generator not wired to all Meta tags",
+      "capiCoverage at 50% — CAPI data tags are custom HTML, not standard Meta CAPI pattern",
+      "funnelIntegrity at 50% — no live ads data to compute funnel ratios"
+    ],
+    "notes": "Remaining gaps are largely structural debt from legacy tags — fixing naming/folders on 85+ tags would require rename operations beyond the 3-op mutation budget. Consider a dedicated tidy-gtm pass."
+  },
+  "winning_configs": [
+    { "file": "winning/best-76.8pct-2026-04-08.json", "score": 76.8, "date": "2026-04-08", "rounds": 15, "model": "sonnet" }
+  ],
+  "ads_snapshot": "data/signals/blade-ads-snapshot-enriched.json",
+  "program_contract": "content/gtm-templates/BLADE/program.md",
+  "last_updated": "2026-04-08"
+}

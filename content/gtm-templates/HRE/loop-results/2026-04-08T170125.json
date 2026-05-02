@@ -1,0 +1,94 @@
+{
+  "startTime": "2026-04-08T17:01:25.137Z",
+  "templatePath": "content/gtm-templates/shopify-ecom-web.json",
+  "rounds": 4,
+  "bestScore": 0.9565,
+  "startScore": 0.9072,
+  "finalScore": 0.9565,
+  "results": [
+    {
+      "round": 0,
+      "score": 0.9072,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 0.6,
+        "namingConventions": 0.975,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 19,
+      "action": "improved",
+      "mutationSummary": "Score 84.3% → 90.7%"
+    },
+    {
+      "round": 1,
+      "score": 0.9527,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 1,
+        "variableHygiene": 0.875,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 0.9810307414222851,
+        "capiCoverage": 0.9867215189955996,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 17,
+      "action": "improved",
+      "mutationSummary": "Score 90.7% → 95.3%"
+    },
+    {
+      "round": 2,
+      "score": 0.9565,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 1,
+        "variableHygiene": 0.9,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.9943092224266855,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 12,
+      "action": "improved",
+      "mutationSummary": "Score 95.3% → 95.7%"
+    },
+    {
+      "round": 3,
+      "score": 0.9565,
+      "dimensions": {
+        "tagCoverage": 1,
+        "paramCompleteness": 1,
+        "deduplication": 1,
+        "consentSettings": 1,
+        "namingConventions": 1,
+        "variableHygiene": 0.9,
+        "triggerQuality": 1,
+        "folderOrganization": 1,
+        "metaAdsAlignment": 1,
+        "capiCoverage": 0.9943092224266855,
+        "funnelIntegrity": 0.7,
+        "googleAdsAlignment": 0.8
+      },
+      "issueCount": 12,
+      "action": "reverted",
+      "mutationSummary": "94.7% <= 95.7%, reverted"
+    }
+  ]
+}
