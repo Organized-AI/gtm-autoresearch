@@ -1,0 +1,1 @@
+Synthetic container and ads inputs only. pre-extraction-parity.json was generated with the original evaluator from the repository HEAD at the start of this branch, before extraction. It covers structural, Meta-enriched, Google-only and full profiles. It is a parity reference, not a live measurement result.

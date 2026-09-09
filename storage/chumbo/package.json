@@ -1,0 +1,19 @@
+{
+  "name": "gtm-autoresearch-connected",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "check": "deno check --config supabase/functions/gtm-autoresearch/deno.json supabase/functions/gtm-autoresearch/index.ts",
+    "test:ui": "node --test tests/ui.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "chumbo": "0.11.0"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0",
+    "vite": "8.2.2",
+    "vite-plugin-singlefile": "2.3.3"
+  }
+}

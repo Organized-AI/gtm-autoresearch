@@ -1,20 +1,24 @@
 {
   "name": "gtm-autoresearch",
   "version": "0.1.0",
-  "description": "Karpathy-style autonomous optimization loop for GTM container configs — scores, mutates via Claude, validates, keeps or reverts",
+  "description": "Karpathy-style autonomous optimization loop for GTM container configs \u2014 scores, mutates via Claude, validates, keeps or reverts",
   "type": "module",
   "scripts": {
     "eval:gtm": "npx tsx evals/eval_gtm_signal_quality.ts",
     "refresh-snapshot": "npx tsx scripts/refresh-ads-snapshot.ts",
     "gtm-loop": "npx tsx scripts/run-gtm-loop.ts",
-    "typecheck": "npx tsc --noEmit"
+    "typecheck": "npx tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "sync:chumbo": "tsx scripts/sync-chumbo.ts",
+    "check:bundle": "tsx scripts/sync-chumbo.ts --check"
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "zod": "4.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
+    "@types/node": "^20.12.12",
     "tsx": "^4.11.0",
-    "@types/node": "^20.12.12"
+    "typescript": "^5.4.5"
   }
 }

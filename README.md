@@ -19,6 +19,10 @@ Pull ads data → Score config → Mutate via Claude → Validate → Keep/rever
 
 > [github.com/karpathy/autoresearch](https://github.com/karpathy/autoresearch) — same loop, different domain. Agent experiments with tracking configs like it experiments with model architectures.
 
+## Chumbo connection preview
+
+The `codex/chumbo-integration` branch adds authenticated container evaluation, candidate comparison, private Supabase history, and an Organized AI review interface through Chumbo. It reuses this repository’s evaluator. Claude proposes candidates; hosted tools deterministically score supplied JSON and save the evidence. Nothing is applied or published to GTM. See [setup, limits, and verification](storage/chumbo/README.md). The connected path is locally tested; real desktop OAuth and hosted deployment still need rehearsal.
+
 ## Results
 
 Wake up to a **validated workspace**.

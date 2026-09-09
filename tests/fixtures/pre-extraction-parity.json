@@ -1,0 +1,1387 @@
+[
+  {
+    "snapshot": null,
+    "expected": {
+      "combinedScore": 0.3682,
+      "dimensions": [
+        {
+          "name": "tagCoverage",
+          "weight": 0.2,
+          "score": 0.09090909090909091,
+          "issues": [
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_item",
+              "message": "Missing GA4 event tag for \"view_item\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_item_list",
+              "message": "Missing GA4 event tag for \"view_item_list\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "select_item",
+              "message": "Missing GA4 event tag for \"select_item\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "add_to_cart",
+              "message": "Missing GA4 event tag for \"add_to_cart\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_cart",
+              "message": "Missing GA4 event tag for \"view_cart\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "begin_checkout",
+              "message": "Missing GA4 event tag for \"begin_checkout\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "add_payment_info",
+              "message": "Missing GA4 event tag for \"add_payment_info\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "GA4 Config",
+              "message": "Missing required tag: GA4 Config"
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "Conversion Linker",
+              "message": "Missing required tag: Conversion Linker"
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "GAds Conversion",
+              "message": "Missing required tag: GAds Conversion"
+            }
+          ]
+        },
+        {
+          "name": "paramCompleteness",
+          "weight": 0.15,
+          "score": 0.3333333333333333,
+          "issues": [
+            {
+              "dimension": "paramCompleteness",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Missing required param \"sendEcommerceData\""
+            },
+            {
+              "dimension": "paramCompleteness",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Missing required param \"measurementIdOverride\""
+            }
+          ]
+        },
+        {
+          "name": "deduplication",
+          "weight": 0.1,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "deduplication",
+              "severity": "error",
+              "entity": "variables",
+              "message": "Missing CJS Event ID Generator variable"
+            }
+          ]
+        },
+        {
+          "name": "consentSettings",
+          "weight": 0.15,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "consentSettings",
+              "severity": "error",
+              "entity": "container",
+              "message": "Missing Consent Mode v2 initialization tag"
+            },
+            {
+              "dimension": "consentSettings",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "consentStatus is \"missing\" — should be \"NEEDED\""
+            }
+          ]
+        },
+        {
+          "name": "namingConventions",
+          "weight": 0.1,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "namingConventions",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Tag name does not follow \"Platform - Event\" pattern"
+            }
+          ]
+        },
+        {
+          "name": "variableHygiene",
+          "weight": 0.1,
+          "score": 1,
+          "issues": []
+        },
+        {
+          "name": "triggerQuality",
+          "weight": 0.1,
+          "score": 1,
+          "issues": []
+        },
+        {
+          "name": "folderOrganization",
+          "weight": 0.1,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "folderOrganization",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Tag not assigned to any folder"
+            }
+          ]
+        }
+      ],
+      "issues": [
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_item",
+          "message": "Missing GA4 event tag for \"view_item\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_item_list",
+          "message": "Missing GA4 event tag for \"view_item_list\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "select_item",
+          "message": "Missing GA4 event tag for \"select_item\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "add_to_cart",
+          "message": "Missing GA4 event tag for \"add_to_cart\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_cart",
+          "message": "Missing GA4 event tag for \"view_cart\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "begin_checkout",
+          "message": "Missing GA4 event tag for \"begin_checkout\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "add_payment_info",
+          "message": "Missing GA4 event tag for \"add_payment_info\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "GA4 Config",
+          "message": "Missing required tag: GA4 Config"
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "Conversion Linker",
+          "message": "Missing required tag: Conversion Linker"
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "GAds Conversion",
+          "message": "Missing required tag: GAds Conversion"
+        },
+        {
+          "dimension": "paramCompleteness",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Missing required param \"sendEcommerceData\""
+        },
+        {
+          "dimension": "paramCompleteness",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Missing required param \"measurementIdOverride\""
+        },
+        {
+          "dimension": "deduplication",
+          "severity": "error",
+          "entity": "variables",
+          "message": "Missing CJS Event ID Generator variable"
+        },
+        {
+          "dimension": "consentSettings",
+          "severity": "error",
+          "entity": "container",
+          "message": "Missing Consent Mode v2 initialization tag"
+        },
+        {
+          "dimension": "consentSettings",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "consentStatus is \"missing\" — should be \"NEEDED\""
+        },
+        {
+          "dimension": "namingConventions",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Tag name does not follow \"Platform - Event\" pattern"
+        },
+        {
+          "dimension": "folderOrganization",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Tag not assigned to any folder"
+        }
+      ],
+      "tagCount": 1,
+      "triggerCount": 1,
+      "variableCount": 0,
+      "folderCount": 0
+    }
+  },
+  {
+    "snapshot": {
+      "generated_at": "2026-09-09T00:00:00Z",
+      "meta": {
+        "account_id": "1",
+        "account_name": "Synthetic fixture",
+        "pixel_id": "2",
+        "currency": "USD",
+        "spend": 100,
+        "date_range": {
+          "since": "2026-09-01",
+          "until": "2026-09-08"
+        },
+        "conversion_events": [
+          {
+            "event": "Purchase",
+            "count_7d_click": 10,
+            "count_1d_click": 5,
+            "count_1d_view": 1,
+            "value_7d_click": 100,
+            "count_browser": 10,
+            "count_server": 10,
+            "dedup_rate": 0.9,
+            "emq_score": 7
+          }
+        ]
+      },
+      "funnel": []
+    },
+    "expected": {
+      "combinedScore": 0.4053,
+      "dimensions": [
+        {
+          "name": "tagCoverage",
+          "weight": 0.15,
+          "score": 0.09090909090909091,
+          "issues": [
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_item",
+              "message": "Missing GA4 event tag for \"view_item\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_item_list",
+              "message": "Missing GA4 event tag for \"view_item_list\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "select_item",
+              "message": "Missing GA4 event tag for \"select_item\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "add_to_cart",
+              "message": "Missing GA4 event tag for \"add_to_cart\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_cart",
+              "message": "Missing GA4 event tag for \"view_cart\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "begin_checkout",
+              "message": "Missing GA4 event tag for \"begin_checkout\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "add_payment_info",
+              "message": "Missing GA4 event tag for \"add_payment_info\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "GA4 Config",
+              "message": "Missing required tag: GA4 Config"
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "Conversion Linker",
+              "message": "Missing required tag: Conversion Linker"
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "GAds Conversion",
+              "message": "Missing required tag: GAds Conversion"
+            }
+          ]
+        },
+        {
+          "name": "paramCompleteness",
+          "weight": 0.11,
+          "score": 0.3333333333333333,
+          "issues": [
+            {
+              "dimension": "paramCompleteness",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Missing required param \"sendEcommerceData\""
+            },
+            {
+              "dimension": "paramCompleteness",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Missing required param \"measurementIdOverride\""
+            }
+          ]
+        },
+        {
+          "name": "deduplication",
+          "weight": 0.07,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "deduplication",
+              "severity": "error",
+              "entity": "variables",
+              "message": "Missing CJS Event ID Generator variable"
+            }
+          ]
+        },
+        {
+          "name": "consentSettings",
+          "weight": 0.12,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "consentSettings",
+              "severity": "error",
+              "entity": "container",
+              "message": "Missing Consent Mode v2 initialization tag"
+            },
+            {
+              "dimension": "consentSettings",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "consentStatus is \"missing\" — should be \"NEEDED\""
+            }
+          ]
+        },
+        {
+          "name": "namingConventions",
+          "weight": 0.07,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "namingConventions",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Tag name does not follow \"Platform - Event\" pattern"
+            }
+          ]
+        },
+        {
+          "name": "variableHygiene",
+          "weight": 0.07,
+          "score": 1,
+          "issues": []
+        },
+        {
+          "name": "triggerQuality",
+          "weight": 0.08,
+          "score": 1,
+          "issues": []
+        },
+        {
+          "name": "folderOrganization",
+          "weight": 0.06,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "folderOrganization",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Tag not assigned to any folder"
+            }
+          ]
+        },
+        {
+          "name": "metaAdsAlignment",
+          "weight": 0.1,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "metaAdsAlignment",
+              "severity": "info",
+              "entity": "Purchase",
+              "message": "Meta event \"Purchase\" has no known GTM tag pattern (10 events, $100)"
+            }
+          ]
+        },
+        {
+          "name": "capiCoverage",
+          "weight": 0.08,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "capiCoverage",
+              "severity": "warning",
+              "entity": "variables",
+              "message": "Missing Cookie - _fbc variable (needed for CAPI click ID matching)"
+            },
+            {
+              "dimension": "capiCoverage",
+              "severity": "warning",
+              "entity": "variables",
+              "message": "Missing Cookie - _fbp variable (needed for CAPI browser ID matching)"
+            },
+            {
+              "dimension": "capiCoverage",
+              "severity": "warning",
+              "entity": "Purchase",
+              "message": "No browser pixel tag for \"Purchase\" — relying solely on CAPI via sGTM"
+            }
+          ]
+        },
+        {
+          "name": "funnelIntegrity",
+          "weight": 0.09,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "funnelIntegrity",
+              "severity": "info",
+              "entity": "funnel",
+              "message": "No funnel steps computed — verify snapshot has sufficient conversion events"
+            }
+          ]
+        }
+      ],
+      "issues": [
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_item",
+          "message": "Missing GA4 event tag for \"view_item\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_item_list",
+          "message": "Missing GA4 event tag for \"view_item_list\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "select_item",
+          "message": "Missing GA4 event tag for \"select_item\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "add_to_cart",
+          "message": "Missing GA4 event tag for \"add_to_cart\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_cart",
+          "message": "Missing GA4 event tag for \"view_cart\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "begin_checkout",
+          "message": "Missing GA4 event tag for \"begin_checkout\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "add_payment_info",
+          "message": "Missing GA4 event tag for \"add_payment_info\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "GA4 Config",
+          "message": "Missing required tag: GA4 Config"
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "Conversion Linker",
+          "message": "Missing required tag: Conversion Linker"
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "GAds Conversion",
+          "message": "Missing required tag: GAds Conversion"
+        },
+        {
+          "dimension": "paramCompleteness",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Missing required param \"sendEcommerceData\""
+        },
+        {
+          "dimension": "paramCompleteness",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Missing required param \"measurementIdOverride\""
+        },
+        {
+          "dimension": "deduplication",
+          "severity": "error",
+          "entity": "variables",
+          "message": "Missing CJS Event ID Generator variable"
+        },
+        {
+          "dimension": "consentSettings",
+          "severity": "error",
+          "entity": "container",
+          "message": "Missing Consent Mode v2 initialization tag"
+        },
+        {
+          "dimension": "consentSettings",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "consentStatus is \"missing\" — should be \"NEEDED\""
+        },
+        {
+          "dimension": "namingConventions",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Tag name does not follow \"Platform - Event\" pattern"
+        },
+        {
+          "dimension": "folderOrganization",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Tag not assigned to any folder"
+        },
+        {
+          "dimension": "metaAdsAlignment",
+          "severity": "info",
+          "entity": "Purchase",
+          "message": "Meta event \"Purchase\" has no known GTM tag pattern (10 events, $100)"
+        },
+        {
+          "dimension": "capiCoverage",
+          "severity": "warning",
+          "entity": "variables",
+          "message": "Missing Cookie - _fbc variable (needed for CAPI click ID matching)"
+        },
+        {
+          "dimension": "capiCoverage",
+          "severity": "warning",
+          "entity": "variables",
+          "message": "Missing Cookie - _fbp variable (needed for CAPI browser ID matching)"
+        },
+        {
+          "dimension": "capiCoverage",
+          "severity": "warning",
+          "entity": "Purchase",
+          "message": "No browser pixel tag for \"Purchase\" — relying solely on CAPI via sGTM"
+        },
+        {
+          "dimension": "funnelIntegrity",
+          "severity": "info",
+          "entity": "funnel",
+          "message": "No funnel steps computed — verify snapshot has sufficient conversion events"
+        }
+      ],
+      "tagCount": 1,
+      "triggerCount": 1,
+      "variableCount": 0,
+      "folderCount": 0
+    }
+  },
+  {
+    "snapshot": {
+      "generated_at": "2026-09-09T00:00:00Z",
+      "google_ads": {
+        "customer_id": "3",
+        "customer_name": "Synthetic fixture",
+        "currency": "USD",
+        "conversion_actions": [
+          {
+            "id": "1",
+            "name": "Purchase",
+            "category": "PURCHASE",
+            "status": "ENABLED",
+            "counting_type": "MANY_PER_CLICK",
+            "click_through_lookback_window_days": 30,
+            "conversion_count_30d": 10,
+            "conversion_value_30d": 100,
+            "tag_snippets": [
+              "AW-123/fixture"
+            ]
+          }
+        ]
+      },
+      "funnel": []
+    },
+    "expected": {
+      "combinedScore": 0.3238,
+      "dimensions": [
+        {
+          "name": "tagCoverage",
+          "weight": 0.17,
+          "score": 0.09090909090909091,
+          "issues": [
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_item",
+              "message": "Missing GA4 event tag for \"view_item\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_item_list",
+              "message": "Missing GA4 event tag for \"view_item_list\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "select_item",
+              "message": "Missing GA4 event tag for \"select_item\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "add_to_cart",
+              "message": "Missing GA4 event tag for \"add_to_cart\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_cart",
+              "message": "Missing GA4 event tag for \"view_cart\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "begin_checkout",
+              "message": "Missing GA4 event tag for \"begin_checkout\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "add_payment_info",
+              "message": "Missing GA4 event tag for \"add_payment_info\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "GA4 Config",
+              "message": "Missing required tag: GA4 Config"
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "Conversion Linker",
+              "message": "Missing required tag: Conversion Linker"
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "GAds Conversion",
+              "message": "Missing required tag: GAds Conversion"
+            }
+          ]
+        },
+        {
+          "name": "paramCompleteness",
+          "weight": 0.13,
+          "score": 0.3333333333333333,
+          "issues": [
+            {
+              "dimension": "paramCompleteness",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Missing required param \"sendEcommerceData\""
+            },
+            {
+              "dimension": "paramCompleteness",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Missing required param \"measurementIdOverride\""
+            }
+          ]
+        },
+        {
+          "name": "deduplication",
+          "weight": 0.09,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "deduplication",
+              "severity": "error",
+              "entity": "variables",
+              "message": "Missing CJS Event ID Generator variable"
+            }
+          ]
+        },
+        {
+          "name": "consentSettings",
+          "weight": 0.13,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "consentSettings",
+              "severity": "error",
+              "entity": "container",
+              "message": "Missing Consent Mode v2 initialization tag"
+            },
+            {
+              "dimension": "consentSettings",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "consentStatus is \"missing\" — should be \"NEEDED\""
+            }
+          ]
+        },
+        {
+          "name": "namingConventions",
+          "weight": 0.08,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "namingConventions",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Tag name does not follow \"Platform - Event\" pattern"
+            }
+          ]
+        },
+        {
+          "name": "variableHygiene",
+          "weight": 0.08,
+          "score": 1,
+          "issues": []
+        },
+        {
+          "name": "triggerQuality",
+          "weight": 0.1,
+          "score": 1,
+          "issues": []
+        },
+        {
+          "name": "folderOrganization",
+          "weight": 0.08,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "folderOrganization",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Tag not assigned to any folder"
+            }
+          ]
+        },
+        {
+          "name": "googleAdsAlignment",
+          "weight": 0.14,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "googleAdsAlignment",
+              "severity": "error",
+              "entity": "Purchase",
+              "message": "Google Ads conversion \"Purchase\" (PURCHASE, 10 conversions, $100) has no matching GTM tag"
+            }
+          ]
+        }
+      ],
+      "issues": [
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_item",
+          "message": "Missing GA4 event tag for \"view_item\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_item_list",
+          "message": "Missing GA4 event tag for \"view_item_list\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "select_item",
+          "message": "Missing GA4 event tag for \"select_item\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "add_to_cart",
+          "message": "Missing GA4 event tag for \"add_to_cart\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_cart",
+          "message": "Missing GA4 event tag for \"view_cart\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "begin_checkout",
+          "message": "Missing GA4 event tag for \"begin_checkout\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "add_payment_info",
+          "message": "Missing GA4 event tag for \"add_payment_info\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "GA4 Config",
+          "message": "Missing required tag: GA4 Config"
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "Conversion Linker",
+          "message": "Missing required tag: Conversion Linker"
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "GAds Conversion",
+          "message": "Missing required tag: GAds Conversion"
+        },
+        {
+          "dimension": "paramCompleteness",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Missing required param \"sendEcommerceData\""
+        },
+        {
+          "dimension": "paramCompleteness",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Missing required param \"measurementIdOverride\""
+        },
+        {
+          "dimension": "deduplication",
+          "severity": "error",
+          "entity": "variables",
+          "message": "Missing CJS Event ID Generator variable"
+        },
+        {
+          "dimension": "consentSettings",
+          "severity": "error",
+          "entity": "container",
+          "message": "Missing Consent Mode v2 initialization tag"
+        },
+        {
+          "dimension": "consentSettings",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "consentStatus is \"missing\" — should be \"NEEDED\""
+        },
+        {
+          "dimension": "namingConventions",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Tag name does not follow \"Platform - Event\" pattern"
+        },
+        {
+          "dimension": "folderOrganization",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Tag not assigned to any folder"
+        },
+        {
+          "dimension": "googleAdsAlignment",
+          "severity": "error",
+          "entity": "Purchase",
+          "message": "Google Ads conversion \"Purchase\" (PURCHASE, 10 conversions, $100) has no matching GTM tag"
+        }
+      ],
+      "tagCount": 1,
+      "triggerCount": 1,
+      "variableCount": 0,
+      "folderCount": 0
+    }
+  },
+  {
+    "snapshot": {
+      "generated_at": "2026-09-09T00:00:00Z",
+      "meta": {
+        "account_id": "1",
+        "account_name": "Synthetic fixture",
+        "pixel_id": "2",
+        "currency": "USD",
+        "spend": 100,
+        "date_range": {
+          "since": "2026-09-01",
+          "until": "2026-09-08"
+        },
+        "conversion_events": [
+          {
+            "event": "Purchase",
+            "count_7d_click": 10,
+            "count_1d_click": 5,
+            "count_1d_view": 1,
+            "value_7d_click": 100,
+            "count_browser": 10,
+            "count_server": 10,
+            "dedup_rate": 0.9,
+            "emq_score": 7
+          }
+        ]
+      },
+      "google_ads": {
+        "customer_id": "3",
+        "customer_name": "Synthetic fixture",
+        "currency": "USD",
+        "conversion_actions": [
+          {
+            "id": "1",
+            "name": "Purchase",
+            "category": "PURCHASE",
+            "status": "ENABLED",
+            "counting_type": "MANY_PER_CLICK",
+            "click_through_lookback_window_days": 30,
+            "conversion_count_30d": 10,
+            "conversion_value_30d": 100,
+            "tag_snippets": [
+              "AW-123/fixture"
+            ]
+          }
+        ]
+      },
+      "funnel": []
+    },
+    "expected": {
+      "combinedScore": 0.3711,
+      "dimensions": [
+        {
+          "name": "tagCoverage",
+          "weight": 0.14,
+          "score": 0.09090909090909091,
+          "issues": [
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_item",
+              "message": "Missing GA4 event tag for \"view_item\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_item_list",
+              "message": "Missing GA4 event tag for \"view_item_list\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "select_item",
+              "message": "Missing GA4 event tag for \"select_item\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "add_to_cart",
+              "message": "Missing GA4 event tag for \"add_to_cart\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "view_cart",
+              "message": "Missing GA4 event tag for \"view_cart\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "begin_checkout",
+              "message": "Missing GA4 event tag for \"begin_checkout\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "add_payment_info",
+              "message": "Missing GA4 event tag for \"add_payment_info\""
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "GA4 Config",
+              "message": "Missing required tag: GA4 Config"
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "Conversion Linker",
+              "message": "Missing required tag: Conversion Linker"
+            },
+            {
+              "dimension": "tagCoverage",
+              "severity": "error",
+              "entity": "GAds Conversion",
+              "message": "Missing required tag: GAds Conversion"
+            }
+          ]
+        },
+        {
+          "name": "paramCompleteness",
+          "weight": 0.1,
+          "score": 0.3333333333333333,
+          "issues": [
+            {
+              "dimension": "paramCompleteness",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Missing required param \"sendEcommerceData\""
+            },
+            {
+              "dimension": "paramCompleteness",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Missing required param \"measurementIdOverride\""
+            }
+          ]
+        },
+        {
+          "name": "deduplication",
+          "weight": 0.07,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "deduplication",
+              "severity": "error",
+              "entity": "variables",
+              "message": "Missing CJS Event ID Generator variable"
+            }
+          ]
+        },
+        {
+          "name": "consentSettings",
+          "weight": 0.11,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "consentSettings",
+              "severity": "error",
+              "entity": "container",
+              "message": "Missing Consent Mode v2 initialization tag"
+            },
+            {
+              "dimension": "consentSettings",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "consentStatus is \"missing\" — should be \"NEEDED\""
+            }
+          ]
+        },
+        {
+          "name": "namingConventions",
+          "weight": 0.06,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "namingConventions",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Tag name does not follow \"Platform - Event\" pattern"
+            }
+          ]
+        },
+        {
+          "name": "variableHygiene",
+          "weight": 0.06,
+          "score": 1,
+          "issues": []
+        },
+        {
+          "name": "triggerQuality",
+          "weight": 0.08,
+          "score": 1,
+          "issues": []
+        },
+        {
+          "name": "folderOrganization",
+          "weight": 0.06,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "folderOrganization",
+              "severity": "warning",
+              "entity": "purchase tag",
+              "message": "Tag not assigned to any folder"
+            }
+          ]
+        },
+        {
+          "name": "metaAdsAlignment",
+          "weight": 0.09,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "metaAdsAlignment",
+              "severity": "info",
+              "entity": "Purchase",
+              "message": "Meta event \"Purchase\" has no known GTM tag pattern (10 events, $100)"
+            }
+          ]
+        },
+        {
+          "name": "capiCoverage",
+          "weight": 0.08,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "capiCoverage",
+              "severity": "warning",
+              "entity": "variables",
+              "message": "Missing Cookie - _fbc variable (needed for CAPI click ID matching)"
+            },
+            {
+              "dimension": "capiCoverage",
+              "severity": "warning",
+              "entity": "variables",
+              "message": "Missing Cookie - _fbp variable (needed for CAPI browser ID matching)"
+            },
+            {
+              "dimension": "capiCoverage",
+              "severity": "warning",
+              "entity": "Purchase",
+              "message": "No browser pixel tag for \"Purchase\" — relying solely on CAPI via sGTM"
+            }
+          ]
+        },
+        {
+          "name": "funnelIntegrity",
+          "weight": 0.07,
+          "score": 0.5,
+          "issues": [
+            {
+              "dimension": "funnelIntegrity",
+              "severity": "info",
+              "entity": "funnel",
+              "message": "No funnel steps computed — verify snapshot has sufficient conversion events"
+            }
+          ]
+        },
+        {
+          "name": "googleAdsAlignment",
+          "weight": 0.08,
+          "score": 0,
+          "issues": [
+            {
+              "dimension": "googleAdsAlignment",
+              "severity": "error",
+              "entity": "Purchase",
+              "message": "Google Ads conversion \"Purchase\" (PURCHASE, 10 conversions, $100) has no matching GTM tag"
+            }
+          ]
+        }
+      ],
+      "issues": [
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_item",
+          "message": "Missing GA4 event tag for \"view_item\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_item_list",
+          "message": "Missing GA4 event tag for \"view_item_list\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "select_item",
+          "message": "Missing GA4 event tag for \"select_item\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "add_to_cart",
+          "message": "Missing GA4 event tag for \"add_to_cart\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "view_cart",
+          "message": "Missing GA4 event tag for \"view_cart\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "begin_checkout",
+          "message": "Missing GA4 event tag for \"begin_checkout\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "add_payment_info",
+          "message": "Missing GA4 event tag for \"add_payment_info\""
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "GA4 Config",
+          "message": "Missing required tag: GA4 Config"
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "Conversion Linker",
+          "message": "Missing required tag: Conversion Linker"
+        },
+        {
+          "dimension": "tagCoverage",
+          "severity": "error",
+          "entity": "GAds Conversion",
+          "message": "Missing required tag: GAds Conversion"
+        },
+        {
+          "dimension": "paramCompleteness",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Missing required param \"sendEcommerceData\""
+        },
+        {
+          "dimension": "paramCompleteness",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Missing required param \"measurementIdOverride\""
+        },
+        {
+          "dimension": "deduplication",
+          "severity": "error",
+          "entity": "variables",
+          "message": "Missing CJS Event ID Generator variable"
+        },
+        {
+          "dimension": "consentSettings",
+          "severity": "error",
+          "entity": "container",
+          "message": "Missing Consent Mode v2 initialization tag"
+        },
+        {
+          "dimension": "consentSettings",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "consentStatus is \"missing\" — should be \"NEEDED\""
+        },
+        {
+          "dimension": "namingConventions",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Tag name does not follow \"Platform - Event\" pattern"
+        },
+        {
+          "dimension": "folderOrganization",
+          "severity": "warning",
+          "entity": "purchase tag",
+          "message": "Tag not assigned to any folder"
+        },
+        {
+          "dimension": "metaAdsAlignment",
+          "severity": "info",
+          "entity": "Purchase",
+          "message": "Meta event \"Purchase\" has no known GTM tag pattern (10 events, $100)"
+        },
+        {
+          "dimension": "capiCoverage",
+          "severity": "warning",
+          "entity": "variables",
+          "message": "Missing Cookie - _fbc variable (needed for CAPI click ID matching)"
+        },
+        {
+          "dimension": "capiCoverage",
+          "severity": "warning",
+          "entity": "variables",
+          "message": "Missing Cookie - _fbp variable (needed for CAPI browser ID matching)"
+        },
+        {
+          "dimension": "capiCoverage",
+          "severity": "warning",
+          "entity": "Purchase",
+          "message": "No browser pixel tag for \"Purchase\" — relying solely on CAPI via sGTM"
+        },
+        {
+          "dimension": "funnelIntegrity",
+          "severity": "info",
+          "entity": "funnel",
+          "message": "No funnel steps computed — verify snapshot has sufficient conversion events"
+        },
+        {
+          "dimension": "googleAdsAlignment",
+          "severity": "error",
+          "entity": "Purchase",
+          "message": "Google Ads conversion \"Purchase\" (PURCHASE, 10 conversions, $100) has no matching GTM tag"
+        }
+      ],
+      "tagCount": 1,
+      "triggerCount": 1,
+      "variableCount": 0,
+      "folderCount": 0
+    }
+  }
+]

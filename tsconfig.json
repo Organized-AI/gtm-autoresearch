@@ -8,8 +8,17 @@
     "outDir": "dist",
     "rootDir": ".",
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
-  "include": ["scripts/**/*", "src/**/*"],
-  "exclude": ["node_modules", "dist", "scripts/worker"]
+  "include": [
+    "scripts/**/*",
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "scripts/worker"
+  ]
 }
