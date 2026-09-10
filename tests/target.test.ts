@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {resolveTarget,assertExportTarget,objectKey} from '../src/target.ts';
+const a={clientId:'a',accountId:'10',containerId:'20',publicId:'GTM-ABC',name:'Website'},b={clientId:'b',accountId:'11',containerId:'21',name:'Website'};
+test('name collisions require disambiguation, IDs resolve only authorized targets',()=>{assert.throws(()=>resolveTarget('Website',[a,b]),/Ambiguous/);assert.deepEqual(resolveTarget('GTM-ABC',[a]),a);assert.throws(()=>resolveTarget('21',[a]),/No authorized/);assert.deepEqual(resolveTarget('accounts/11/containers/21',[a,b]),b);});
+test('cross-client or inconsistent container exports are rejected',()=>{assertExportTarget(a,{containerVersion:{accountId:'10',containerId:'20'}});assert.throws(()=>assertExportTarget(a,{containerVersion:{accountId:'11',containerId:'21'}}));assert.throws(()=>assertExportTarget(a,{containerVersion:{accountId:'10',containerId:'20',container:{accountId:'11'}}}));});
+test('client paths cannot collapse into another client key',()=>{assert.notEqual(objectKey(a,'run'),objectKey(b,'run'));assert(objectKey({...a,clientId:'a/b'},'run').startsWith('a%2Fb/'));assert.throws(()=>objectKey({...a,clientId:'..'},'run'));});
