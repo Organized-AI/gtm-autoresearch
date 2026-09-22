@@ -1,3 +1,19 @@
+# Current State — 2026-09-22 (bounded execution driver)
+
+## Branch
+`feat/jev-shadow-pilot` — draft PR #5 against `feat/baseline-preserving-container-policy`.
+
+## What changed
+- Added `scripts/jev_pilot_execute.py`, a default-off, shadow-only driver for the frozen 12-row Jev training pilot.
+- It preflights executable package bytes, two native saved definitions, rubric/provider/model/seed identities, and only projects `input.observation`; expected-label bytes are not opened or parsed.
+- A durable exclusive journal records each of at most 24 logical atomic attempts before dispatch. Timeouts/errors consume attempts; interruption is never retried; result artifacts are rebuilt atomically from authoritative completed journal records.
+- The pinned TypeSafe route is blocked because its SDK has hidden retries. CLI execution is also blocked until a reviewed, verifiable provider-side spend-control adapter exists. No provider calls, spend settings, usage, predictions, GTM actions, or promotion were introduced.
+
+## Verification
+- Real final package preflight against a native frozen Cloudflare placeholder seed: 12 records, 24 attempt cap, 0 calls.
+- 16 package/driver Python tests pass with fakes; native seed save/load test passes in the pinned runtime.
+- TypeScript typecheck and all 37 TypeScript tests pass (the test runner used the required local Unix-domain socket permission).
+
 # Current State — 2026-09-21 (frozen offline training pilot)
 
 ## Branch
