@@ -13,9 +13,11 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 try:
+    from gtm_export_view import export_snapshot
     from jev_pilot import parse_json as strict_parse_json
     from jev_pilot_execute import input_preflight
 except ModuleNotFoundError:  # Imported as scripts.gtm_run_view by tests or tooling.
+    from scripts.gtm_export_view import export_snapshot
     from scripts.jev_pilot import parse_json as strict_parse_json
     from scripts.jev_pilot_execute import input_preflight
 
@@ -309,7 +311,7 @@ def parse_allowed_origin(value):
     return value
 
 
-def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_dir=None, baseline_package=None):
+def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_dir=None, baseline_package=None, export_bundle=None):
     if (baseline_run_dir is None) != (baseline_package is None):
         raise ValueError("baseline run directory and package must be supplied together")
     configured_origins = {parse_allowed_origin(origin) for origin in allowed_origins}
@@ -322,6 +324,7 @@ def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_d
             if not matching_origins or origin and origin not in matching_origins:
                 self.send_error(403); return
             route = urlsplit(self.path)
+            download = None
             static = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "text/javascript"), "/styles.css": ("styles.css", "text/css")}
             for family, weights in (("jetbrains-mono", (400, 500, 600, 700, 800)), ("inter", (400, 500, 600, 700))):
                 for weight in weights:
@@ -329,7 +332,19 @@ def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_d
                     static[f"/{name}"] = (name, "font/ttf")
             if route.query:
                 self.send_error(404); return
-            if route.path == "/api/state":
+            if route.path == "/api/export" or route.path in {"/exports/container.json", "/exports/report.json", "/exports/manifest.json"}:
+                exported, artifacts = export_snapshot(export_bundle)
+                if route.path == "/api/export":
+                    body = json.dumps(exported, allow_nan=False).encode()
+                else:
+                    download = route.path.rsplit("/", 1)[-1]
+                    if not exported["available"]:
+                        self.send_error(404); return
+                    if download == "container.json" and not exported["downloadReady"]:
+                        self.send_error(409, "Container requires corrections before import"); return
+                    body = artifacts[download]
+                mime = "application/json"
+            elif route.path == "/api/state":
                 state = snapshot(run_dir, package, include_comparison_identity=baseline_run_dir is not None)
                 if baseline_run_dir is not None:
                     baseline = snapshot(baseline_run_dir, baseline_package, include_comparison_identity=True)
@@ -347,6 +362,8 @@ def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_d
             self.send_response(200)
             self.send_header("Content-Type", mime + "; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
+            if download:
+                self.send_header("Content-Disposition", f'attachment; filename="{download}"')
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'")
@@ -365,6 +382,7 @@ def main():
     parser.add_argument("--baseline-package", type=Path,
                         help="Frozen package matching --baseline-run-dir")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--export-bundle", type=Path, help="Scored GTM export bundle to offer for download")
     parser.add_argument("--allow-origin", action="append", default=[], type=parse_allowed_origin,
                         help="Exact additional browser origin for a trusted private reverse proxy; repeatable")
     args = parser.parse_args()
@@ -374,6 +392,7 @@ def main():
         args.run_dir.resolve(), args.package.resolve(), args.allow_origin,
         args.baseline_run_dir.resolve() if args.baseline_run_dir else None,
         args.baseline_package.resolve() if args.baseline_package else None,
+        args.export_bundle.resolve() if args.export_bundle else None,
     ))
     print(f"Read-only GTM run viewer: http://127.0.0.1:{server.server_port}", flush=True)
     try: server.serve_forever()

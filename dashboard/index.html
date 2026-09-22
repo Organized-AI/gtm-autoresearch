@@ -41,6 +41,7 @@
         <button id="diagram-tab" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="diagram-panel">Run diagram</button>
         <button id="judgments-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="judgments-panel">Judgments <span id="judgment-count" class="tab-count">—</span></button>
         <button id="comparison-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="comparison-panel" hidden>Comparison</button>
+        <button id="export-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="export-panel">Container export</button>
       </div>
 
       <section id="diagram-panel" class="tab-panel" role="tabpanel" aria-labelledby="diagram-tab">
@@ -111,6 +112,29 @@
           <div id="comparison-table" class="comparison-table" role="table" aria-label="Recorded v1 and v2 rubric comparison"></div>
           <p class="comparison-note">Agreement uses unreviewed synthetic generator labels. No confidence cutoff or calibration claim is applied.</p>
         </section>
+      </section>
+
+      <section id="export-panel" class="tab-panel" role="tabpanel" aria-labelledby="export-tab" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">YOUR OUTPUT</p><h2>Scored GTM container</h2></div><span id="export-status" class="replay-state">LOADING</span></div>
+        <p id="export-message" class="muted">Checking for a scored container…</p>
+        <div id="export-content" hidden>
+          <div id="export-metrics" class="detail-grid export-metrics"></div>
+          <div class="export-actions">
+            <a id="export-download" class="download-button" href="/exports/container.json" download="container.json" hidden>Download GTM JSON ↓</a>
+            <a class="download-button secondary" href="/exports/report.json" download="report.json">Download score report ↓</a>
+            <a class="download-button secondary" href="/exports/manifest.json" download="manifest.json">Download checksums ↓</a>
+          </div>
+          <p id="export-download-note" class="comparison-note"></p>
+          <div class="export-columns">
+            <section><h3>Score breakdown</h3><div id="export-dimensions" class="export-dimensions"></div></section>
+            <section><h3>Validation &amp; remaining work</h3><ul id="export-findings" class="export-findings"></ul></section>
+          </div>
+          <div class="export-columns import-help">
+            <section><p class="eyebrow">MANUAL IMPORT</p><h3>Import into a GTM workspace</h3><ol><li>Download the GTM JSON when its checks pass.</li><li>In the matching web or server container, open Admin → Import Container.</li><li>Select the JSON and a review workspace. Review GTM’s merge or overwrite preview.</li><li>Confirm the import, then preview and test tracking before publishing.</li></ol></section>
+            <section><p class="eyebrow">PROGRAMMATIC ACCESS</p><h3>Use the same verified artifact</h3><p class="muted">Fetch the report, require readiness to pass, then download the exact scored bytes. GTM’s API has no bulk JSON import endpoint; your importer must map resources into a workspace.</p><pre id="export-command"></pre><p class="comparison-note">The download endpoints are read-only and accessible through your Tailscale connection.</p></section>
+          </div>
+          <p class="comparison-note">Scores are deterministic checks, not measured conversion lift. GTM acceptance and live tracking still need workspace preview. The Jev pilot shown in the other tabs did not generate or approve this export.</p>
+        </div>
       </section>
 
       <footer><span id="poll-indicator" class="poll-indicator" aria-hidden="true"></span><span id="poll-status">Polling the local journal every 3 seconds.</span><span> No provider actions are available here.</span></footer>

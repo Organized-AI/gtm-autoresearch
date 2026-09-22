@@ -25,6 +25,19 @@ Verified recovery by terminating only the managed viewer process: launchd restar
 
 ## Manual foreground mode
 
+### Scored container downloads
+
+Prepare a bundle with `scripts/prepare-gtm-export.ts` (see README Usage), then pass `--export-bundle /absolute/path/to/bundle` to the installer or foreground viewer. The installer verifies and copies only `container.json`, `report.json` and `manifest.json` into its stable release. Subsequent reinstalls retain the installed bundle when the option is omitted.
+
+The Container export tab is independent of the Jev pilot. It shows the selected container's deterministic score, optional baseline, source identity, validation blockers and import instructions. It never represents pilot agreement as a container score. Routes are fixed and inherit the same exact Host/Origin checks:
+
+- `GET /api/export`: bundle availability, readiness and score report.
+- `GET /exports/container.json`: exact scored bytes as an attachment, only when offline checks pass.
+- `GET /exports/report.json`: score and validation report, including blocked exports.
+- `GET /exports/manifest.json`: artifact checksums.
+
+All artifacts are checksum-verified together on each request; missing or changed bytes disable downloads. The browser clears export links on connection failures. These routes do not call providers or GTM. Offline readiness is for import review; Google's own import preview and tracking QA remain separate.
+
 Run from the repository checkout:
 
 ```sh

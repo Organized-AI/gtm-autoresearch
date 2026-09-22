@@ -158,9 +158,44 @@
   async function refresh() {
     try { const response = await fetch('/api/state', { headers: { Accept: 'application/json' }, cache: 'no-store' }); if (!response.ok) throw new Error(`HTTP ${response.status}`); const data = await response.json(); if (!safeState(data)) throw new Error('unsupported state payload'); const previousLength = state.data ? state.data.events.length : 0; state.data = data; if (!state.selectedRecord && data.records[0]) state.selectedRecord = data.records[0].recordId; if (state.replayIndex >= previousLength && data.events.length) state.replayIndex = 0; renderSummary(data); renderComparison(data.comparison); updateReplay(); renderJudgments(); renderDetail(); text(els.poll, `Recorded journal checked ${new Date().toLocaleTimeString()}. Polling every 3 seconds.`); els.pollIndicator.className = 'poll-indicator'; } catch (error) { setUnavailable('The recorded pilot journal is unavailable. This screen will retry locally; it will not start an optimizer.'); }
   }
-  function switchTab(which) { ['diagram', 'judgments', 'comparison'].forEach((name) => { const selected = name === which; const tab = $(`${name}-tab`); const panel = $(`${name}-panel`); tab.classList.toggle('is-active', selected); tab.setAttribute('aria-selected', String(selected)); panel.hidden = !selected; }); }
+  const percent = (n) => Number.isFinite(n) ? `${(n * 100).toFixed(1)}%` : 'Unavailable';
+  function renderExport(data) {
+    const available = Boolean(data && data.available);
+    $('export-content').hidden = !available;
+    $('export-download').hidden = !available || !data.downloadReady;
+    text($('export-status'), available ? data.downloadReady ? 'OFFLINE CHECKS PASSED' : 'NEEDS CORRECTIONS' : 'UNAVAILABLE');
+    if (!available) { text($('export-message'), data && data.reason || 'The scored export is unavailable.'); return; }
+    const report = data.report, scored = report.scoring.candidate || {}, baseline = report.scoring.baseline;
+    const kinds = { 'saved-container': 'Saved container', 'optimization-winner': 'Saved optimization winner', 'synthetic-demo': 'Synthetic demo' };
+    text($('export-message'), `${kinds[report.source.kind] || 'Scored container'} · ${report.container.name || report.container.publicId || 'Unnamed container'}${report.source.name ? ` · ${report.source.name}` : ''} · independently scored ${new Date(report.createdAt).toLocaleDateString()}.`);
+    $('export-metrics').replaceChildren(
+      field('Container score', percent(scored.combinedScore)), field('Baseline score', baseline ? percent(baseline.combinedScore) : 'Not supplied'),
+      field('Scoring profile', report.scoring.profile), field('Container type', (report.container.usageContext || []).join(', ')),
+      field('Tags / triggers / variables', `${number(scored.tagCount)} / ${number(scored.triggerCount)} / ${number(scored.variableCount)}`),
+      field('Scored JSON · SHA-256', data.sha256));
+    text($('export-download-note'), data.downloadReady ? 'The JSON retains the original container settings and tracking destinations. Scores are in the separate report. Offline checks passed; review GTM’s import preview before use.' : 'The JSON is withheld from import download until the blockers below are resolved. The report is available for review.');
+    $('export-dimensions').replaceChildren();
+    (scored.dimensions || []).forEach((dimension) => {
+      const row = document.createElement('div'), label = document.createElement('span'), score = document.createElement('strong');
+      label.textContent = dimension.name.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()); score.textContent = percent(dimension.score); row.append(label, score); $('export-dimensions').append(row);
+    });
+    const findings = [...new Set([...report.readiness.blockers, ...report.validation.errors, ...report.validation.warnings])];
+    const groups = new Map();
+    (scored.issues || []).forEach((issue) => { const key = `${issue.severity}: ${issue.message}`; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(issue.entity); });
+    groups.forEach((entities, key) => findings.push(`${key}${entities.length > 1 ? ` (${entities.length} findings)` : entities[0] ? ` · ${entities[0]}` : ''}`));
+    if (!findings.length) findings.push('Offline format and reference checks passed. Test tag behavior in GTM preview after import.');
+    $('export-findings').replaceChildren();
+    findings.forEach((finding) => { const li = document.createElement('li'); li.textContent = finding; $('export-findings').append(li); });
+    text($('export-command'), `curl --fail '${location.origin}/exports/report.json' -o report.json\njq -e '.readiness.status == "ready-for-import-review"' report.json &&\n  curl --fail '${location.origin}/exports/container.json' -o container.json`);
+  }
+  async function refreshExport() {
+    try { const response = await fetch('/api/export', {cache:'no-store'}); if (!response.ok) throw new Error('Export unavailable'); renderExport(await response.json()); }
+    catch { renderExport({available:false, reason:'Unable to load the scored export. Retrying automatically.'}); }
+  }
+  function switchTab(which) { ['diagram', 'judgments', 'comparison', 'export'].forEach((name) => { const selected = name === which; const tab = $(`${name}-tab`); const panel = $(`${name}-panel`); tab.classList.toggle('is-active', selected); tab.setAttribute('aria-selected', String(selected)); panel.hidden = !selected; }); }
   document.querySelectorAll('.flow-node').forEach((node) => node.addEventListener('click', () => { document.querySelectorAll('.flow-node').forEach((item) => item.classList.remove('is-selected')); node.classList.add('is-selected'); const detail = descriptions[node.dataset.node]; text(els.explanationNumber, detail[0]); text(els.explanationKicker, detail[1]); text(els.explanationTitle, detail[2]); text(els.explanationText, detail[3]); }));
   $('diagram-tab').addEventListener('click', () => switchTab('diagram')); $('judgments-tab').addEventListener('click', () => switchTab('judgments')); $('comparison-tab').addEventListener('click', () => switchTab('comparison'));
   els.play.addEventListener('click', () => state.playing ? (pause(), updateReplay()) : play()); els.previous.addEventListener('click', () => { pause(); state.replayIndex -= 1; updateReplay(); selectFromEvent(activeEvent()); }); els.next.addEventListener('click', () => { pause(); state.replayIndex += 1; updateReplay(); selectFromEvent(activeEvent()); }); els.reset.addEventListener('click', () => { pause(); state.replayIndex = 0; updateReplay(); selectFromEvent(activeEvent()); }); els.scrubber.addEventListener('input', () => { pause(); state.replayIndex = Number(els.scrubber.value); updateReplay(); selectFromEvent(activeEvent()); });
-  refresh(); window.setInterval(refresh, 3000);
+  $('export-tab').addEventListener('click', () => switchTab('export'));
+  refresh(); refreshExport(); window.setInterval(refresh, 3000); window.setInterval(refreshExport, 15000);
 })();

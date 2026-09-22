@@ -45,6 +45,7 @@ import {
   type MetaAdsSnapshot,
   type EnrichedAdsSnapshot,
 } from "../evals/eval_gtm_signal_quality.js";
+import { createScoredGtmExport } from "./gtm-scored-export.js";
 
 const PROJECT_ROOT = path.resolve(
   decodeURIComponent(new URL(".", import.meta.url).pathname),
@@ -1191,6 +1192,16 @@ async function main(): Promise<void> {
   );
   await writeFile(winningPath, bestJson);
   console.log(`\n[Save] Winning config → ${winningPath}`);
+  const scoredExportPath = `${winningPath}.scored-export`;
+  const scoredExport = await createScoredGtmExport({
+    containerBytes: bestJson,
+    baselineBytes: seedJson,
+    outputDir: scoredExportPath,
+    sourceKind: "optimization-winner",
+    sourceName: path.basename(winningPath),
+    adsSnapshot,
+  });
+  console.log(`[Save] Scored GTM export → ${scoredExportPath} (${scoredExport.report.readiness.status})`);
 
   // ── Write experiment log ──
 
