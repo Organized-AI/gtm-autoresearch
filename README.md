@@ -73,6 +73,12 @@ Up to 12-dimension scorer evaluates GTM container quality, with dimensions activ
 
 Each round: score → build prompt → mutate via Claude → validate → keep/revert → repeat.
 
+## Container safety architecture
+
+Every run treats the selected GTM export as its baseline, then applies typed operations to a deep clone. Deterministic code allocates IDs, preserves unmodified and unknown fields, and verifies references before a candidate can be scored. The mutation provider never emits a full container document.
+
+See [the container mutation policy](DOCUMENTATION/container-mutation-policy.md) for the operation boundary, Jev's post-validation judge role, and the planned OpenShell execution boundary.
+
 ## Ads data feedback loop
 
 The enriched snapshot pulls live data from Meta and Google Ads APIs before each loop run, giving the optimizer real signals to work with:

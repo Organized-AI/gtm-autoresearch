@@ -7,7 +7,8 @@
     "eval:gtm": "npx tsx evals/eval_gtm_signal_quality.ts",
     "refresh-snapshot": "npx tsx scripts/refresh-ads-snapshot.ts",
     "gtm-loop": "npx tsx scripts/run-gtm-loop.ts",
-    "typecheck": "npx tsc --noEmit"
+    "typecheck": "npx tsc --noEmit",
+    "test": "tsx --test tests/gtm-container-mutations.test.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5"

@@ -1,3 +1,27 @@
+# Current State — 2026-09-21
+
+## Branch
+`feat/baseline-preserving-container-policy`
+
+## What Just Happened
+- Added `scripts/gtm-container-mutations.ts`, which applies only typed operations to a deep-cloned GTM export.
+- Moved ID allocation, account/container identity, preservation checks, and reference validation into deterministic code.
+- Updated the mutation prompt so providers never create full containers or supply IDs.
+- Added compatibility tests for HRE web plus BLADE web and server-side exports.
+- Documented Jev as a post-validation judge and OpenShell as a future worker sandbox boundary in `DOCUMENTATION/container-mutation-policy.md`.
+
+## Verification
+- `npm run typecheck`
+- `npm test`
+- `npm run eval:gtm -- content/gtm-templates/BLADE/seed/blade-sgtm.json`
+- Committed as `e3969d4` and opened as PR #4.
+
+## Next Steps
+- Review and merge PR #4.
+- Add the post-validation Jev worker and OpenShell worker sandbox only when the runtime execution phase is scheduled.
+
+---
+
 # Current State — 2026-04-07
 
 ## Branch
