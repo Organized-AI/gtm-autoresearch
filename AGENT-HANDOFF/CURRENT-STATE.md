@@ -3,6 +3,9 @@
 ## Branch
 `feat/jev-shadow-pilot` — draft PR #5 against `feat/baseline-preserving-container-policy`.
 
+## Active checkout
+Execution work is in `/private/tmp/gtm-jev-execution-20260922`; the original workspace Git metadata is cloud-offloaded and could not be read. The original workspace was not rewritten. Use this checkout or recover the pushed branch from GitHub before continuing. The regenerated training pilot is under this checkout at `data/jev-shadow/training-pilot-v1-final`.
+
 ## What changed
 - Added `scripts/jev_pilot_execute.py`, a default-off, shadow-only driver for the frozen 12-row Jev training pilot.
 - It preflights executable package bytes, two native saved definitions, rubric/provider/model/seed identities, and only projects `input.observation`; expected-label bytes are not opened or parsed.
@@ -12,7 +15,11 @@
 ## Verification
 - Real final package preflight against a native frozen Cloudflare placeholder seed: 12 records, 24 attempt cap, 0 calls.
 - 18 package/driver Python tests pass with fakes; native seed save/load test passes in the pinned runtime.
-- TypeScript typecheck and all 37 TypeScript tests pass (the test runner used the required local Unix-domain socket permission).
+- Independent root verification: all 19 native/package/driver Python tests, all 37 TypeScript tests via `node --import tsx --test tests/*.test.ts`, and TypeScript typecheck pass.
+- Full native runtime now resolves: `pip check` passes; all 18 installed Jev source files match the pinned commit. See `DOCUMENTATION/jev-shadow-pilot/PROVIDER-RUNTIME-REVIEW.md`.
+
+## Remaining live work
+Provider/model, credentials and maximum spend remain pending. The current CLI intentionally has no live spending-control adapter. Integrate the chosen provider with a verified hard spending limit, capture actual usage, and add a killable process boundary before any live pilot. Holdout remains reserved; do not merge PR #4 or #5 or promote Jev automatically.
 
 # Current State — 2026-09-21 (frozen offline training pilot)
 
