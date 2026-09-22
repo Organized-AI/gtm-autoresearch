@@ -1,4 +1,6 @@
-import importlib.util, io, json, os, unittest
+import importlib.util, io, json, os, unittest, threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
@@ -29,6 +31,22 @@ class DirectCloudflareTest(unittest.TestCase):
   overflow=json.dumps({"model":"jev","answers":{"evidenceSufficient":answer},"usage":{"input_tokens":9007199254740992,"output_tokens":0}}).encode(); opener=Opener(Response(overflow))
   with patch.dict(os.environ,{"CLOUDFLARE_ACCOUNT_ID":"a"*32,"CLOUDFLARE_API_TOKEN":"secret"},clear=True),patch.object(module.urllib.request,"build_opener",return_value=opener):
    with self.assertRaisesRegex(ValueError,"usage"): module.evaluate(self.request())
+
+ def test_no_redirect_handler_does_not_follow_loopback_redirect(self):
+  class Handler(BaseHTTPRequestHandler):
+   target_hits=0
+   def do_GET(self):
+    if self.path=="/start": self.send_response(302);self.send_header("Location","/target");self.end_headers()
+    else: type(self).target_hits+=1;self.send_response(200);self.end_headers()
+   def log_message(self,*args): pass
+  server=ThreadingHTTPServer(("127.0.0.1",0),Handler); thread=threading.Thread(target=server.serve_forever);thread.start()
+  try:
+   with self.assertRaises(urllib.error.HTTPError) as caught: module.urllib.request.build_opener(module.NoRedirect()).open(f"http://127.0.0.1:{server.server_port}/start")
+   caught.exception.close(); self.assertEqual(Handler.target_hits,0)
+  finally: server.shutdown();thread.join();server.server_close()
+ def test_safe_reason_redacts_unexpected_text(self):
+  self.assertEqual(module.safe_reason(ValueError("mock secret value")),"direct Cloudflare evaluation failed")
+  self.assertEqual(module.safe_reason(ValueError("Cloudflare HTTP 403")),"Cloudflare HTTP 403")
 
  def test_rejects_malformed_or_mismatched_choices_without_retry(self):
   body=json.dumps({"model":"jev","answers":{"evidenceSufficient":{"type":"choice","choice":"wrong","confidence":1,"probabilities":{}}}}).encode(); opener=Opener(Response(body))
