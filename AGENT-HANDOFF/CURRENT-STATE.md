@@ -1,5 +1,7 @@
 # Current State — 2026-09-22 (scored container export)
 
+- Product direction clarified: continuously improve the selected container daily and after relevant changes. See `DOCUMENTATION/daily-container-improvement.md` for the daily run contract and implementation sequence. Target web/server topology is awaiting the user's answer; no schedule, watcher or new paid inference has been activated. Current dashboard export is still a historical artifact.
+
 - User approved current dashboard design and requested a scored GTM JSON deliverable for manual/programmatic import. Selected an existing saved optimization winner if valid. Terra implemented export packaging; root integrated and verified the dashboard/download service.
 - Added `scripts/prepare-gtm-export.ts` and `scripts/gtm-scored-export.ts`. Output is byte-preserving `container.json`, separate `report.json`, and SHA-256 `manifest.json`. Loop now packages the selected winner automatically beside its saved JSON. No GTM/API writes, paid inference, or changes to Jev decisions.
 - Attached archive `content/gtm-templates/BLADE/winning/2026-04-29T143650-blade-web.json`, with `BLADE/seed/blade-web.json` as baseline and no ads snapshot. Structural scores 0.7617 vs 0.4277; 115 tags / 49 triggers / 72 variables. This is the old saved winner, not a new optimization or Jev-approved output; original BLADE destinations remain. Candidate SHA-256 `fd920df13c8466b3e4807c05bb9dad9d7142f1d5e3fe0b336a5eb8747c9d98e3`.
