@@ -17,7 +17,7 @@ Answers are `pass`, `fail`, or `insufficient`. A failed or absent preview is not
 
 ## Synthetic-data boundary
 
-BLADE web and server exports are examples of acceptable GTM JSON shape only. They are not business truth, evaluation truth, or a fixed purchase requirement. Synthetic injected-fault labels are permitted for software testing but are marked `synthetic`, retained outside model inputs, and never presented as reviewed production labels. A separate synthetic lab may supply healthy controls, benign configuration drift, business/traffic changes, collection faults, and reporting delays once its verified handoff is available.
+BLADE web and server exports are examples of acceptable GTM JSON shape only. They are not business truth, evaluation truth, or a fixed purchase requirement. Synthetic injected-fault labels are permitted for software testing but are marked `synthetic`, retained outside model inputs, and never presented as reviewed production labels. The separate synthetic lab supplies 12 scenarios covering healthy controls, benign configuration drift, business/traffic changes, collection faults, and reporting delays through the time-bounded adapter described in [SYNTHETIC-REPLAY.md](SYNTHETIC-REPLAY.md).
 
 ## Data boundaries
 
