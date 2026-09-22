@@ -40,3 +40,7 @@ tailscale serve --bg --http=8765 http://127.0.0.1:8765
 Open that private origin from a connected Tailscale device. HTTP travels inside the encrypted Tailscale network. This uses Serve, not public Funnel. Host and Origin checks remain exact; no wildcard access is enabled. The viewer process must remain running. Stop just this route with `tailscale serve --http=8765 off`; do not reset other services.
 
 On macOS with the GUI app installed, the CLI may be `/Applications/Tailscale.app/Contents/MacOS/Tailscale`.
+
+## Visual design
+
+The viewer follows the [OrganizedAI Jev field guide](https://talk.organizedai.vip/jev/): warm near-black surfaces, cream text, JetBrains Mono headings, gold emphasis, restrained cyan and fine borders. Typography is bundled locally under `dashboard/fonts/` with SIL Open Font licenses; the browser does not need Google Fonts access. Diagram/replay, judgment data and frozen comparison checks retain their existing behavior.

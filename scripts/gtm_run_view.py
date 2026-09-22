@@ -323,6 +323,10 @@ def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_d
                 self.send_error(403); return
             route = urlsplit(self.path)
             static = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "text/javascript"), "/styles.css": ("styles.css", "text/css")}
+            for family, weights in (("jetbrains-mono", (400, 500, 600, 700, 800)), ("inter", (400, 500, 600, 700))):
+                for weight in weights:
+                    name = f"fonts/{family}-{weight}.ttf"
+                    static[f"/{name}"] = (name, "font/ttf")
             if route.query:
                 self.send_error(404); return
             if route.path == "/api/state":

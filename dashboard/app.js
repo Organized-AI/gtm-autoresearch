@@ -53,7 +53,7 @@
     els.seal.setAttribute('aria-label', isComplete ? 'Completed read-only recorded pilot' : isActive ? 'Observed active journal lock' : `${statusLabel} recorded journal`);
     els.scopeIcon.className = `scope-icon${isUnavailable ? ' is-unavailable' : status === 'partial' ? ' is-partial' : isActive ? ' is-active' : ''}`;
     text(els.scopeIcon, isComplete ? '✓' : isActive ? '◉' : status === 'partial' ? '!' : '×');
-    text(els.scopeMessage, isComplete ? 'Completed recorded shadow pilot. This screen replays its stored sequence and cannot publish, mutate a container, or affect a keep/revert decision.' : isActive ? 'Observed active journal. This screen only polls the stored journal; it cannot create requests, publish, mutate a container, or affect a keep/revert decision.' : status === 'partial' ? 'Stopped or partial recorded journal. This screen only shows durable entries and cannot create requests, publish, mutate a container, or affect a keep/revert decision.' : 'Recorded journal state unavailable. This screen will not infer activity, create requests, publish, mutate a container, or affect a keep/revert decision.');
+    text(els.scopeMessage, isComplete ? 'Recorded shadow pilot. Replay is read-only: no provider calls or GTM changes.' : isActive ? 'An active journal writer is observed. This view only polls recorded events; it cannot launch requests or change GTM.' : status === 'partial' ? 'Partial recorded journal. Only saved events are shown; no provider calls or GTM changes occur here.' : 'Journal unavailable. No activity is inferred; this viewer cannot launch requests or change GTM.');
     text(els.subtitle, isComplete ? `Completed recorded pilot · ${run.id || 'run ID unavailable'} · ${run.model || 'model unavailable'}` : isActive ? `Observed journal lock · ${run.id || 'run ID unavailable'} · no optimizer activity is implied` : `${statusLabel} recorded journal · ${run.id || 'run ID unavailable'}`);
     text(els.records, number(run.totalRows)); text(els.recordsNote, isUnavailable ? 'journal unavailable' : `${number(run.completedRows)} completed`);
     text(els.attempts, number(run.attemptsFinished)); text(els.attemptsNote, isUnavailable ? 'journal unavailable' : `cap ${number(run.attemptCap)} · ${number(run.errors)} errors`);
@@ -71,10 +71,10 @@
     if (!metric || !Number.isFinite(metric.successfulPairs) || !Number.isFinite(metric.completedRows) || !Number.isFinite(metric.denominator)) return '—';
     return `${metric.successfulPairs}/${metric.denominator} successful pairs · ${metric.completedRows}/${metric.denominator} completed`;
   }
-  function comparisonHeader(run) {
+  function comparisonHeader(run, label) {
     if (!run || !run.rubric) return '—';
-    const version = run.rubric.version || 'frozen rubric';
-    return `${version} · ${shortId(run.rubric.id)}`;
+    const version = String(run.rubric.version || '').match(/(?:^|-)(v[0-9]+)$/);
+    return `${label}${version ? ` / ${version[1]}` : ''} · ${String(run.rubric.id || '').slice(0, 8)}`;
   }
   function comparisonCell(content, className = '') { const cell = document.createElement('div'); cell.className = `comparison-cell${className ? ` ${className}` : ''}`; cell.setAttribute('role', 'cell'); cell.textContent = content; return cell; }
   function renderComparison(comparison) {
@@ -84,7 +84,7 @@
     const baseline = comparison.baseline || {}, current = comparison.current || {};
     text(els.comparisonMessage, 'Exact record IDs and input hashes match; expected answers are unchanged. The two frozen rubric identities are distinct.');
     const rows = [
-      ['Metric', comparisonHeader(baseline), comparisonHeader(current)],
+      ['Metric', comparisonHeader(baseline, 'Baseline'), comparisonHeader(current, 'Current')],
       ['Evidence sufficient agreement', metricText(value(baseline, ['agreement', 'evidenceSufficient'])), metricText(value(current, ['agreement', 'evidenceSufficient']))],
       ['Tracking behavior agreement', metricText(value(baseline, ['agreement', 'trackingBehaviorPreserved'])), metricText(value(current, ['agreement', 'trackingBehaviorPreserved']))],
       ['Paired agreement', metricText(value(baseline, ['agreement', 'paired'])), metricText(value(current, ['agreement', 'paired']))],
@@ -153,7 +153,7 @@
   }
 
   function setUnavailable(message) {
-    pause(); state.data = null; renderComparison(null); els.scopeMessage.parentElement.classList.add('is-unavailable'); els.scopeMessage.parentElement.classList.remove('is-partial'); text(els.status, 'UNAVAILABLE'); text(els.source, 'Local journal unavailable'); els.seal.setAttribute('aria-label', 'Recorded journal unavailable'); els.scopeIcon.className = 'scope-icon is-unavailable'; text(els.scopeIcon, '×'); text(els.scopeMessage, 'Recorded journal state unavailable. This screen will not infer activity, create requests, publish, mutate a container, or affect a keep/revert decision.'); text(els.subtitle, message); ['records','attempts','agreement','insufficient'].forEach((key) => text(els[key], '—')); text(els.recordsNote, 'journal unavailable'); text(els.attemptsNote, 'journal unavailable'); text(els.agreementNote, 'comparison unavailable'); text(els.insufficientNote, 'comparison unavailable'); text(els.judgmentCount, '—'); text(els.shadowCaption, 'The recorded journal is unavailable. No live run is implied.'); text(els.poll, 'Unable to read /api/state. Retrying every 3 seconds.'); els.pollIndicator.className = 'poll-indicator is-error'; updateReplay(); renderJudgments(); renderDetail();
+    pause(); state.data = null; renderComparison(null); els.scopeMessage.parentElement.classList.add('is-unavailable'); els.scopeMessage.parentElement.classList.remove('is-partial'); text(els.status, 'UNAVAILABLE'); text(els.source, 'Local journal unavailable'); els.seal.setAttribute('aria-label', 'Recorded journal unavailable'); els.scopeIcon.className = 'scope-icon is-unavailable'; text(els.scopeIcon, '×'); text(els.scopeMessage, 'Journal unavailable. No activity is inferred; this viewer cannot launch requests or change GTM.'); text(els.subtitle, message); ['records','attempts','agreement','insufficient'].forEach((key) => text(els[key], '—')); text(els.recordsNote, 'journal unavailable'); text(els.attemptsNote, 'journal unavailable'); text(els.agreementNote, 'comparison unavailable'); text(els.insufficientNote, 'comparison unavailable'); text(els.judgmentCount, '—'); text(els.shadowCaption, 'The recorded journal is unavailable. No live run is implied.'); text(els.poll, 'Unable to read /api/state. Retrying every 3 seconds.'); els.pollIndicator.className = 'poll-indicator is-error'; updateReplay(); renderJudgments(); renderDetail();
   }
   async function refresh() {
     try { const response = await fetch('/api/state', { headers: { Accept: 'application/json' }, cache: 'no-store' }); if (!response.ok) throw new Error(`HTTP ${response.status}`); const data = await response.json(); if (!safeState(data)) throw new Error('unsupported state payload'); const previousLength = state.data ? state.data.events.length : 0; state.data = data; if (!state.selectedRecord && data.records[0]) state.selectedRecord = data.records[0].recordId; if (state.replayIndex >= previousLength && data.events.length) state.replayIndex = 0; renderSummary(data); renderComparison(data.comparison); updateReplay(); renderJudgments(); renderDetail(); text(els.poll, `Recorded journal checked ${new Date().toLocaleTimeString()}. Polling every 3 seconds.`); els.pollIndicator.className = 'poll-indicator'; } catch (error) { setUnavailable('The recorded pilot journal is unavailable. This screen will retry locally; it will not start an optimizer.'); }
