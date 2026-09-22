@@ -1,0 +1,11 @@
+import { readFile } from "node:fs/promises";
+import { evaluateGtmSignalQuality, type GtmContainer } from "../evals/eval_gtm_signal_quality.js";
+import { applyOperations, validateCandidate } from "./gtm-container-mutations.js";
+import { buildEvidence, FakeJudge, freezeSeedDefinition, shadowPolicy } from "./jev-shadow.js";
+import { exportJsonl, replayReport, splitByGroup, assertGroupDisjoint } from "./jev-offline.js";
+const baseline=JSON.parse(await readFile("content/gtm-templates/BLADE/seed/blade-web.json","utf8")) as GtmContainer;
+const tag=baseline.containerVersion.tag![0]; const operations=[{op:"rename_tags" as const,renames:[{tagId:tag.tagId,newName:"Bing - All Pages"}]}];
+const candidate=applyOperations(baseline,operations); const before=evaluateGtmSignalQuality(baseline),after=evaluateGtmSignalQuality(candidate);
+const evidence=buildEvidence({runId:"offline-demo",parentId:"blade-web",baseline,candidate,operations,targetedIssue:"naming",before,after,validation:validateCandidate(baseline,candidate,operations),qa:{status:"passed",source:"synthetic"},frozen:freezeSeedDefinition()});
+const judgment=await new FakeJudge().judge(evidence); const route=shadowPolicy(evidence,judgment).route;
+const rows=[{input:{evidenceHash:judgment.status==="success"?judgment.evidenceHash:"none"},prediction:judgment,provenance:{containerGroup:"blade-web",lineageGroup:"blade-web",synthetic:true,samplingReasons:["synthetic"]},label:{evidenceHash:"synthetic",trackingBehaviorPreserved:"pass" as const,reviewer:"synthetic",reviewedAt:"not-human"},route}]; const split=splitByGroup(rows);assertGroupDisjoint(split); console.log(JSON.stringify({route,actualLegacyAction:after.combinedScore>before.combinedScore?"improved":"reverted",datasetJsonl:exportJsonl(rows),report:replayReport(rows)},null,2));

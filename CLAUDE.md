@@ -69,6 +69,7 @@ MAX_ROUNDS=30                     # rounds per run
 - Max rounds reached
 
 ## Agent Conventions
+- For Python-worker protocol tests, use the normal runtime timeout for successful/error responses; use short deadlines only for explicit timeout tests and assert the expected failure reason.
 - Read this file first on every session
 - Check `AGENT-HANDOFF/CURRENT-STATE.md` before starting any work
 - Write `AGENT-HANDOFF/CURRENT-STATE.md` after completing any phase

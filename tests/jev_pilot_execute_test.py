@@ -1,0 +1,305 @@
+import hashlib
+import importlib.util
+import json
+import tempfile
+import unittest
+import sys
+import time
+import multiprocessing
+import os
+import subprocess
+from unittest.mock import patch
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location("jev_pilot_execute", ROOT / "scripts/jev_pilot_execute.py")
+assert SPEC and SPEC.loader
+pilot = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = pilot
+SPEC.loader.exec_module(pilot)
+
+
+def canonical(value): return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+def sha(value): return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def concurrent_worker(package, seed, config, results, journal, calls):
+    prepared = pilot.prepare(Path(package), Path(seed))
+    loaded_config = pilot.validate_execution_config(Path(config), prepared)
+    class Recorder:
+        def __init__(self, name): self.name = name
+        def __call__(self, **kwargs):
+            with open(calls, "a", encoding="utf-8") as handle: handle.write(self.name + "\n")
+            return type("Prediction", (), {"choice": "pass"})()
+        def close(self): pass
+    pilot.execute(prepared, config=loaded_config, results_path=Path(results), journal_path=Path(journal), run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: Recorder(name) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
+
+
+class FakeFunction:
+    def __init__(self, name, calls, failure=None): self.name, self.calls, self.failure = name, calls, failure
+    def __call__(self, **kwargs):
+        self.calls.append((self.name, kwargs))
+        if self.failure: raise self.failure
+        return type("Prediction", (), {"choice": "pass"})()
+    def close(self): pass
+
+
+class ExecutePilotTest(unittest.TestCase):
+    def test_direct_worker_failure_preserves_safe_status_and_redacts_other_text(self):
+        state = {"current_candidate": {"instructions": "fixed", "criteria": {"pass": "p"}},
+                 "backend": {}, "selected_columns": ["observation"]}
+        function = pilot.DirectCloudflareFunction("evidenceSufficient", state, "typesafe/jev",
+                    {"CLOUDFLARE_ACCOUNT_ID": "0" * 32, "CLOUDFLARE_API_TOKEN": "secret"})
+        class FailedChild:
+            returncode = 2
+            def communicate(self, *args, **kwargs):
+                return json.dumps({"error": "ValueError", "reason": self.reason}), None
+        for reason, expected in [("Cloudflare HTTP 403", "Cloudflare HTTP 403"),
+                                 ("Authorization Bearer secret", "direct Cloudflare evaluation failed")]:
+            child = FailedChild(); child.reason = reason
+            with patch.object(pilot.subprocess, "Popen", return_value=child):
+                with self.assertRaises(pilot.DirectCloudflareError) as caught:
+                    function(observation={"synthetic": True})
+            self.assertEqual(str(caught.exception), expected)
+
+    def test_direct_timeout_kills_child_process(self):
+        state = {"current_candidate": {"instructions": "fixed", "criteria": {"pass": "p"}},
+                 "backend": {}, "selected_columns": ["observation"]}
+        function = pilot.DirectCloudflareFunction("evidenceSufficient", state, "typesafe/jev",
+                    {"CLOUDFLARE_ACCOUNT_ID": "0" * 32, "CLOUDFLARE_API_TOKEN": "secret"})
+        children = []
+        real_popen = subprocess.Popen
+        def slow_worker(_args, **kwargs):
+            child = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
+            children.append(child)
+            return child
+        with patch.object(pilot.subprocess, "Popen", side_effect=slow_worker), patch.object(pilot, "MAX_ATOMIC_SECONDS", .1):
+            with self.assertRaises(pilot.AtomicTimeout): function(observation={"synthetic": True})
+        self.assertEqual(len(children), 1)
+        self.assertIsNotNone(children[0].poll())
+        with self.assertRaises(ProcessLookupError): os.kill(children[0].pid, 0)
+
+    def test_direct_run_preserves_metadata_and_transport_on_resume(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            rubric_hash, _ = self.make_package(root, count=12)
+            seed = self.make_seed(root, rubric_hash, model="typesafe/jev")
+            prepared = pilot.prepare(root, seed)
+            config = pilot.validate_execution_config(self.config(root, model="typesafe/jev"), prepared)
+            calls = []
+            class DirectFake(FakeFunction):
+                def __call__(self, **kwargs):
+                    prediction = super().__call__(**kwargs)
+                    prediction.metadata = {"reportedModel": "jev-test", "usage": {"input_tokens": 12, "output_tokens": 3}}
+                    return prediction
+            kwargs = dict(config=config, results_path=root / "results.jsonl", journal_path=root / "journal.jsonl",
+                          run_id="direct-run", environment={"CLOUDFLARE_ACCOUNT_ID": "0" * 32, "CLOUDFLARE_API_TOKEN": "secret"})
+            with patch.object(pilot, "load_direct_cloudflare_functions", side_effect=lambda *_: {name: DirectFake(name, calls) for name in pilot.FUNCTIONS}), patch.object(pilot, "call_with_timeout", side_effect=AssertionError("direct path must use child timeout")):
+                report = pilot.execute(prepared, direct_cloudflare=True, **kwargs)
+                pilot.execute(prepared, direct_cloudflare=True, **kwargs)
+            self.assertEqual(len(calls), 24)
+            self.assertEqual(report["transport"], "cloudflare-direct-v1")
+            records = pilot.existing_jsonl(root / "results.jsonl")
+            self.assertEqual(records[0]["providerEvaluations"]["evidenceSufficient"]["usage"]["input_tokens"], 12)
+            with self.assertRaisesRegex(ValueError, "immutable run header"):
+                pilot.execute(prepared, provider_guard=lambda *_: None, loader=lambda _: {}, **kwargs)
+
+    def test_direct_failure_stops_new_rows_then_explicit_resume_continues(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); rubric_hash, _ = self.make_package(root, count=12)
+            prepared = pilot.prepare(root, self.make_seed(root, rubric_hash, model="typesafe/jev"))
+            kwargs = dict(config=pilot.validate_execution_config(self.config(root, model="typesafe/jev"), prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="direct-stop", environment={"CLOUDFLARE_ACCOUNT_ID": "0" * 32, "CLOUDFLARE_API_TOKEN": "secret"}, direct_cloudflare=True)
+            calls = []
+            class Failing:
+                def __call__(self, **_):
+                    calls.append("failed"); raise pilot.DirectCloudflareError("Cloudflare response model missing")
+                def close(self): pass
+            with patch.object(pilot, "load_direct_cloudflare_functions", return_value={name: Failing() for name in pilot.FUNCTIONS}):
+                report = pilot.execute(prepared, **kwargs)
+            self.assertEqual(report["atomicAttempts"], 1); self.assertTrue(report["stoppedAfterDirectError"]); self.assertEqual(report["remainingRows"], 11); self.assertEqual(calls, ["failed"])
+            resumed = []
+            with patch.object(pilot, "load_direct_cloudflare_functions", return_value={name: FakeFunction(name, resumed) for name in pilot.FUNCTIONS}):
+                report = pilot.execute(prepared, **kwargs)
+            self.assertFalse(report["stoppedAfterDirectError"]); self.assertEqual(report["remainingRows"], 0); self.assertEqual(len(resumed), 22)
+            self.assertEqual([item["status"] for item in pilot.existing_jsonl(root / "results.jsonl")].count("error"), 1)
+
+    def make_package(self, directory, count=1, expected=False):
+        labels = {"pass": "p", "fail": "f", "insufficient": "i"}
+        rubric = {"status": "seed", "rubricVersion": "r1", "preprocessingVersion": "synthetic-gtm-observation-v2", "functions": {name: {"description": name, "labels": labels} for name in pilot.FUNCTIONS}}
+        rubric_hash = sha(canonical(rubric)); rows = []
+        for index in range(count):
+            observation = {"schemaVersion": "synthetic-gtm-observation-v2", "decisionTime": f"2026-01-{index + 1:02d}T00:00:00.000Z", "synthetic": True, "facts": {"index": index}, "cautions": []}
+            value = {"observation": observation}; encoded = canonical(value)
+            rows.append({"recordId": f"r{index}", "inputHash": sha(encoded), "canonicalInput": encoded, "input": value, "provenance": {"split": "train", "decisionTime": observation["decisionTime"]}, "deterministicReject": False, "rubricHash": rubric_hash})
+        manifest = {"schemaVersion": "jev-pilot-package-v1", "rubricHash": rubric_hash, "pilotObservations": count, "maxAtomicEvaluations": count * 2}
+        files = {"rubric.json": canonical(rubric) + "\n", "pilot-inputs.jsonl": "".join(json.dumps(row) + "\n" for row in rows), "manifest.json": json.dumps(manifest) + "\n"}
+        if expected:
+            expected_rows = [{"recordId": row["recordId"], "inputHash": row["inputHash"], "rubricHash": rubric_hash, "reviewStatus": "unreviewed", "provenance": "synthetic_generator_rule_not_human_reviewed", "labelVersion": "synthetic-observability-labels-v1", "deterministicReject": False, "expectedAnswers": {"evidenceSufficient": "pass", "trackingBehaviorPreserved": "pass"}} for row in rows]
+            files["pilot-expected.jsonl"] = "".join(json.dumps(row) + "\n" for row in expected_rows)
+        for name, content in files.items(): (directory / name).write_text(content, encoding="utf-8")
+        (directory / "checksums.json").write_text(json.dumps({name: sha(content) for name, content in files.items()}), encoding="utf-8")
+        return rubric_hash, rows
+
+    def make_seed(self, directory, rubric_hash, provider="cloudflare", model="approved-model"):
+        functions = {}
+        for name in pilot.FUNCTIONS:
+            saved = directory / name; saved.mkdir()
+            state = {"run_id": name, "source_sha256": rubric_hash, "selected_columns": ["observation"], "column_mode": "selected", "backend": {"provider": provider, "model": model, "options": {}}, "current_candidate": {"kind": "multiclass", "instructions": name, "criteria": {"pass": "p", "fail": "f", "insufficient": "i"}}}
+            (saved / "state.json").write_text(json.dumps(state), encoding="utf-8")
+            functions[name] = {"path": str(saved), "definitionHash": sha(canonical(pilot.native_definition(state))), "provider": provider, "model": model}
+        payload = {"status": "seed", "rubricHash": rubric_hash, "requestedModel": model, "preprocessingVersion": "synthetic-gtm-observation-v2", "rubricVersion": "r1", "policyVersion": "tracking-shadow-policy-v1", "functions": functions}
+        manifest = {**payload, "manifestHash": sha(canonical(payload))}
+        seed = directory / "seed-manifest.json"; seed.write_text(json.dumps(manifest), encoding="utf-8")
+        return seed
+
+    def config(self, directory, provider="cloudflare", model="approved-model"):
+        value = {"schemaVersion": pilot.CONFIG_SCHEMA, "mode": "shadow", "provider": provider, "model": model}
+        path = directory / "execution.json"; path.write_text(json.dumps(value), encoding="utf-8"); return path
+
+    def prepared(self, directory, count=1, provider="cloudflare", expected=False):
+        rubric_hash, rows = self.make_package(directory, count, expected)
+        seed = self.make_seed(directory, rubric_hash, provider)
+        return pilot.prepare(directory, seed), self.config(directory, provider), rows
+
+    def test_preflight_is_offline_and_checks_saved_function_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root)
+            self.assertEqual(prepared.provider, "cloudflare")
+            self.assertEqual(pilot.validate_execution_config(config, prepared)["mode"], "shadow")
+            # Changing persisted native identity fails before a loader or provider can run.
+            state = json.loads((root / "evidenceSufficient/state.json").read_text()); state["selected_columns"] = ["labels"]
+            (root / "evidenceSufficient/state.json").write_text(json.dumps(state))
+            with self.assertRaisesRegex(ValueError, "select only observation"):
+                pilot.prepare(root, root / "seed-manifest.json")
+
+    def test_absent_config_credential_and_identity_reject_with_zero_calls(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root); calls = []
+            loader = lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS}
+            with self.assertRaisesRegex(ValueError, "unable to read"):
+                pilot.validate_execution_config(root / "missing.json", prepared)
+            with self.assertRaisesRegex(ValueError, "missing provider credentials"):
+                pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={}, loader=loader, provider_guard=lambda *_: None)
+            self.assertEqual(calls, [])
+            bad = json.loads(config.read_text()); bad["model"] = "other"; config.write_text(json.dumps(bad))
+            with self.assertRaisesRegex(ValueError, "provider/model"):
+                pilot.validate_execution_config(config, prepared)
+            self.assertEqual(calls, [])
+
+    def test_twelve_rows_are_bounded_to_twenty_four_atomic_attempts_and_observation_only(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, rows = self.prepared(root, 12); calls = []
+            loader = lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS}
+            report = pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=loader, provider_guard=lambda *_: None)
+            self.assertEqual(report["atomicAttempts"], 24); self.assertEqual(len(calls), 24)
+            self.assertTrue(all(set(payload) == {"observation"} for _, payload in calls))
+            self.assertEqual(len(pilot.existing_jsonl(root / "results.jsonl")), 12)
+            self.assertFalse((root / "pilot-expected.jsonl").exists())
+
+    def test_errors_consume_attempts_and_make_complete_error_records(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root, 2); calls = []
+            loader = lambda _: {name: FakeFunction(name, calls, TimeoutError() if name == "evidenceSufficient" else None) for name in pilot.FUNCTIONS}
+            report = pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=loader, provider_guard=lambda *_: None)
+            self.assertEqual(report["atomicAttempts"], 2); self.assertEqual([row["status"] for row in pilot.existing_jsonl(root / "results.jsonl")], ["error", "error"])
+            self.assertEqual(len(calls), 2)
+
+    def test_interruption_does_not_retry_started_atomic_attempt_on_resume(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root); calls = []
+            loader = lambda _: {name: FakeFunction(name, calls, KeyboardInterrupt() if name == "evidenceSufficient" else None) for name in pilot.FUNCTIONS}
+            kwargs = dict(config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=loader, provider_guard=lambda *_: None)
+            with self.assertRaises(KeyboardInterrupt): pilot.execute(prepared, **kwargs)
+            self.assertEqual(len(calls), 1)
+            # Resume never invokes the partially started function again.
+            pilot.execute(prepared, **kwargs)
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(pilot.existing_jsonl(root / "results.jsonl")[0]["status"], "error")
+
+    def test_concurrent_resumes_share_one_twenty_four_attempt_budget(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root, 12); calls = root / "calls.log"
+            args = (str(root), str(root / "seed-manifest.json"), str(config), str(root / "results.jsonl"), str(root / "journal.jsonl"), str(calls))
+            context = multiprocessing.get_context("spawn")
+            processes = [context.Process(target=concurrent_worker, args=args) for _ in range(2)]
+            for process in processes: process.start()
+            for process in processes:
+                process.join(15); self.assertEqual(process.exitcode, 0)
+            self.assertEqual(len(calls.read_text().splitlines()), 24)
+            self.assertEqual(len(pilot.existing_jsonl(root / "results.jsonl")), 12)
+
+    def test_two_row_resume_accepts_completed_result_prefix_after_interruption(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root, 2); calls = []
+            class InterruptThird(FakeFunction):
+                def __call__(self, **kwargs):
+                    self.calls.append((self.name, kwargs))
+                    if len(self.calls) == 3: raise KeyboardInterrupt()
+                    return type("Prediction", (), {"choice": "pass"})()
+            kwargs = dict(config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, provider_guard=lambda *_: None)
+            with self.assertRaises(KeyboardInterrupt):
+                pilot.execute(prepared, loader=lambda _: {name: InterruptThird(name, calls) for name in pilot.FUNCTIONS}, **kwargs)
+            self.assertEqual((root / "results.jsonl").read_text(), "")
+            pilot.execute(prepared, loader=lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS}, **kwargs)
+            records = pilot.existing_jsonl(root / "results.jsonl")
+            self.assertEqual([record["status"] for record in records], ["success", "error"])
+            self.assertEqual(len(calls), 3)
+
+    def test_unreviewed_transport_cannot_enable_provider_calls(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root); calls = []
+            with self.assertRaisesRegex(ValueError, "no reviewed transport"):
+                pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS})
+            self.assertEqual(calls, [])
+
+    def test_timeout_consumes_started_attempt_and_journal_rebuilds_results(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root); calls = []
+            class Slow(FakeFunction):
+                def __call__(self, **kwargs):
+                    self.calls.append((self.name, kwargs)); time.sleep(0.03)
+            original = pilot.MAX_ATOMIC_SECONDS; pilot.MAX_ATOMIC_SECONDS = 0.005
+            try:
+                report = pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: Slow(name, calls) if name == "evidenceSufficient" else FakeFunction(name, calls) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
+            finally:
+                pilot.MAX_ATOMIC_SECONDS = original
+            self.assertEqual(report["atomicAttempts"], 1)
+            self.assertIn("AtomicTimeout", pilot.existing_jsonl(root / "results.jsonl")[0]["reason"])
+            (root / "results.jsonl").unlink()
+            # Completed journal state is authoritative after a crash between journal and result publication.
+            pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
+            self.assertEqual(len(pilot.existing_jsonl(root / "results.jsonl")), 1)
+            self.assertEqual(len(calls), 1)
+
+    def test_label_files_are_never_opened_and_journal_or_output_tampering_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root, expected=True)
+            inventory = json.loads((root / "checksums.json").read_text()); inventory["train-expected.jsonl"] = "0" * 64
+            (root / "checksums.json").write_text(json.dumps(inventory)); (root / "pilot-expected.jsonl").unlink()
+            # Expected-label inventory entries can be absent: no label bytes are read by prepare.
+            prepared = pilot.prepare(root, root / "seed-manifest.json")
+            results, journal = root / "results.jsonl", root / "journal.jsonl"; results.write_text("unrelated output")
+            with self.assertRaisesRegex(ValueError, "existing results"):
+                pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=results, journal_path=journal, run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: FakeFunction(name, []) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
+            results.unlink()
+            pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=results, journal_path=journal, run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: FakeFunction(name, []) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
+            lines = journal.read_text().splitlines(); header = json.loads(lines[0]); header["inputs"][0]["inputHash"] = "0" * 64; lines[0] = json.dumps(header); journal.write_text("\n".join(lines) + "\n")
+            with self.assertRaisesRegex(ValueError, "immutable run header"):
+                pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=results, journal_path=journal, run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: FakeFunction(name, []) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
+
+    def test_typesafe_retries_are_rejected_and_output_scores_offline(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root, provider="typesafe", expected=True); calls = []
+            with self.assertRaisesRegex(ValueError, "hidden SDK retries"):
+                pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"TYPESAFE_API_KEY": "test"}, loader=lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
+            self.assertEqual(calls, [])
+            # A Cloudflare fake run creates artifacts accepted by the existing scorer.
+            cloud = root / "cloud"; cloud.mkdir()
+            prepared, config, _ = self.prepared(cloud, expected=True)
+            calls = []
+            pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=prepared.package / "results.jsonl", journal_path=prepared.package / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
+            score = pilot.jev_pilot.score(prepared.package, prepared.package / "results.jsonl")
+            self.assertEqual(score["predictionCount"], 1)
+
+
+if __name__ == "__main__": unittest.main()
