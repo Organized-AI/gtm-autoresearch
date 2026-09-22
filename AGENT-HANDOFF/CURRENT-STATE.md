@@ -1,4 +1,23 @@
-# Current State — 2026-09-21
+# Current State — 2026-09-21 (v2 synthetic replay)
+
+## Branch
+`feat/jev-shadow-pilot` — draft PR #5 against `feat/baseline-preserving-container-policy`
+
+## What Just Happened
+- Extended the read-only synthetic-lab adapter for a direct-root v2 manifest with per-case lineage, container, topology, and planned split metadata.
+- The grouped replay splitter connects cases that share any container, lineage, or topology group, rejects partial/conflicting planned components, and keeps grouping metadata outside model input.
+- Retained the v1 `datasets/demo-v1` compatibility path and ran its 36-observation offline replay successfully.
+- Kept Jev shadow-only: no provider calls, labels/oracle access, GTM actions, calibration claims, or enforcement were added.
+
+## Verification
+- `TMPDIR=/private/tmp npm run typecheck`
+- `TMPDIR=/private/tmp node --import tsx --test tests/*.test.ts` (27 passing)
+- `SYNTHETIC_GTM_LAB_PATH='/Users/jordaaan/Documents/ChatGPT/Measure U/synthetic-gtm-lab' TMPDIR=/private/tmp node --import tsx scripts/synthetic-lab-demo.ts` (36 v1 observations; 0 provider calls)
+
+## Next Steps
+- Push the v2 replay commit to draft PR #5 and review it against the stacked baseline-policy PR.
+
+# Previous State — 2026-09-21
 
 ## Branch
 `feat/baseline-preserving-container-policy`

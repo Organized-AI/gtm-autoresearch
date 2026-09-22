@@ -8,14 +8,15 @@ import { splitByGroup, assertGroupDisjoint, replayReport, exportJsonl } from "./
 type Json = Record<string, unknown>;
 const args = process.argv.slice(2);
 const cutoffs: string[] = [];
-let output: string | undefined;
+let output: string | undefined; let dataset: string | undefined;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--decision-time" && args[i + 1]) cutoffs.push(args[++i]);
   else if (args[i] === "--output" && args[i + 1]) output = args[++i];
+  else if (args[i] === "--dataset" && args[i + 1]) dataset = args[++i];
   else throw new Error(`Unknown/incomplete argument: ${args[i]}`);
 }
 if (!cutoffs.length) cutoffs.push("2026-01-01T12:00:00Z", "2026-01-02T06:00:00Z", "2026-01-03T12:00:00Z");
-const root = process.env.SYNTHETIC_GTM_LAB_PATH ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../synthetic-gtm-lab");
+const root = dataset ?? process.env.SYNTHETIC_GTM_LAB_PATH ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../synthetic-gtm-lab");
 const rows = (await Promise.all(cutoffs.map(t => buildSyntheticReplayRows(root, t)))).flat();
 const split = splitByGroup(rows); assertGroupDisjoint(split);
 const summaries = rows.map((row, index) => {
@@ -35,9 +36,9 @@ const summaries = rows.map((row, index) => {
 });
 const summary = {
   mode: "offline-evidence-only", providerCalls: 0, observations: rows.length,
-  decisionTimes: cutoffs, lineageGroups: [...new Set(rows.map(r => r.provenance.lineageGroup))],
+  decisionTimes: cutoffs, lineageGroups: [...new Set(rows.map(r => r.provenance.lineageGroup))], topologyGroups: [...new Set(rows.map(r => r.provenance.topologyGroup).filter(Boolean))],
   splitCounts: Object.fromEntries(Object.entries(split).map(([key, value]) => [key, value.length])),
-  evaluationReadiness: "Insufficient: one shared topology/lineage; no judge predictions or independently reviewed labels.",
+  evaluationReadiness: "Insufficient for calibration or generalization claims: synthetic topology coverage uses shared simulator recipes and has no judge predictions or independently reviewed labels.",
   report: replayReport(rows.map(row => ({ ...row, route: "review" as const }))),
   measurements: summaries,
 };

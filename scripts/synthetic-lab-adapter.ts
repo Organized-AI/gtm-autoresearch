@@ -6,8 +6,8 @@ import type { DatasetRow } from "./jev-offline.js";
 
 type Json = Record<string, unknown>;
 export interface LabManifest {
-  schema_version: string; lineage_group: string; synthetic: true;
-  cases: Array<{ case_id: string; directory: string }>;
+  schema_version: string; lineage_group?: string; synthetic: true;
+  cases: Array<{ case_id: string; directory: string; lineage_group?: string; container_group?: string; topology_group?: string; split?: "train"|"validation"|"holdout" }>;
 }
 export interface SyntheticObservation {
   provenance: { source: "synthetic-gtm-lab"; datasetSchema: string; lineageGroup: string; caseId: string; decisionTime: string; synthetic: true };
@@ -44,15 +44,12 @@ async function contained(parent: string, child: string): Promise<string> {
   if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) throw new Error("dataset path escapes observations directory");
   return target;
 }
+async function datasetRoot(root: string): Promise<string> { try { await readFile(path.join(root,"manifest.json"),"utf8"); return root; } catch { return path.join(root,"datasets/demo-v1"); } }
 export async function loadManifest(root: string): Promise<LabManifest> {
-  const raw = record(await json(path.join(root, "datasets/demo-v1/manifest.json")), "manifest");
-  if (raw.synthetic !== true || typeof raw.schema_version !== "string" || typeof raw.lineage_group !== "string" || !raw.lineage_group) throw new Error("invalid synthetic manifest");
-  const cases = array(raw.cases, "manifest cases").map(item => {
-    if (typeof item.case_id !== "string" || typeof item.directory !== "string" || !/^observations\/[A-Za-z0-9_-]+$/.test(item.directory)) throw new Error("invalid observation directory");
-    return { case_id: item.case_id, directory: item.directory };
-  });
-  if (new Set(cases.map(c => c.case_id)).size !== cases.length) throw new Error("duplicate case IDs");
-  return { schema_version: raw.schema_version, lineage_group: raw.lineage_group, synthetic: true, cases };
+  const dataset=await datasetRoot(root), raw=record(await json(path.join(dataset,"manifest.json")),"manifest"), v2=raw.schema_version==="2.0.0";
+  if (raw.synthetic!==true||typeof raw.schema_version!=="string"||(!v2&&(typeof raw.lineage_group!=="string"||!raw.lineage_group))) throw new Error("invalid synthetic manifest");
+  const cases=array(raw.cases,"manifest cases").map(item=>{if(typeof item.case_id!=="string"||!item.case_id||typeof item.directory!=="string"||!/^observations\/[A-Za-z0-9_-]+$/.test(item.directory))throw new Error("invalid observation directory");if(v2&&(["lineage_group","container_group","topology_group","split"] as const).some(k=>typeof item[k]!=="string"||!(item[k] as string).trim()) )throw new Error("v2 case missing grouping metadata");if(item.split!==undefined&&!(["train","validation","holdout"] as string[]).includes(item.split as string))throw new Error("invalid declared split");return {case_id:item.case_id,directory:item.directory,lineage_group:item.lineage_group as string|undefined,container_group:item.container_group as string|undefined,topology_group:item.topology_group as string|undefined,split:item.split as "train"|"validation"|"holdout"|undefined};});
+  if(new Set(cases.map(c=>c.case_id)).size!==cases.length)throw new Error("duplicate case IDs");if(v2){const topologySplits=new Map<string,string>();for(const c of cases){const prior=topologySplits.get(c.topology_group!);if(prior&&prior!==c.split)throw new Error("topology has conflicting declared splits");topologySplits.set(c.topology_group!,c.split!);}}return {schema_version:raw.schema_version,lineage_group:raw.lineage_group as string|undefined,synthetic:true,cases};
 }
 const COLLECTION_IDS: Record<string, string> = { tag: "tagId", trigger: "triggerId", variable: "variableId", folder: "folderId", client: "clientId", customTemplate: "templateId" };
 /** These checks cover the simulator reference shape, not Google's complete import schema. */
@@ -141,7 +138,7 @@ export async function observeSyntheticCase(root: string, caseId: string, decisio
   const cutoff = timestamp(decisionTime, "decision time");
   const manifest = await loadManifest(root), item = manifest.cases.find(c => c.case_id === caseId);
   if (!item) throw new Error(`unknown synthetic case ${caseId}`);
-  const dataset = path.join(root, "datasets/demo-v1");
+  const dataset = await datasetRoot(root);
   const base = await contained(path.join(dataset, "observations"), path.basename(item.directory));
   const loadRows = async (file: string) => jsonl(await contained(base, file));
   const [data, network, snapshots, rawHistory] = await Promise.all([loadRows("data-layer.jsonl"), loadRows("network-events.jsonl"), loadRows("platform-snapshots.jsonl"), json(await contained(base, "container-history.json"))]);
@@ -174,7 +171,7 @@ export async function observeSyntheticCase(root: string, caseId: string, decisio
     events: array(s.events, "platform events").map(e => ({ eventName: e.event_name, receivedRequests: e.received_requests, uniqueEvents: e.unique_events,
       browserEvents: e.browser_events, serverEvents: e.server_events, browserServerOverlap: e.browser_server_overlap,
       serverDedupOverlapRate: e.server_dedup_overlap_rate, attributedConversions: e.attributed_conversions, attributedValue: e.attributed_value, simulatedEmqProxy: e.simulated_emq_proxy })) }));
-  return { provenance: { source: "synthetic-gtm-lab", datasetSchema: manifest.schema_version, lineageGroup: manifest.lineage_group, caseId, decisionTime: new Date(cutoff).toISOString(), synthetic: true },
+  return { provenance: { source: "synthetic-gtm-lab", datasetSchema: manifest.schema_version, lineageGroup: item.lineage_group ?? manifest.lineage_group ?? "unknown", caseId, decisionTime: new Date(cutoff).toISOString(), synthetic: true },
     facts: { ...summarize(visitor, deliveries), containers, segments, availablePlatformSnapshots: platformSnapshots,
       containerHistory: history.map(h => ({ effectiveAt: h.effective_at, webHash: h.web_hash, serverHash: h.server_hash })),
       qa: { status: "absent", detail: "simulation observations; no browser/GTM preview executed" } },
@@ -196,6 +193,6 @@ export async function buildSyntheticReplayRows(root: string, decisionTime: strin
   return Promise.all(manifest.cases.map(async item => {
     const observation = await observeSyntheticCase(root, item.case_id, decisionTime);
     return { input: { observation: compactSyntheticJudgeInput(observation) }, prediction: { status: "unavailable" as const, reason: "offline evidence replay; Jev was not called" },
-      provenance: { containerGroup: manifest.lineage_group, lineageGroup: manifest.lineage_group, synthetic: true, samplingReasons: ["synthetic-corpus-full-enumeration"] } };
+      provenance: { containerGroup: item.container_group ?? manifest.lineage_group ?? "unknown", lineageGroup: item.lineage_group ?? manifest.lineage_group ?? "unknown", topologyGroup: item.topology_group, plannedSplit: item.split, synthetic: true, samplingReasons: ["synthetic-corpus-full-enumeration"] } };
   }));
 }
