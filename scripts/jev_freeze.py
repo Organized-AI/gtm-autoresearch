@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create two offline Jev seed functions from a reviewed rubric; never evaluate them."""
+"""Create two offline Jev seed functions from a versioned rubric; never evaluate them."""
 from __future__ import annotations
 
 import argparse

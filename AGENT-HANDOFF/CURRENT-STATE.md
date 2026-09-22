@@ -1,3 +1,29 @@
+# Current State — 2026-09-21 (frozen offline training pilot)
+
+## Branch
+`feat/jev-shadow-pilot` — draft PR #5 against unmerged `feat/baseline-preserving-container-policy` / PR #4. Do not merge or promote automatically.
+
+## Completed
+- Froze the two-function seed rubric in `DOCUMENTATION/jev-shadow-pilot/rubric-v1.json`.
+- Added `scripts/jev-pilot-dataset.ts`: checksum-verified training inputs/truth only, injection-time generator truth, evidence-only expected answers, equivalent-input consistency check, deterministic selection, and separate input/label artifacts.
+- Built `data/jev-shadow/training-pilot-v1-final`: 78 training observations, four reference rejects, 12 selected inputs / proposed 24 atomic evaluation ceiling; zero provider calls. Validation and holdout inputs/truth were not opened by preparation.
+- Added actual native Jev save/load helper/test against pinned source; only a placeholder test model was used. Added offline preflight/scorer with explicit unreviewed-label agreement and runtime coverage.
+- Independent review found and resolved absent-route false-positive cases; regression tests added.
+- BLADE is JSON shape only; Jev remains default-off/shadow-only. No live evaluation, deployment, calibration or promotion.
+
+## Verification
+- 37 TypeScript tests and typecheck pass using exact-lockfile dependencies in `/private/tmp/gtm-offline-verification` because macOS offloads workspace files.
+- Simulator: 26 Python tests pass. Native save/load and offline preflight/scorer: 8 Python tests pass.
+- Real generated pilot preflight: 12 rows, proposed 24 atomic evaluations, zero calls.
+- Detailed reproducibility, label coverage and limits: `DOCUMENTATION/jev-shadow-pilot/TRAINING-PILOT.md`.
+
+## Next step / pending settings
+- Await provider/model and maximum spend; the existing asynchronous question remains unanswered. No native provider credentials were found in the process environment or project configuration.
+- Native backends: typesafe, cloudflare, vercel. Before live work: resolve runtime dependencies, freeze explicit provider/model definitions, enforce parent call limits, provider spending limits and usage recording. The current preflight/scorer does not execute providers.
+- Preserve holdout for final evaluation. Expected answers are generator-defined and unreviewed; one topology per partition limits generalization claims.
+
+---
+
 # Current State — 2026-09-21 (v2 synthetic replay)
 
 ## Branch

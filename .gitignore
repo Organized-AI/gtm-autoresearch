@@ -11,3 +11,7 @@ docs/
 content/gtm-templates/winning/
 content/gtm-templates/*/shadow-results/
 data/jev-shadow/
+
+# Local Python verification caches
+__pycache__/
+*.pyc
