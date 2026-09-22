@@ -22,6 +22,8 @@ Each invocation evaluates one bounded deterministic batch, not an open-ended mod
 
 For this Mac mini's existing private dashboard, `scripts/run-daily-benchmark-service.py --state-dir DIR --publish-viewer` runs the same benchmark and refreshes the installed export only when it passes offline readiness checks. This updates the dashboard only; it never imports or publishes to GTM. The service wrapper uses the existing completed Jev records as separate recorded views.
 
+The daily task is installed as heartbeat `daily-blade-container-benchmark`, scheduled at 09:00 America/Chicago. It is quiet for unchanged results and reports meaningful improvements or failures. Its executable source is pinned at `~/Library/Application Support/GTM Autoresearch/benchmark/code-7b17914`; persistent state is the sibling `state` directory. This avoids relying on temporary task checkouts. Update the existing automation and installed code together for future stages. The initial accepted result was 0.4277 → 0.4894; no tracking-behavior improvement is claimed.
+
 ## Run contract
 
 1. Read the selected container's current published version and any explicitly selected source workspace. Capture complete exports, IDs, fingerprints, timestamps and content hashes. Keep published, staged and proposed state distinct. For paired web/server containers, capture both as one topology with separate import files.
