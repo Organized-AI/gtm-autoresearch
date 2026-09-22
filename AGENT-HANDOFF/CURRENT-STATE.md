@@ -20,6 +20,13 @@
 - Review and merge PR #4.
 - Add the post-validation Jev worker and OpenShell worker sandbox only when the runtime execution phase is scheduled.
 
+## Jev Shadow Pilot — 2026-09-21
+
+- Stacked branch: `feat/jev-shadow-pilot`, based on the still-open container-policy PR #4.
+- Added shadow-only evidence, pure routing policy, fake-tested Python worker adapter, grouped offline dataset/replay tooling, and BLADE web/server fixture coverage.
+- `JEV_MODE=off` is default. `shadow` cannot change legacy keep/revert behavior.
+- No Teleios claim, live GTM action, provider evaluation, calibration, OpenShell enforcement, or enforcement activation occurred.
+
 ---
 
 # Current State — 2026-04-07

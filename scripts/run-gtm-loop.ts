@@ -21,6 +21,15 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { postAutoresearchRun } from "./post-to-linear.js";
 import {
+  buildEvidence,
+  freezeSeedDefinition,
+  PythonJevJudge,
+  shadowPolicy,
+  writeEvidence,
+  hash,
+  type ShadowOutcome,
+} from "./jev-shadow.js";
+import {
   applyOperations,
   assertValidOperations,
   validateCandidate,
@@ -51,6 +60,10 @@ const PLATEAU_STREAK = 3;
 const MAX_REGRESSIONS = 3;
 const MAX_JSON_FAILURES = 5;
 const MUTATION_BUDGET = 3;
+const JEV_MODE = process.env.JEV_MODE === "shadow" ? "shadow" : "off";
+const JEV_PYTHON = process.env.JEV_PYTHON ?? "python3";
+const JEV_WORKER_PATH = process.env.JEV_WORKER_PATH ?? path.join(PROJECT_ROOT, "scripts/jev_worker.py");
+const JEV_DEFINITION_PATH = process.env.JEV_DEFINITION_PATH ?? "";
 
 // Mutation provider config
 // "claude" = Claude Code CLI (authenticated via Claude plan)
@@ -75,6 +88,7 @@ interface RoundResult {
   issueCount: number;
   action: "improved" | "reverted" | "validation_fail" | "json_fail";
   mutationSummary: string;
+  shadow?: ShadowOutcome;
 }
 
 interface ClientManifest {
@@ -923,6 +937,8 @@ async function main(): Promise<void> {
   let bestScore = baselineScores.combinedScore;
   let bestJson = seedJson;
   let prevScore = baselineScores.combinedScore;
+  const shadowRunId = `shadow-${Date.now()}`;
+  const frozenJudgeDefinition = freezeSeedDefinition();
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     console.log(`\n${"═".repeat(60)}`);
@@ -1098,6 +1114,20 @@ async function main(): Promise<void> {
 
     // Re-score mutated version
     const mutatedScores = evaluateGtmSignalQuality(mutated, adsSnapshot);
+    let shadowBase: Omit<ShadowOutcome, "actualAction" | "disagreement"> | undefined;
+    if (JEV_MODE === "shadow") {
+      const evidence = buildEvidence({
+        runId: shadowRunId, parentId: hash(working).slice(0, 16), baseline: working, candidate: mutated,
+        operations: mutationResp.operations, targetedIssue: strategy, before: scores, after: mutatedScores,
+        validation, snapshot: { identity: adsSnapshot ? "loaded-snapshot" : "none", partial: Boolean((adsSnapshot as EnrichedAdsSnapshot | undefined)?.partial) },
+        qa: { status: "absent" }, frozen: frozenJudgeDefinition,
+      });
+      const judge = new PythonJevJudge(JEV_PYTHON, JEV_WORKER_PATH, JEV_DEFINITION_PATH);
+      const judgment = await judge.judge(evidence);
+      const proposal = shadowPolicy(evidence, judgment);
+      shadowBase = { mode: "shadow", proposedRoute: proposal.route, reasonCodes: proposal.reasonCodes, judgment };
+      await writeEvidence(path.join(path.dirname(templatePath), "shadow-results", shadowRunId, `${round}-${evidence.candidateId}`), evidence, working, mutated);
+    }
     console.log(
       `[Mutate] New score: ${(mutatedScores.combinedScore * 100).toFixed(1)}% ` +
         `(was ${(scores.combinedScore * 100).toFixed(1)}%)`,
@@ -1117,6 +1147,7 @@ async function main(): Promise<void> {
         issueCount: mutatedScores.issues.length,
         action: "improved",
         mutationSummary: `Score ${(scores.combinedScore * 100).toFixed(1)}% → ${(mutatedScores.combinedScore * 100).toFixed(1)}%`,
+        shadow: shadowBase && { ...shadowBase, actualAction: "improved", disagreement: shadowBase.proposedRoute !== "keep" },
       });
     } else {
       // Revert
@@ -1130,6 +1161,7 @@ async function main(): Promise<void> {
         issueCount: scores.issues.length,
         action: "reverted",
         mutationSummary: `${(mutatedScores.combinedScore * 100).toFixed(1)}% <= ${(scores.combinedScore * 100).toFixed(1)}%, reverted`,
+        shadow: shadowBase && { ...shadowBase, actualAction: "reverted", disagreement: shadowBase.proposedRoute === "keep" },
       });
     }
   }

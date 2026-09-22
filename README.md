@@ -79,6 +79,8 @@ Every run treats the selected GTM export as its baseline, then applies typed ope
 
 See [the container mutation policy](DOCUMENTATION/container-mutation-policy.md) for the operation boundary, Jev's post-validation judge role, and the planned OpenShell execution boundary.
 
+The implemented shadow-pilot contract, offline replay workflow, and operational limits are in [Jev shadow-pilot documentation](DOCUMENTATION/jev-shadow-pilot/CONTRACT.md).
+
 ## Ads data feedback loop
 
 The enriched snapshot pulls live data from Meta and Google Ads APIs before each loop run, giving the optimizer real signals to work with:

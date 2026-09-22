@@ -1,0 +1,4 @@
+# Install only in the isolated judge worker environment after reviewing the pinned commit.
+# The pilot test suite uses tests/fixtures/fake-jev-worker.py and makes no provider calls.
+# jev-align must be pinned to a reviewed upstream commit before a live capture:
+# git+https://github.com/sutro-sh/jev-align.git@<reviewed-commit>

@@ -9,3 +9,5 @@ data/experiments.sqlite
 .DS_Store
 docs/
 content/gtm-templates/winning/
+content/gtm-templates/*/shadow-results/
+data/jev-shadow/
