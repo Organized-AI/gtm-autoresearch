@@ -26,7 +26,8 @@
 - Added shadow-only evidence, pure routing policy, fake-tested Python worker adapter, grouped offline dataset/replay tooling, and BLADE web/server JSON-shape compatibility coverage only.
 - `JEV_MODE=off` is default. `shadow` cannot change legacy keep/revert behavior.
 - Draft stacked PR #5 is open against `feat/baseline-preserving-container-policy` (PR #4).
-- No Teleios claim, live GTM action, provider evaluation, calibration, OpenShell enforcement, enforcement activation, or synthetic-lab integration occurred.
+- Integrated the read-only synthetic-lab observation adapter: decision-time filtering, whole lineage provenance, and explicit no-oracle/no-causality limits.
+- No Teleios claim, live GTM action, provider evaluation, calibration, OpenShell enforcement, enforcement activation, or synthetic-lab label ingestion occurred.
 
 ---
 

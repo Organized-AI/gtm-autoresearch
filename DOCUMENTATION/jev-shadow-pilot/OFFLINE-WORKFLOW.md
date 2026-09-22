@@ -18,3 +18,9 @@ The TypeScript adapter runs Python with an argument array, sends one JSON reques
 `jev-offline.ts` exports prediction/provenance separately from optional reviewer labels. Labels never enter `compactJudgeInput`. Split by `containerGroup`/lineage before calibration; the external holdout must stay unseen by GEPA. The built-in jev-align holdout must not be relied on unless its importer preserves those precomputed groups.
 
 BLADE is used only to exercise generic web/server JSON-shape compatibility. The included fixtures and labels are synthetic software tests, not business or evaluation truth. Before any promotion, collect reviewed production examples, pin the definition/model/preprocessing and provider configuration, inspect proposed definition changes, replay an untouched grouped holdout, and approve explicit thresholds. The report exposes denominators, harmful proposed keeps, valid-fix rejection, review rate, latency, and unavailable cost rather than claiming calibration from fixtures.
+
+## Synthetic GTM drift lab adapter
+
+The separate `synthetic-gtm-lab` repository is consumed read-only through `scripts/synthetic-lab-adapter.ts`. It filters data-layer events, network deliveries, and platform snapshots by the explicit decision time, preserves the single manifest lineage group, and states that normalized Meta/Google snapshots are not existing enriched-snapshot inputs. It never reads `ground-truth/`, `ORACLE-REPORT.md`, scenario labels, or the private report-arrival schedule.
+
+Run `SYNTHETIC_GTM_LAB_PATH='/absolute/path/to/synthetic-gtm-lab' npm run demo:synthetic-lab`. The lab contains a shared topology and generator-defined synthetic cases, including healthy and benign controls, transport outages, business/traffic changes, collection faults, and reporting delays. It establishes neither causality from ratios nor generalization, calibration, or enforcement readiness.
