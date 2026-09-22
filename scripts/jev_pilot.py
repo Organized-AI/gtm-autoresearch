@@ -2,7 +2,7 @@
 """Offline validation and scoring for a bounded Jev pilot package. Never calls a provider."""
 from __future__ import annotations
 
-import argparse, hashlib, json
+import argparse, hashlib, json, math
 from pathlib import Path
 
 LABELS = {"pass", "fail", "insufficient"}
@@ -12,7 +12,21 @@ MAX_ROWS = 12
 def canonical(value): return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 def digest_text(value): return hashlib.sha256(value.encode("utf-8")).hexdigest()
 def digest_bytes(value): return hashlib.sha256(value).hexdigest()
-def parse_json(text): return json.loads(text, parse_constant=lambda value: fail(f"nonfinite JSON value: {value}"))
+def parse_json(text):
+    def pairs(items):
+        value={}
+        for key,item in items:
+            if key in value: fail(f"duplicate JSON key: {key}")
+            value[key]=item
+        return value
+    value=json.loads(text, parse_constant=lambda item: fail(f"nonfinite JSON value: {item}"), object_pairs_hook=pairs)
+    def finite(item):
+        if isinstance(item,float) and not math.isfinite(item): fail("nonfinite JSON number")
+        if isinstance(item,dict):
+            for child in item.values(): finite(child)
+        elif isinstance(item,list):
+            for child in item: finite(child)
+    finite(value); return value
 def read_json(path): return parse_json(path.read_text(encoding="utf-8"))
 def read_jsonl(path): return [parse_json(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 def fail(message): raise ValueError(message)
@@ -36,12 +50,12 @@ def validate_row(row, rubric_hash):
     if not isinstance(row.get("canonicalInput"), str): fail("canonical input missing")
     try: parsed = parse_json(row["canonicalInput"])
     except json.JSONDecodeError as error: raise ValueError("canonical input is invalid JSON") from error
-    if parsed != input_value: fail("canonical input does not exactly represent input")
+    if canonical(parsed) != canonical(input_value): fail("canonical input does not exactly represent input")
     if digest_text(row["canonicalInput"]) != row["inputHash"]: fail("input hash mismatch")
     provenance = row.get("provenance")
     if not isinstance(provenance, dict) or provenance.get("split") != "train": fail("pilot accepts training rows only")
     observation = input_value["observation"]
-    if not isinstance(observation, dict) or set(observation) != {"schemaVersion", "decisionTime", "synthetic", "facts", "cautions"}: fail("invalid bounded observation projection")
+    if not isinstance(observation, dict) or set(observation) != {"schemaVersion", "decisionTime", "synthetic", "facts", "cautions"} or observation.get("synthetic") is not True or not isinstance(observation.get("facts"),dict) or not isinstance(observation.get("cautions"),list) or not all(isinstance(item,str) for item in observation["cautions"]): fail("invalid bounded observation projection")
     if observation["schemaVersion"] != "synthetic-gtm-observation-v2" or observation["decisionTime"] != provenance.get("decisionTime"): fail("observation/provenance time identity mismatch")
     if row.get("deterministicReject") is not False: fail("deterministic rejects cannot be sent to the judge")
     if row.get("rubricHash", rubric_hash) != rubric_hash: fail("row rubric identity mismatch")
@@ -50,7 +64,7 @@ def preflight(root):
     root = Path(root).resolve(); package_files(root)
     manifest, rubric = read_json(root / "manifest.json"), read_json(root / "rubric.json")
     if not isinstance(manifest, dict) or manifest.get("schemaVersion") != "jev-pilot-package-v1": fail("unsupported pilot package")
-    if not isinstance(rubric, dict) or rubric.get("status") != "seed" or rubric.get("preprocessingVersion") != "synthetic-gtm-observation-v2": fail("pilot requires a frozen synthetic seed rubric")
+    if not isinstance(rubric, dict) or rubric.get("status") != "seed" or rubric.get("preprocessingVersion") != "synthetic-gtm-observation-v2" or not isinstance(rubric.get("rubricVersion"),str) or not rubric["rubricVersion"]: fail("pilot requires a frozen synthetic seed rubric")
     functions=rubric.get("functions")
     if not isinstance(functions,dict) or set(functions)!=FUNCTIONS: fail("rubric must define exactly two functions")
     for function in functions.values():
@@ -74,7 +88,7 @@ def score(root, results_path):
     expected = {row["recordId"]: row for row in read_jsonl(root / "pilot-inputs.jsonl")}
     expected_rows=read_jsonl(root / "pilot-expected.jsonl"); expected_labels={}
     for label in expected_rows:
-        if not isinstance(label,dict) or label.get("recordId") not in expected or label.get("recordId") in expected_labels or label.get("inputHash")!=expected[label.get("recordId")]["inputHash"] or label.get("rubricHash")!=rubric_hash: fail("invalid expected label identity")
+        if not isinstance(label,dict) or label.get("recordId") not in expected or label.get("recordId") in expected_labels or label.get("inputHash")!=expected[label.get("recordId")]["inputHash"] or label.get("rubricHash")!=rubric_hash or label.get("provenance")!="synthetic_generator_rule_not_human_reviewed" or label.get("labelVersion")!="synthetic-observability-labels-v1" or label.get("deterministicReject") is not False: fail("invalid expected label identity")
         answers=label.get("expectedAnswers")
         if not isinstance(answers,dict) or set(answers)!=FUNCTIONS or any(value not in LABELS for value in answers.values()) or label.get("reviewStatus")!="unreviewed": fail("invalid expected labels")
         expected_labels[label["recordId"]]=answers
@@ -100,10 +114,10 @@ def score(root, results_path):
             errors.append({"recordId":record_id,"reason":result["reason"]})
         else: fail("unknown result status")
     if seen != set(expected): fail("missing result records")
-    confusion={name:{truth:{guess:0 for guess in LABELS} for truth in LABELS} for name in FUNCTIONS}
+    order=sorted(LABELS); confusion={name:{truth:{guess:0 for guess in order} for truth in order} for name in sorted(FUNCTIONS)}
     for prediction in predictions:
         for name in FUNCTIONS: confusion[name][expected_labels[prediction["recordId"]][name]][prediction["answers"][name]]+=1
-    agreement={name:{"matches":sum(confusion[name][label][label] for label in LABELS),"denominator":len(predictions),"unreviewedGeneratorLabels":True} for name in FUNCTIONS}
+    agreement={name:{"matches":sum(confusion[name][label][label] for label in order),"denominator":len(predictions),"unreviewedGeneratorLabels":True} for name in sorted(FUNCTIONS)}
     insufficient=sum(1 for prediction in predictions for answer in prediction["answers"].values() if answer=="insufficient")
     return {**report,"mode":"offline-result-score","predictions":predictions,"abstentions":abstentions,"errors":errors,"predictionCount":len(predictions),"abstentionCount":len(abstentions),"errorCount":len(errors),"runtimeCoverage":{"completed":len(predictions),"denominator":len(expected)},"insufficientPredictionCount":insufficient,"confusion":confusion,"agreementWithUnreviewedGeneratorLabels":agreement,"accuracy":"unavailable: generator labels are unreviewed and are not calibration or human accuracy"}
 
