@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import uuid
+import tempfile
 import fcntl
 import signal
 from contextlib import contextmanager
@@ -354,26 +355,44 @@ def journal_state(path: Path, prepared: PreparedRun, run_id: str, config: Mappin
             fail("journal event is invalid")
     if len(attempts) > MAX_ATOMIC_ATTEMPTS:
         fail("journal exceeds atomic attempt cap")
+    for record_id, record in completed.items():
+        if record["status"] == "success":
+            answers = record.get("answers")
+            if not isinstance(answers, dict) or set(answers) != set(FUNCTIONS):
+                fail("journal success record answers are invalid")
+            for name in FUNCTIONS:
+                atomic = attempts.get((record_id, name))
+                if atomic is None or atomic.get("event") != "attempt-finished" or atomic.get("status") != "success" or atomic.get("answer") != answers[name]:
+                    fail("journal success record does not match atomic attempts")
+        elif "answers" in record or not isinstance(record.get("reason"), str):
+            fail("journal non-success record is invalid")
     return attempts, completed
 
 def synchronize_results(path: Path, prepared: PreparedRun, completed: Mapping[str, Mapping[str, Any]]) -> None:
     """Atomically project the authoritative journal without overwriting unrelated output."""
-    records = []
+    wanted = []
     for row in prepared.rows:
         event = completed.get(row["recordId"])
         if event is not None:
-            records.append(canonical({key: value for key, value in event.items() if key not in {"event", "seedManifestHash"}}))
-    desired = "".join(item + "\n" for item in records)
-    if path.exists() and path.read_text(encoding="utf-8") not in {"", desired}:
-        fail("existing results do not match this authoritative journal")
+            wanted.append(canonical({key: value for key, value in event.items() if key not in {"event", "seedManifestHash"}}))
+    if path.exists():
+        try:
+            actual = [canonical(item) for item in existing_jsonl(path)]
+        except (ValueError, json.JSONDecodeError) as error:
+            raise ValueError("existing results do not match this authoritative journal") from error
+        if actual != wanted[:len(actual)]:
+            fail("existing results do not match this authoritative journal")
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + ".tmp")
-    with temporary.open("w", encoding="utf-8") as handle:
-        handle.write(desired); handle.flush(); os.fsync(handle.fileno())
-    os.replace(temporary, path)
-    directory_fd = os.open(path.parent, os.O_RDONLY)
-    try: os.fsync(directory_fd)
-    finally: os.close(directory_fd)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", delete=False) as handle:
+        temporary = Path(handle.name)
+        handle.write("".join(item + "\n" for item in wanted)); handle.flush(); os.fsync(handle.fileno())
+    try:
+        os.replace(temporary, path)
+        directory_fd = os.open(path.parent, os.O_RDONLY)
+        try: os.fsync(directory_fd)
+        finally: os.close(directory_fd)
+    finally:
+        if temporary.exists(): temporary.unlink()
 
 def execute(
     prepared: PreparedRun,
@@ -388,11 +407,13 @@ def execute(
     provider calls. Tests inject an in-memory fake guard and transport.
     """
     config = validate_execution_config_object(config, prepared)
-    protected = {prepared.package / "rubric.json", prepared.package / "pilot-inputs.jsonl", prepared.package / "manifest.json", prepared.package / "checksums.json", prepared.seed_manifest_path}
+    inventory = read_json(prepared.package / "checksums.json")
+    protected = {prepared.package / name for name in inventory}
+    protected.update({prepared.package / "checksums.json", prepared.seed_manifest_path})
     for function_name in FUNCTIONS:
         protected.add(Path(prepared.seed_manifest["functions"][function_name]["path"]) / "state.json")
-    paths = {results_path.resolve(), journal_path.resolve(), journal_path.with_name(journal_path.name + ".lock").resolve(), results_path.with_name(results_path.name + ".tmp").resolve()}
-    if len(paths) != 4 or any(item.resolve() in paths for item in protected):
+    paths = {results_path.resolve(), journal_path.resolve(), journal_path.with_name(journal_path.name + ".lock").resolve()}
+    if len(paths) != 3 or any(item.resolve() in paths for item in protected):
         fail("results/journal path collides with a protected artifact")
     if provider_guard is None:
         fail("no verified provider spending-control adapter is available; provider calls remain blocked")

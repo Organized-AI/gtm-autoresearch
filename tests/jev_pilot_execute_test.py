@@ -5,6 +5,7 @@ import tempfile
 import unittest
 import sys
 import time
+import multiprocessing
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +18,18 @@ SPEC.loader.exec_module(pilot)
 
 def canonical(value): return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 def sha(value): return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def concurrent_worker(package, seed, config, results, journal, calls):
+    prepared = pilot.prepare(Path(package), Path(seed))
+    loaded_config = pilot.validate_execution_config(Path(config), prepared)
+    class Recorder:
+        def __init__(self, name): self.name = name
+        def __call__(self, **kwargs):
+            with open(calls, "a", encoding="utf-8") as handle: handle.write(self.name + "\n")
+            return type("Prediction", (), {"choice": "pass"})()
+        def close(self): pass
+    pilot.execute(prepared, config=loaded_config, results_path=Path(results), journal_path=Path(journal), run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: Recorder(name) for name in pilot.FUNCTIONS}, provider_guard=lambda *_: None)
 
 
 class FakeFunction:
@@ -121,6 +134,35 @@ class ExecutePilotTest(unittest.TestCase):
             pilot.execute(prepared, **kwargs)
             self.assertEqual(len(calls), 1)
             self.assertEqual(pilot.existing_jsonl(root / "results.jsonl")[0]["status"], "error")
+
+    def test_concurrent_resumes_share_one_twenty_four_attempt_budget(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root, 12); calls = root / "calls.log"
+            args = (str(root), str(root / "seed-manifest.json"), str(config), str(root / "results.jsonl"), str(root / "journal.jsonl"), str(calls))
+            context = multiprocessing.get_context("spawn")
+            processes = [context.Process(target=concurrent_worker, args=args) for _ in range(2)]
+            for process in processes: process.start()
+            for process in processes:
+                process.join(15); self.assertEqual(process.exitcode, 0)
+            self.assertEqual(len(calls.read_text().splitlines()), 24)
+            self.assertEqual(len(pilot.existing_jsonl(root / "results.jsonl")), 12)
+
+    def test_two_row_resume_accepts_completed_result_prefix_after_interruption(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); prepared, config, _ = self.prepared(root, 2); calls = []
+            class InterruptThird(FakeFunction):
+                def __call__(self, **kwargs):
+                    self.calls.append((self.name, kwargs))
+                    if len(self.calls) == 3: raise KeyboardInterrupt()
+                    return type("Prediction", (), {"choice": "pass"})()
+            kwargs = dict(config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, provider_guard=lambda *_: None)
+            with self.assertRaises(KeyboardInterrupt):
+                pilot.execute(prepared, loader=lambda _: {name: InterruptThird(name, calls) for name in pilot.FUNCTIONS}, **kwargs)
+            self.assertEqual((root / "results.jsonl").read_text(), "")
+            pilot.execute(prepared, loader=lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS}, **kwargs)
+            records = pilot.existing_jsonl(root / "results.jsonl")
+            self.assertEqual([record["status"] for record in records], ["success", "error"])
+            self.assertEqual(len(calls), 3)
 
     def test_unverified_spend_reference_cannot_enable_provider_calls(self):
         with tempfile.TemporaryDirectory() as temp:

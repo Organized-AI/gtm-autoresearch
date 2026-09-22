@@ -11,7 +11,7 @@
 
 ## Verification
 - Real final package preflight against a native frozen Cloudflare placeholder seed: 12 records, 24 attempt cap, 0 calls.
-- 16 package/driver Python tests pass with fakes; native seed save/load test passes in the pinned runtime.
+- 18 package/driver Python tests pass with fakes; native seed save/load test passes in the pinned runtime.
 - TypeScript typecheck and all 37 TypeScript tests pass (the test runner used the required local Unix-domain socket permission).
 
 # Current State — 2026-09-21 (frozen offline training pilot)
