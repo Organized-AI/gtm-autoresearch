@@ -1,4 +1,16 @@
-# Current State — 2026-09-22 (complete paired pilot scored)
+# Current State — 2026-09-22 (run interface and rubric v2 prepared)
+
+- Active checkout `/private/tmp/gtm-jev-execution-20260922`, branch `feat/jev-shadow-pilot`, draft PR #5 stacked on unmerged PR #4. Preserve the original cloud-offloaded workspace; do not merge or enable enforcement.
+- Two Terra agents implemented the diagram frontend, abstention review, revised rubric, and viewer validation; root reviewed and verified integration.
+- Local read-only interface: `http://127.0.0.1:8765`. Launch instructions and behavior in `DOCUMENTATION/jev-shadow-pilot/RUN-VIEW.md`. It replays the actual completed shadow journal and labels the GTM optimizer architecture conceptual. No fake live optimization or provider controls.
+- Reviewed three abstention disagreements in `ABSTENTION-REVIEW.md`. Rubric v2 is frozen and offline comparison package prepared: `data/jev-shadow/training-pilot-rubric-v2-prepared`; native seed `/private/tmp/gtm-jev-cloudflare-rubric-v2-seed-20260922/manifest.json`. Instructions, hashes and preflight results in `RUBRIC-V2-COMPARISON-PLAN.md`.
+- Same 12 training inputs and unreviewed expected answers, zero new provider calls. Existing pilot/diagnostic journals preserved. Validation/holdout unopened. Rubric v2 remains unevaluated.
+- Verification: 32 Jev Python tests, 9 viewer tests, 37 TypeScript tests, typecheck and JavaScript syntax checks pass. Chrome verification covered real metrics, replay playback/pause/step/reset, node highlighting and disagreement metadata. Original journal/result/score hashes are unchanged.
+- Next evaluation requires a new bounded authorization for at most 24 v2 attempts; the prior allowance is exhausted. Compare abstention and retention strata using prediction-first scoring, without calibration/promotion claims.
+
+---
+
+# Previous State — 2026-09-22 (complete paired pilot scored)
 
 - Same active checkout `/private/tmp/gtm-jev-execution-20260922`, branch `feat/jev-shadow-pilot`, draft PR #5 stacked on unmerged PR #4. Do not merge or enable enforcement.
 - Following explicit user approval, a fresh run `cloudflare-training-paired-v2-20260922` completed 12 paired observations / 24 requests without errors or retries, all `jev-1.13.0`. Root launched the authenticated run; Terra scored/reviewed; root independently checked journal identity, result projection and score.

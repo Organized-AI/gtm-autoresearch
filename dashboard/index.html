@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07111f">
+    <title>GTM Autoresearch · Shadow run</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to run diagram</a>
+    <main id="main" class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> GTM AUTORESEARCH / RUN VIEW</p>
+          <h1>Shadow judgment replay</h1>
+          <p id="run-subtitle" class="subtitle" aria-live="polite">Loading the recorded pilot journal…</p>
+        </div>
+        <div id="run-seal" class="read-only-seal" aria-label="Recorded journal status loading">
+          <span aria-hidden="true">⌁</span>
+          <div><strong id="run-status">READ ONLY</strong><small id="run-source">Recorded journal</small></div>
+        </div>
+      </header>
+
+      <section class="disclosure" aria-label="Scope notice">
+        <span id="scope-icon" class="scope-icon" aria-hidden="true">⌁</span>
+        <p id="scope-message"><strong>Recorded journal view.</strong> This screen replays a stored sequence and polls it for changes. It cannot publish, mutate a container, or affect a keep/revert decision.</p>
+      </section>
+
+      <section class="metric-strip" aria-label="Recorded pilot summary">
+        <article><span>Records</span><strong id="metric-records">—</strong><small id="metric-records-note">from journal</small></article>
+        <article><span>Atomic attempts</span><strong id="metric-attempts">—</strong><small id="metric-attempts-note">completed</small></article>
+        <article><span>Paired agreement</span><strong id="metric-agreement">—</strong><small id="metric-agreement-note">unreviewed synthetic labels</small></article>
+        <article><span>Insufficient answers</span><strong id="metric-insufficient">—</strong><small id="metric-insufficient-note">recorded predictions</small></article>
+      </section>
+
+      <div class="tabbar" role="tablist" aria-label="Run view">
+        <button id="diagram-tab" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="diagram-panel">Run diagram</button>
+        <button id="judgments-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="judgments-panel">Judgments <span id="judgment-count" class="tab-count">—</span></button>
+      </div>
+
+      <section id="diagram-panel" class="tab-panel" role="tabpanel" aria-labelledby="diagram-tab">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">SYSTEM MAP</p>
+            <h2>GTM optimization &amp; shadow evaluation</h2>
+          </div>
+          <p class="muted">Select a node to inspect its boundary.</p>
+        </div>
+
+        <div class="diagram-wrap">
+          <div class="lane architecture-lane">
+            <div class="lane-intro"><span class="lane-mark" aria-hidden="true">01</span><div><p class="lane-label">CONCEPTUAL</p><h3>GTM optimization architecture</h3><p>Architecture only — not executed in this pilot.</p></div></div>
+            <div class="node-track" aria-label="Conceptual GTM optimization pipeline">
+              <button class="flow-node conceptual" type="button" data-node="baseline"><b>Baseline</b><span>container state</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual" type="button" data-node="score"><b>Score</b><span>deterministic checks</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual" type="button" data-node="mutation"><b>Typed mutation</b><span>bounded operation</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual" type="button" data-node="validate"><b>Validate</b><span>structural guard</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual decision" type="button" data-node="decision"><b>Keep / revert</b><span>policy decision</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual" type="button" data-node="next"><b>Next round</b><span>only after decision</span></button>
+            </div>
+          </div>
+
+          <div class="lane shadow-lane">
+            <div class="lane-intro"><span class="lane-mark" aria-hidden="true">02</span><div><p class="lane-label">EXECUTED</p><h3>Recorded Jev shadow pipeline</h3><p id="shadow-caption">Reading the stored evidence sequence.</p></div></div>
+            <div class="node-track" aria-label="Executed Jev shadow pilot pipeline">
+              <button class="flow-node executed" type="button" data-node="evidence"><b>Synthetic GTM / site</b><span>Meta + Google evidence</span></button><span class="connector active" aria-hidden="true">→</span>
+              <button class="flow-node executed" type="button" data-node="preflight"><b>Preflight</b><span>frozen definitions</span></button><span class="connector active" aria-hidden="true">→</span>
+              <button class="flow-node executed is-selected" type="button" data-node="questions"><b>Cloudflare Jev</b><span>two atomic questions</span></button><span class="connector active" aria-hidden="true">→</span>
+              <button class="flow-node executed" type="button" data-node="journal"><b>Journal</b><span>durable record</span></button><span class="connector active" aria-hidden="true">→</span>
+              <button class="flow-node executed" type="button" data-node="comparison"><b>Offline comparison</b><span>labels read after run</span></button>
+            </div>
+            <p id="current-event-summary" class="current-event" aria-live="polite">Recorded event loading…</p>
+            <p class="shadow-boundary"><span aria-hidden="true">⊘</span> Shadow output is read-only research evidence. It cannot reach keep/revert or publishing.</p>
+          </div>
+        </div>
+
+        <aside class="explanation" aria-live="polite">
+          <div class="explanation-mark" id="explanation-number">02</div>
+          <div><p class="eyebrow" id="explanation-kicker">EXECUTED BOUNDARY</p><h3 id="explanation-title">Cloudflare Jev · two atomic questions</h3><p id="explanation-text">The pilot made two recorded judgments per observation: whether the evidence was sufficient, and whether tracking behavior was preserved. Answers were written to the journal; they did not decide a GTM mutation.</p></div>
+        </aside>
+
+        <section class="replay-card" aria-labelledby="replay-title">
+          <div class="replay-head"><div><p class="eyebrow">RECORDED REPLAY</p><h2 id="replay-title">Journal timeline</h2><p id="replay-detail" class="muted">Loading recorded events…</p></div><span id="replay-state" class="replay-state">PAUSED</span></div>
+          <div class="replay-controls">
+            <button id="replay-reset" class="icon-button" type="button" title="Reset replay" aria-label="Reset replay">↺</button>
+            <button id="replay-previous" class="icon-button" type="button" title="Previous recorded event" aria-label="Previous recorded event">‹</button>
+            <button id="replay-play" class="play-button" type="button" disabled><span aria-hidden="true">▶</span> Play replay</button>
+            <button id="replay-next" class="icon-button" type="button" title="Next recorded event" aria-label="Next recorded event">›</button>
+            <input id="replay-scrubber" type="range" min="0" max="0" value="0" step="1" aria-label="Recorded event position" disabled>
+            <output id="replay-position" for="replay-scrubber">0 / 0</output>
+          </div>
+          <div id="event-rail" class="event-rail" aria-label="Recorded event sequence"></div>
+        </section>
+      </section>
+
+      <section id="judgments-panel" class="tab-panel" role="tabpanel" aria-labelledby="judgments-tab" hidden>
+        <div class="judgment-layout">
+          <section class="judgment-list-card"><div class="panel-heading compact"><div><p class="eyebrow">RECORDED RESULTS</p><h2>Paired judgments</h2></div><p id="judgment-hint" class="muted">Choose a record</p></div><div id="judgment-list" class="judgment-list"></div></section>
+          <aside class="judgment-detail" aria-live="polite"><p class="eyebrow">SELECTED ATOMIC JUDGMENT</p><h2 id="detail-title">No recorded judgment selected</h2><div id="detail-body" class="detail-body"><p class="muted">Select a completed record to inspect its recorded answer, confidence, token usage, and request ID.</p></div></aside>
+        </div>
+      </section>
+
+      <footer><span id="poll-indicator" class="poll-indicator" aria-hidden="true"></span><span id="poll-status">Polling the local journal every 3 seconds.</span><span> No provider actions are available here.</span></footer>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
