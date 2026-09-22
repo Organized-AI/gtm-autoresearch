@@ -38,7 +38,7 @@ Every v2 manifest case declares an opaque case ID, observation directory, contai
 
 Observation directories contain before/after exports, content-hashed container history, site events, network deliveries and normalized Meta/Google snapshots. The simulator's report-arrival schedule is removed from public network records. Ground truth remains in a separate directory with provenance `synthetic_generator_rule_not_human_reviewed`. The adapter excludes case/group/split metadata, ground truth and future evidence from model state.
 
-The same configuration and seeds produce identical bytes and a checksum inventory. Case order is shuffled deterministically; IDs do not encode scenario order. Paired scenarios have byte-identical pre-drift observations within a lineage.
+The same source, configuration and seeds produce identical bytes and a checksum inventory. V2 manifests also record hashes of the generator source files so changes in simulation rules are distinguishable from changes in seeds. Case order is shuffled deterministically; IDs do not encode scenario order. Paired scenarios have byte-identical pre-drift observations within a lineage.
 
 ## Modeling limits
 

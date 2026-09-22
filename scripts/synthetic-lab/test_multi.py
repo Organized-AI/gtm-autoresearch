@@ -102,6 +102,16 @@ class MultiTopologyTests(unittest.TestCase):
                 leaks = [n for n in case[3] if n["platform"] != "ga4" and n["consent"]["ad_storage"] == "denied"]
                 self.assertEqual(bool(leaks), scenario == "consent_bypass", (p.key, scenario))
 
+    def test_consent_bypass_is_collection_fault_not_paid_attribution(self):
+        for p in TOPOLOGIES.values():
+            for event in p.events:
+                good = self.settled(p, "healthy", "meta", event)
+                bypassed = self.settled(p, "consent_bypass", "meta", event)
+                self.assertEqual(bypassed["attributed_conversions"], good["attributed_conversions"], (p.key, event))
+                self.assertEqual(bypassed["attributed_value"], good["attributed_value"], (p.key, event))
+            leaks = [n for n in self.cases[p.key]["consent_bypass"][3] if n["platform"] == "meta" and n["consent"]["ad_storage"] == "denied"]
+            self.assertGreater(len(leaks), 0)
+
     def test_business_traffic_and_reporting_controls(self):
         for p in TOPOLOGIES.values():
             self.assertLess(self.settled(p, "business_conversion_drop", "meta")["unique_events"], self.settled(p, "healthy", "meta")["unique_events"])

@@ -231,7 +231,7 @@ def snapshots(network, actions):
                 for event in (EVENTS if platform == "meta" else ["purchase"]):
                     subset = [n for n in rows if n["event_name"] == event]
                     unique = {(n["event_name"], n["event_id"]): n for n in subset}
-                    attributed = [n for n in unique.values() if n["channel"] == platform]
+                    attributed = [n for n in unique.values() if n["channel"] == platform and n["consent"]["ad_storage"] == "granted"]
                     browser = {n["event_id"] for n in subset if n["source"] == "browser"}
                     server = {n["event_id"] for n in subset if n["source"] == "server"}
                     srv = [n for n in subset if n["source"] == "server"]

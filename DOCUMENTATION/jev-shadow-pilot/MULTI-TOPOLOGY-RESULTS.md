@@ -15,6 +15,7 @@ With seeds 20260921 and 20260922 at eight sessions per hour, the corpus contains
 
 - Disabling browser GA4 leaves retail server delivery intact, stops lead-generation server delivery, and preserves only subscription billing events. This tests architecture behavior rather than superficial renaming.
 - Healthy conversion counts equal the consent-eligible site conversions under the simplified simulation. Retail purchases, generated leads and subscriptions use separate event names and Google conversion labels.
+- Denied-consent requests remain visible as collection faults but do not enter paid attribution. Independent review caught this distinction, and regression tests now cover it in both generators.
 - Missing trigger references are the only intended structural failures. The final replay reports 12 invalid observations: six affected cases at two post-change decision times.
 - Before the change, all model inputs within each of the six paired lineages are identical. Future exports and observations, ground-truth labels and bookkeeping identifiers are excluded.
 - Group isolation links declared container, lineage and topology groups, plus identities derived from verified baseline hashes. Relabeling an identical baseline cannot put it in a different partition.
@@ -24,7 +25,11 @@ With seeds 20260921 and 20260922 at eight sessions per hour, the corpus contains
 
 The portable generator source and Python tests are included at [`scripts/synthetic-lab`](../../scripts/synthetic-lab/README.md). Generated corpora and replay files remain local and ignored by git. See [SYNTHETIC-REPLAY.md](SYNTHETIC-REPLAY.md) for the generation and replay commands.
 
-Run the simulator checks with `python3 -m unittest discover -s scripts/synthetic-lab -p 'test_*.py' -v`. They cover both the original corpus and the expanded architectures. Run the repository's TypeScript test suite and typecheck for the adapter and split checks.
+Run the simulator checks with `python3 -m unittest discover -s scripts/synthetic-lab -p 'test_*.py' -v` (26 tests). They cover both the original corpus and the expanded architectures. Run `node --import tsx --test tests/*.test.ts` (27 tests) and `node node_modules/typescript/bin/tsc --noEmit` for the repository checks.
+
+The final local dataset is `synthetic-gtm-lab/datasets/multi-topology-v2-final` in the shared workspace. Its matching repository replay is `data/jev-shadow/multi-topology-replay-final/REPORT.md`. These replace the intermediate artifacts generated before the consent-attribution correction. V2 manifests record generator source hashes in addition to the artifact checksum inventory.
+
+A regeneration in a local temporary directory passed all 703 artifact checksums and both generator-source hashes, with an inventory byte-identical to the workspace corpus. This avoided cloud-placeholder read stalls during the final audit.
 
 ## What this supports
 

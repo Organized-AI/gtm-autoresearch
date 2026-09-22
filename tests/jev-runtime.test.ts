@@ -7,6 +7,7 @@ import { evaluateGtmSignalQuality, type GtmContainer } from "../evals/eval_gtm_s
 import { buildEvidence, freezeSeedDefinition, PythonJevJudge, hash, manifestHash, frozenDefinitionFromManifest, FakeJudge, shadowPolicy } from "../scripts/jev-shadow.js";
 import { replayReport, splitByGroup, assertGroupDisjoint, type DatasetRow } from "../scripts/jev-offline.js";
 const worker=path.resolve("scripts/jev_worker.py");
+// Protocol tests use the runtime's ten-second allowance; only timeout tests shorten it.
 async function evidence(frozen=freezeSeedDefinition()) {
   const base=JSON.parse(await readFile("content/gtm-templates/BLADE/seed/blade-web.json","utf8")) as GtmContainer;
   const scores=evaluateGtmSignalQuality(base);
@@ -40,7 +41,7 @@ class AIFunction:
  def load(path): return F(path)
 `);
   await Promise.all([writeFile(manifestPath,JSON.stringify(manifest)),writeFile(calls,""),writeFile(closed,"")]);
-  return {dir,manifestPath,calls,closed,manifest,e,judge:(extra:NodeJS.ProcessEnv={})=>new PythonJevJudge("python3",worker,manifestPath,1000,4096,{PYTHONPATH:dir,CALLS:calls,CLOSED:closed,...extra})};
+  return {dir,manifestPath,calls,closed,manifest,e,judge:(extra:NodeJS.ProcessEnv={})=>new PythonJevJudge("python3",worker,manifestPath,10_000,4096,{PYTHONPATH:dir,CALLS:calls,CLOSED:closed,...extra})};
 }
 test("real Python worker binds Unicode identity and reads upstream atomic Prediction fields",async()=>{
   const f=await fixture();
@@ -99,11 +100,11 @@ test("loading a valid frozen manifest remains uncalibrated and routes review",as
 test("subprocess startup, oversized output and ignored termination fail closed",async()=>{
   const f=await fixture();
   try {
-    const missing=await new PythonJevJudge(path.join(f.dir,"missing-python"),worker,f.manifestPath,1000).judge(f.e);
+    const missing=await new PythonJevJudge(path.join(f.dir,"missing-python"),worker,f.manifestPath,10_000).judge(f.e);
     assert.equal(missing.status,"unavailable");
     const noisy=path.join(f.dir,"noisy.py");
     await writeFile(noisy,'import sys\nsys.stdin.read()\nsys.stdout.write(" " * 5000)\nsys.stdout.flush()\n');
-    const oversized=await new PythonJevJudge("python3",noisy,f.manifestPath,1000,1024).judge(f.e);
+    const oversized=await new PythonJevJudge("python3",noisy,f.manifestPath,10_000,1024).judge(f.e);
     assert.equal(oversized.status,"unavailable");
     if(oversized.status==="unavailable") assert.equal(oversized.reason,"worker output exceeded limit");
     const stubborn=path.join(f.dir,"stubborn.py");

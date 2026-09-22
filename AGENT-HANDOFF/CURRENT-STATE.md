@@ -7,17 +7,20 @@
 - Extended the read-only synthetic-lab adapter for a direct-root v2 manifest with per-case lineage, container, topology, and planned split metadata.
 - The grouped replay splitter connects cases that share any declared container, lineage, topology, or verified baseline-pair group, rejects partial/conflicting planned components, and keeps grouping metadata outside model input.
 - Added the portable three-family synthetic generator. Its two-default-seed run emits 78 cases and yields 78 rows in each authored replay split across the demo's three cutoffs.
+- Independent review caught consent-denied requests entering paid attribution; corrected both generators and added regression tests. V2 manifests now include generator-source hashes.
 - Retained the v1 `datasets/demo-v1` compatibility path and ran its 36-observation offline replay successfully.
 - Kept Jev shadow-only: no provider calls, labels/oracle access, GTM actions, calibration claims, or enforcement were added.
 
 ## Verification
 - `TMPDIR=/private/tmp npm run typecheck`
-- `TMPDIR=/private/tmp node --import tsx --test --test-concurrency=1 tests/*.test.ts` (27 passing)
+- `node --import tsx --test --test-reporter=dot tests/*.test.ts` (27 passing; ordinary worker tests use the normal ten-second timeout and assert exact protocol errors)
+- `python3 -m unittest discover -s scripts/synthetic-lab -p 'test_*.py' -v` (26 passing; provenance/reproducibility case also rerun after adding source hashes)
 - `SYNTHETIC_GTM_LAB_PATH='/Users/jordaaan/Documents/ChatGPT/Measure U/synthetic-gtm-lab' TMPDIR=/private/tmp node --import tsx scripts/synthetic-lab-demo.ts` (36 v1 observations; 0 provider calls)
 - `python3 scripts/synthetic-lab/generate_multi.py --output /private/tmp/gtm-multi-v2-root` plus the explicit-dataset demo (234 v2 observations; 78/78/78 splits; 0 provider calls)
 
 ## Next Steps
-- Push the v2 replay commit to draft PR #5 and review it against the stacked baseline-policy PR.
+- Final corrected corpus: sibling `synthetic-gtm-lab/datasets/multi-topology-v2-final`; replay: `data/jev-shadow/multi-topology-replay-final/REPORT.md`. Source is checked in; generated files are not.
+- Review draft PR #5 and its dependency #4. Neither is automatically merged. Before provider evaluation, pin and review the atomic definitions and provider configuration; no calibration or promotion has occurred.
 
 # Previous State — 2026-09-21
 

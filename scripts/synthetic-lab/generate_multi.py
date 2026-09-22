@@ -308,7 +308,7 @@ def snapshots(p, network, actions):
                 for event in (p.events if platform == "meta" else (p.conversion,)):
                     subset = [n for n in rows if n["event_name"] == event]
                     unique = {(n["event_name"], n["event_id"]): n for n in subset}
-                    attributed = [n for n in unique.values() if n["channel"] == platform]
+                    attributed = [n for n in unique.values() if n["channel"] == platform and n["consent"]["ad_storage"] == "granted"]
                     browser = {n["event_id"] for n in subset if n["source"] == "browser"}
                     server = {n["event_id"] for n in subset if n["source"] == "server"}
                     srv = [n for n in subset if n["source"] == "server"]
@@ -345,7 +345,10 @@ def generate(output, seeds=(20260921, 20260922), sessions_per_hour=8):
     if output.exists():
         raise ValueError(f"Output already exists; choose a new path: {output}")
     output.mkdir(parents=True)
+    source_hashes = {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                     for name in ("generate.py", "generate_multi.py")}
     manifest = {"schema_version": VERSION, "synthetic": True, "seeds": list(seeds), "hours": HOURS,
+                "generator_source_hashes": source_hashes,
                 "sessions_per_hour": sessions_per_hour, "split_policy": "authored_topology_families_v1", "cases": [],
                 "topologies": [{"topology_group": f"synthetic-{p.key}-v1", "split": p.split, "description": p.description} for p in TOPOLOGIES.values()],
                 "warning": "Paired cases and all seeds of a topology must stay together. Recipes share a simulator; no calibration or generalization claim."}

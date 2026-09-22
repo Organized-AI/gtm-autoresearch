@@ -75,6 +75,12 @@ class SimulationTests(unittest.TestCase):
             if leaks:
                 self.assertTrue(all(n["source"] == "browser" and n["platform"] == "meta" and n["event_name"] == "purchase" for n in leaks))
 
+    def test_consent_bypass_does_not_add_attributed_conversions(self):
+        healthy, bypassed = self.settled("healthy", "meta"), self.settled("consent_bypass", "meta")
+        self.assertGreater(bypassed["unique_events"], healthy["unique_events"])
+        self.assertEqual(bypassed["attributed_conversions"], healthy["attributed_conversions"])
+        self.assertEqual(bypassed["attributed_value"], healthy["attributed_value"])
+
     def test_outage_without_config_change(self):
         before, after, _, network, _ = self.cases["server_outage"]
         self.assertEqual(before, after)
