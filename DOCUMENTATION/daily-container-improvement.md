@@ -1,8 +1,26 @@
 # Daily container improvement
 
-Status: implementation plan; no daily execution or change watcher has been enabled.
+Scope: BLADE is the fixed benchmark baseline, as confirmed by the user. This is an offline improvement workflow, not access to or management of BLADE's live container.
 
-The product should reassess tracking every day and after relevant changes, then produce a scored GTM JSON when it finds a verified improvement. A successful day can also conclude that the current container should be retained. The saved BLADE winner currently downloadable from the dashboard is an example artifact, not an active daily baseline.
+The product should reassess tracking every day and after relevant changes, then produce a scored GTM JSON when it finds a verified improvement. A successful day can also conclude that the current container should be retained. The old saved BLADE winner is an example artifact; daily work starts from the original `BLADE/seed/blade-web.json` and carries forward only accepted changes from this new benchmark lineage.
+
+## First executable stage
+
+The offline daily runner performs bounded, deterministic container organization improvements, with persisted best state and immutable run history. It checks that behavior-affecting fields remain unchanged. It performs no live API calls or paid model inference. Evidence-file hashes can record changes, but the hygiene score is not a measurement of synthetic or live event behavior.
+
+Synthetic GTM drift, visitor events and Meta/Google reports already exist in the lab. Connecting their decision-time observations and candidate execution to daily behavioral evaluation is the next stage; the hygiene runner must not claim that integration is complete. Jev remains shadow-only and the previous pilot spend authorizations are exhausted.
+
+The broader contract below describes that next stage and eventual use with an explicitly selected operational container.
+
+Run the first stage with:
+
+```sh
+node --import tsx scripts/run-daily-benchmark.ts --state-dir /absolute/path/to/benchmark-state
+```
+
+Each invocation evaluates one bounded deterministic batch, not an open-ended model loop. `state.json` points to the immutable accepted export and binds its hash to the original baseline. History and export bundles remain versioned. Altered saved bytes, a changed original baseline, overlapping runs and missing explicitly supplied evidence stop the run instead of silently resetting it. `best.json` is a convenience copy, not the source of truth.
+
+For this Mac mini's existing private dashboard, `scripts/run-daily-benchmark-service.py --state-dir DIR --publish-viewer` runs the same benchmark and refreshes the installed export only when it passes offline readiness checks. This updates the dashboard only; it never imports or publishes to GTM. The service wrapper uses the existing completed Jev records as separate recorded views.
 
 ## Run contract
 
@@ -40,7 +58,7 @@ New or unverified resource types, including the consent-tag type flagged in the 
 
 ## Implementation order and verification
 
-1. Configure the target topology, evidence sources, daily time and bounded mutation/Jev budget. BLADE remains a shape reference unless explicitly chosen as the operational target. Prior Cloudflare pilot allowances are exhausted.
+1. Use the fixed BLADE web benchmark baseline and retain its hash. Configure synthetic evidence sources, daily time and any future mutation/Jev budget. This selection does not authorize live BLADE operations. Prior Cloudflare pilot allowances are exhausted.
 2. Implement read-only daily intake, change fingerprints and persistent run history. Test unchanged inputs, outside edits, missing/stale/partial evidence, idempotency and restart recovery without provider calls.
 3. Connect bounded mutation execution and candidate QA. Test improvements, score-only regressions, no improvement, insufficient evidence, interrupted runs and baseline changes during a run using synthetic fixtures first.
 4. Connect daily results to the existing dashboard and immutable export bundles. Verify checksum identity, blocked downloads, historical attribution and that no result claims deployment.
