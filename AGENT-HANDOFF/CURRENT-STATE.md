@@ -5,14 +5,16 @@
 
 ## What Just Happened
 - Extended the read-only synthetic-lab adapter for a direct-root v2 manifest with per-case lineage, container, topology, and planned split metadata.
-- The grouped replay splitter connects cases that share any container, lineage, or topology group, rejects partial/conflicting planned components, and keeps grouping metadata outside model input.
+- The grouped replay splitter connects cases that share any declared container, lineage, topology, or verified baseline-pair group, rejects partial/conflicting planned components, and keeps grouping metadata outside model input.
+- Added the portable three-family synthetic generator. Its two-default-seed run emits 78 cases and yields 78 rows in each authored replay split across the demo's three cutoffs.
 - Retained the v1 `datasets/demo-v1` compatibility path and ran its 36-observation offline replay successfully.
 - Kept Jev shadow-only: no provider calls, labels/oracle access, GTM actions, calibration claims, or enforcement were added.
 
 ## Verification
 - `TMPDIR=/private/tmp npm run typecheck`
-- `TMPDIR=/private/tmp node --import tsx --test tests/*.test.ts` (27 passing)
+- `TMPDIR=/private/tmp node --import tsx --test --test-concurrency=1 tests/*.test.ts` (27 passing)
 - `SYNTHETIC_GTM_LAB_PATH='/Users/jordaaan/Documents/ChatGPT/Measure U/synthetic-gtm-lab' TMPDIR=/private/tmp node --import tsx scripts/synthetic-lab-demo.ts` (36 v1 observations; 0 provider calls)
+- `python3 scripts/synthetic-lab/generate_multi.py --output /private/tmp/gtm-multi-v2-root` plus the explicit-dataset demo (234 v2 observations; 78/78/78 splits; 0 provider calls)
 
 ## Next Steps
 - Push the v2 replay commit to draft PR #5 and review it against the stacked baseline-policy PR.

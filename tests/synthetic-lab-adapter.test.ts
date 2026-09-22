@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, cp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -146,15 +146,30 @@ test("bounded synthetic evidence reaches the shadow contract without asserting r
 test("v2 direct dataset roots honor complete declared topology splits and reject conflicts", async () => {
   const f = await fixture();
   try {
+    const caseTwo = path.join(f.dataset, "observations/case-002");
+    await cp(f.base, caseTwo, { recursive: true });
+    const secondBaseline = container("baseline-2"), secondCurrent = container("current-2", true);
+    for (const side of ["web", "server"]) {
+      await writeFile(path.join(caseTwo, `${side}-before.json`), JSON.stringify(secondBaseline));
+      await writeFile(path.join(caseTwo, `${side}-after.json`), JSON.stringify(secondCurrent));
+    }
+    await writeFile(path.join(caseTwo, "container-history.json"), JSON.stringify([
+      { effective_at: BEFORE, web_hash: hash(secondBaseline), server_hash: hash(secondBaseline) },
+      { effective_at: CHANGE, web_hash: hash(secondCurrent), server_hash: hash(secondCurrent) },
+    ]));
     const manifest = { schema_version: "2.0.0", synthetic: true, cases: [
       { case_id: "case-001", directory: "observations/case-001", lineage_group: "L1", container_group: "C1", topology_group: "retail", split: "train" },
-      { case_id: "case-002", directory: "observations/case-001", lineage_group: "L2", container_group: "C2", topology_group: "leadgen", split: "holdout" }
+      { case_id: "case-002", directory: "observations/case-002", lineage_group: "L2", container_group: "C2", topology_group: "leadgen", split: "holdout" }
     ] };
     await writeFile(path.join(f.dataset, "manifest.json"), JSON.stringify(manifest));
     assert.equal((await loadManifest(f.dataset)).schema_version, "2.0.0");
     const rows = await buildSyntheticReplayRows(f.dataset, CUTOFF), split = splitByGroup(rows);
     assert.equal(split.train.length, 1); assert.equal(split.holdout.length, 1); assertGroupDisjoint(split);
     assert.ok(!JSON.stringify(rows[0].input).includes("retail"));
+    assert.ok(rows[0].provenance.baselineGroup);
+    await cp(f.base, caseTwo, { recursive: true, force: true });
+    const duplicatedBaselineRows = await buildSyntheticReplayRows(f.dataset, CUTOFF);
+    assert.throws(() => splitByGroup(duplicatedBaselineRows), /conflicting or incomplete/);
     manifest.cases[1].topology_group = "retail"; await writeFile(path.join(f.dataset, "manifest.json"), JSON.stringify(manifest));
     await assert.rejects(loadManifest(f.dataset), /topology has conflicting/);
   } finally { await f.cleanup(); }
@@ -164,6 +179,8 @@ test("split components reject partial declarations and hold cross-seed topology 
   const row = (lineageGroup: string, plannedSplit?: "train"|"validation"|"holdout") => ({ input: {}, prediction: { status: "unavailable" as const, reason: "offline" }, provenance: { containerGroup: `container-${lineageGroup}`, lineageGroup, topologyGroup: "subscription", plannedSplit, synthetic: true, samplingReasons: [] } });
   assert.throws(() => splitByGroup([row("seed-a", "validation"), row("seed-b")]), /conflicting or incomplete/);
   assert.throws(() => splitByGroup([row("seed-a", "validation"), row("seed-b", "holdout")]), /conflicting or incomplete/);
+  const independent = { ...row("seed-c"), provenance: { ...row("seed-c").provenance, topologyGroup: "retail" } };
+  assert.throws(() => splitByGroup([row("seed-a", "validation"), independent]), /conflicting or incomplete/);
   const split = splitByGroup([row("seed-a", "validation"), row("seed-b", "validation")]);
   assert.equal(split.validation.length, 2); assertGroupDisjoint(split);
 });
@@ -176,5 +193,9 @@ test("v2 manifests reject incomplete grouping metadata and duplicate case IDs", 
     await assert.rejects(loadManifest(f.dataset), /missing grouping metadata/);
     await writeFile(path.join(f.dataset, "manifest.json"), JSON.stringify({ ...base, cases: [base.cases[0], base.cases[0]] }));
     await assert.rejects(loadManifest(f.dataset), /duplicate case IDs/);
+    await writeFile(path.join(f.dataset, "manifest.json"), JSON.stringify({ ...base, cases: [base.cases[0], { ...base.cases[0], case_id: "case-002" }] }));
+    await assert.rejects(loadManifest(f.dataset), /duplicate observation directories/);
+    await writeFile(path.join(f.dataset, "manifest.json"), JSON.stringify({ ...base, schema_version: "3.0.0" }));
+    await assert.rejects(loadManifest(f.dataset), /unsupported synthetic manifest schema/);
   } finally { await f.cleanup(); }
 });

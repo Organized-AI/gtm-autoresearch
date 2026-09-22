@@ -44,12 +44,19 @@ async function contained(parent: string, child: string): Promise<string> {
   if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) throw new Error("dataset path escapes observations directory");
   return target;
 }
-async function datasetRoot(root: string): Promise<string> { try { await readFile(path.join(root,"manifest.json"),"utf8"); return root; } catch { return path.join(root,"datasets/demo-v1"); } }
+async function datasetRoot(root: string): Promise<string> {
+  try { await readFile(path.join(root,"manifest.json"),"utf8"); return root; }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return path.join(root,"datasets/demo-v1");
+    throw error;
+  }
+}
 export async function loadManifest(root: string): Promise<LabManifest> {
-  const dataset=await datasetRoot(root), raw=record(await json(path.join(dataset,"manifest.json")),"manifest"), v2=raw.schema_version==="2.0.0";
-  if (raw.synthetic!==true||typeof raw.schema_version!=="string"||(!v2&&(typeof raw.lineage_group!=="string"||!raw.lineage_group))) throw new Error("invalid synthetic manifest");
-  const cases=array(raw.cases,"manifest cases").map(item=>{if(typeof item.case_id!=="string"||!item.case_id||typeof item.directory!=="string"||!/^observations\/[A-Za-z0-9_-]+$/.test(item.directory))throw new Error("invalid observation directory");if(v2&&(["lineage_group","container_group","topology_group","split"] as const).some(k=>typeof item[k]!=="string"||!(item[k] as string).trim()) )throw new Error("v2 case missing grouping metadata");if(item.split!==undefined&&!(["train","validation","holdout"] as string[]).includes(item.split as string))throw new Error("invalid declared split");return {case_id:item.case_id,directory:item.directory,lineage_group:item.lineage_group as string|undefined,container_group:item.container_group as string|undefined,topology_group:item.topology_group as string|undefined,split:item.split as "train"|"validation"|"holdout"|undefined};});
-  if(new Set(cases.map(c=>c.case_id)).size!==cases.length)throw new Error("duplicate case IDs");if(v2){const topologySplits=new Map<string,string>();for(const c of cases){const prior=topologySplits.get(c.topology_group!);if(prior&&prior!==c.split)throw new Error("topology has conflicting declared splits");topologySplits.set(c.topology_group!,c.split!);}}return {schema_version:raw.schema_version,lineage_group:raw.lineage_group as string|undefined,synthetic:true,cases};
+  const dataset=await datasetRoot(root), raw=record(await json(path.join(dataset,"manifest.json")),"manifest"), v2=raw.schema_version==="2.0.0", v1=raw.schema_version==="1"||raw.schema_version==="1.0.0";
+  if(!v1&&!v2)throw new Error("unsupported synthetic manifest schema");
+  if (raw.synthetic!==true||(!v2&&(typeof raw.lineage_group!=="string"||!raw.lineage_group))) throw new Error("invalid synthetic manifest");
+  const cases=array(raw.cases,"manifest cases").map(item=>{if(typeof item.case_id!=="string"||!item.case_id||typeof item.directory!=="string"||!/^observations\/[A-Za-z0-9_-]+$/.test(item.directory))throw new Error("invalid observation directory");if(v2&&(["lineage_group","container_group","topology_group","split"] as const).some(k=>typeof item[k]!=="string"||!(item[k] as string).trim()) )throw new Error("v2 case missing grouping metadata");if(item.split!==undefined&&!(["train","validation","holdout"] as string[]).includes(item.split as string))throw new Error("invalid declared split");return {case_id:item.case_id,directory:item.directory,lineage_group:typeof item.lineage_group==="string"?item.lineage_group:undefined,container_group:typeof item.container_group==="string"?item.container_group:undefined,topology_group:typeof item.topology_group==="string"?item.topology_group:undefined,split:item.split as "train"|"validation"|"holdout"|undefined};});
+  if(new Set(cases.map(c=>c.case_id)).size!==cases.length)throw new Error("duplicate case IDs");if(new Set(cases.map(c=>c.directory)).size!==cases.length)throw new Error("duplicate observation directories");if(v2){const topologySplits=new Map<string,string>();for(const c of cases){const prior=topologySplits.get(c.topology_group!);if(prior&&prior!==c.split)throw new Error("topology has conflicting declared splits");topologySplits.set(c.topology_group!,c.split!);}}return {schema_version:raw.schema_version as string,lineage_group:typeof raw.lineage_group==="string"?raw.lineage_group:undefined,synthetic:true,cases};
 }
 const COLLECTION_IDS: Record<string, string> = { tag: "tagId", trigger: "triggerId", variable: "variableId", folder: "folderId", client: "clientId", customTemplate: "templateId" };
 /** These checks cover the simulator reference shape, not Google's complete import schema. */
@@ -192,7 +199,11 @@ export async function buildSyntheticReplayRows(root: string, decisionTime: strin
   const manifest = await loadManifest(root);
   return Promise.all(manifest.cases.map(async item => {
     const observation = await observeSyntheticCase(root, item.case_id, decisionTime);
+    const containers=observation.facts.containers as Record<string, Json>;
+    const baselineHashes=["web","server"].map(side=>containers[side]?.baselineHash);
+    if(baselineHashes.some(hash=>typeof hash!=="string"))throw new Error("synthetic observation missing verified baseline hash");
+    const baselineGroup=createHash("sha256").update(baselineHashes.join(":"),"utf8").digest("hex");
     return { input: { observation: compactSyntheticJudgeInput(observation) }, prediction: { status: "unavailable" as const, reason: "offline evidence replay; Jev was not called" },
-      provenance: { containerGroup: item.container_group ?? manifest.lineage_group ?? "unknown", lineageGroup: item.lineage_group ?? manifest.lineage_group ?? "unknown", topologyGroup: item.topology_group, plannedSplit: item.split, synthetic: true, samplingReasons: ["synthetic-corpus-full-enumeration"] } };
+      provenance: { containerGroup: item.container_group ?? manifest.lineage_group ?? "unknown", lineageGroup: item.lineage_group ?? manifest.lineage_group ?? "unknown", topologyGroup: item.topology_group, baselineGroup, plannedSplit: item.split, synthetic: true, samplingReasons: ["synthetic-corpus-full-enumeration"] } };
   }));
 }

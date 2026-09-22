@@ -15,12 +15,17 @@ SYNTHETIC_GTM_LAB_PATH='/absolute/path/to/synthetic-gtm-lab' \
 For a v2 dataset, give the dataset root explicitly; its `manifest.json` is read from that directory.
 
 ```sh
+python3 scripts/synthetic-lab/generate_multi.py \
+  --output data/jev-shadow/multi-topology-v2
+
 npm run demo:synthetic-lab -- \
-  --dataset '/absolute/path/to/dataset-root' \
+  --dataset data/jev-shadow/multi-topology-v2 \
   --output data/jev-shadow/my-synthetic-replay
 ```
 
 For a v1 lab root, the adapter retains the compatibility path `datasets/demo-v1`.
+
+The default generator creates retail/train, leadgen/validation, and subscription/holdout topology families. Its two default seeds and 13 scenarios per family produce 78 cases, or 234 replay rows across the three default decision times. The manifest's planned split is authored before generation and is never inferred from oracle files or observed scores.
 
 The default decisions occur at hours 12, 30 and 60: before the simulated change, shortly after it, and after report settlement. Repeat `--decision-time` to choose other explicit UTC/offset timestamps. Output paths must not already exist.
 
@@ -35,7 +40,7 @@ The command writes `evidence.jsonl`, grouped `train.jsonl`, `validation.jsonl`, 
 - Network counts are separated by platform, source and event; browser requests are not all counted as conversions. HTTP failures, denied-consent requests and observed Meta event-ID divergence are retained.
 - Platform snapshots retain values, attribution definition, action labels, event window and observation time. An observation cannot be used as a later settled outcome.
 - Exact case IDs and grouping metadata stay outside model state. The adapter never opens the ground-truth directory or oracle report.
-- A v2 manifest requires nonempty lineage, container, and topology groups plus a declared `train`, `validation`, or `holdout` split for every case. Components connect through any of those groups, and incomplete or conflicting declarations fail before replay output is written.
+- A v2 manifest requires nonempty lineage, container, and topology groups plus a declared `train`, `validation`, or `holdout` split for every case. Components connect through any of those groups and the verified web/server baseline-pair hash; incomplete or conflicting declarations fail before replay output is written.
 - QA remains absent: simulated delivery is not browser/GTM preview validation.
 - Normalized synthetic metrics are not blindly cast into the production enriched-snapshot type.
 
