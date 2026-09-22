@@ -87,7 +87,40 @@ export class PythonJevJudge implements Judge {
   constructor(private readonly python:string,private readonly worker:string,private readonly definitionPath:string,private readonly timeoutMs=10_000,private readonly maxOutput=128_000,private readonly environment:NodeJS.ProcessEnv={}) {}
   async judge(evidence:CandidateEvidence):Promise<JudgeResult>{
     const input=JSON.stringify({protocol:"jev-shadow-v1",definitionPath:this.definitionPath,evidence:compactJudgeInput(evidence)});
-    const output=await new Promise<{code:number|null;out:string;err:string;timedOut:boolean}>((resolve)=>{let settled=false,out="",err="",timedOut=false;const finish=(code:number|null)=>{if(!settled){settled=true;resolve({code,out,err,timedOut});}};let child;try{child=spawn(this.python,[this.worker,"--protocol","jev-shadow-v1"],{stdio:["pipe","pipe","pipe"],shell:false,env:{...process.env,...this.environment}});}catch(error){return finish(null)}const timer=setTimeout(()=>{timedOut=true;child.kill("SIGTERM");setTimeout(()=>child.kill("SIGKILL"),250).unref();},this.timeoutMs);child.on("error",error=>{err=String(error);clearTimeout(timer);finish(null)});child.stdout.on("data",data=>{const chunk=String(data);if(out.length+chunk.length>this.maxOutput){out+=chunk.slice(0,Math.max(0,this.maxOutput-out.length));err="worker output exceeded limit";child.kill("SIGTERM")}else out+=chunk});child.stdin.on("error",error=>{err=String(error);finish(null)});child.stderr.on("data",data=>{err+=String(data).slice(0,4096)});child.on("close",code=>{clearTimeout(timer);finish(code)});child.stdin.end(input);});
-    if(output.timedOut)return{status:"unavailable",reason:"worker timeout"};if(output.code!==0)return{status:"unavailable",reason:`worker exit ${output.code}: ${output.err.slice(0,240)}`};try{return validateJudgeResult(JSON.parse(output.out),evidence)}catch{return{status:"error",reason:"malformed worker JSON"};}
+    const output=await new Promise<{code:number|null;out:string;failure?:string}>((resolve)=>{
+      let settled=false,out="",failure:string|undefined,killTimer:NodeJS.Timeout|undefined;
+      const child=spawn(this.python,[this.worker,"--protocol","jev-shadow-v1"],{
+        stdio:["pipe","pipe","pipe"],shell:false,env:{...process.env,...this.environment},
+      });
+      const stop=(reason:string)=>{
+        if(failure)return;
+        failure=reason;
+        child.kill("SIGTERM");
+        killTimer=setTimeout(()=>child.kill("SIGKILL"),250);
+      };
+      const timer=setTimeout(()=>stop("worker timeout"),this.timeoutMs);
+      const finish=(code:number|null)=>{
+        if(settled)return;
+        settled=true;clearTimeout(timer);if(killTimer)clearTimeout(killTimer);
+        resolve({code,out,failure});
+      };
+      child.on("error",()=>{failure="worker process could not start";finish(null)});
+      let outputBytes=0;
+      child.stdout.setEncoding("utf8");
+      child.stdout.on("data",(data:string)=>{
+        outputBytes+=Buffer.byteLength(data,"utf8");
+        if(outputBytes>this.maxOutput){stop("worker output exceeded limit");return;}
+        if(!failure)out+=data;
+      });
+      // Drain diagnostics without retaining provider output or credentials in evidence.
+      child.stderr.on("data",()=>{});
+      child.stdin.on("error",()=>stop("worker input failed"));
+      child.on("close",finish);
+      child.stdin.end(input);
+    }).catch(()=>({code:null,out:"",failure:"worker process could not start"}));
+    if(output.failure)return{status:"unavailable",reason:output.failure};
+    if(output.code!==0)return{status:"unavailable",reason:`worker exit ${output.code}`};
+    try{return validateJudgeResult(JSON.parse(output.out),evidence)}
+    catch{return{status:"error",reason:"malformed worker JSON"};}
   }
 }

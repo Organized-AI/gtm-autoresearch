@@ -34,6 +34,10 @@ Run `SYNTHETIC_GTM_LAB_PATH='/absolute/path/to/synthetic-gtm-lab' npm run demo:s
 
 A valid manifest is a frozen **seed snapshot**, not a calibration or promotion decision. The policy therefore records review for all seed-manifest outcomes. It does not enable keep/enforcement. A second, explicitly approved acceptance workflow is required before changing that behavior.
 
+Compute each loaded function's `definitionHash` in Python using `scripts.jev_worker.digest(function._definition)`. This uses Python's JSON number representation, which may differ from JavaScript for floating-point values; do not substitute the TypeScript evidence hash for arbitrary loaded definitions. The manifest identity fields shown below are strings. Compute the outer `manifestHash` with the exported TypeScript `manifestHash` helper, then load it with `frozenDefinitionFromManifest`. Use absolute saved-function paths. Loading a function does not evaluate it; close it after inspecting its definition.
+
+The worker validates both loaded functions before evaluating either and closes loaded runtimes on completion or failure. Runtime stdout diagnostics are redirected away from the JSON protocol; the parent drains diagnostics without persisting provider text. Startup errors, stdin errors, excessive output and timeouts produce unavailable results, with forced termination if graceful termination fails.
+
 ```json
 {
   "definitionHash": "seed-definition-content-hash",
