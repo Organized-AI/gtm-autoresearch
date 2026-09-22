@@ -21,6 +21,12 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { postAutoresearchRun } from "./post-to-linear.js";
 import {
+  applyOperations,
+  assertValidOperations,
+  validateCandidate,
+  type MutationResponse,
+} from "./gtm-container-mutations.js";
+import {
   evaluateGtmSignalQuality,
   type GtmContainer,
   type GtmTag,
@@ -619,183 +625,10 @@ ${listMarkdown(unresolved, "None")}
 `;
 }
 
-// ── Placeholder extraction ───────────────────────────────────────────────────
-
-function extractPlaceholders(json: string): string[] {
-  const matches = json.match(/%%[A-Z_]+%%/g) ?? [];
-  return [...new Set(matches)];
-}
-
-// ── 3-tier validation gate ───────────────────────────────────────────────────
-
-function validateMutation(
-  mutated: unknown,
-  original: GtmContainer,
-  originalJson: string,
-): { valid: boolean; reason: string } {
-  // Tier 1: Valid JSON (handled by caller's JSON.parse)
-  if (!mutated || typeof mutated !== "object") {
-    return { valid: false, reason: "Not a valid object" };
-  }
-
-  const m = mutated as GtmContainer;
-
-  // Tier 2: Has required GTM schema
-  if (!m.exportFormatVersion) {
-    return { valid: false, reason: "Missing exportFormatVersion" };
-  }
-  if (m.exportFormatVersion !== original.exportFormatVersion) {
-    return { valid: false, reason: "exportFormatVersion changed" };
-  }
-  if (!m.containerVersion) {
-    return { valid: false, reason: "Missing containerVersion" };
-  }
-  if (!Array.isArray(m.containerVersion.tag)) {
-    return { valid: false, reason: "Missing containerVersion.tag array" };
-  }
-  if (!Array.isArray(m.containerVersion.trigger)) {
-    return { valid: false, reason: "Missing containerVersion.trigger array" };
-  }
-  if (!Array.isArray(m.containerVersion.variable)) {
-    return { valid: false, reason: "Missing containerVersion.variable array" };
-  }
-
-  // Tier 3: Invariant checks
-  const mutatedJson = JSON.stringify(m);
-
-  // Placeholder preservation
-  const originalPlaceholders = extractPlaceholders(originalJson);
-  const mutatedPlaceholders = extractPlaceholders(mutatedJson);
-  for (const ph of originalPlaceholders) {
-    if (!mutatedPlaceholders.includes(ph)) {
-      return { valid: false, reason: `Placeholder ${ph} was removed` };
-    }
-  }
-
-  // No tag removal
-  const origTagIds = new Set(
-    (original.containerVersion.tag ?? []).map((t) => t.tagId),
-  );
-  for (const id of origTagIds) {
-    if (!m.containerVersion.tag!.some((t) => t.tagId === id)) {
-      return { valid: false, reason: `Original tag ${id} was removed` };
-    }
-  }
-
-  // No folder removal
-  const origFolderIds = new Set(
-    (original.containerVersion.folder ?? []).map((f) => f.folderId),
-  );
-  for (const id of origFolderIds) {
-    if (!(m.containerVersion.folder ?? []).some((f) => f.folderId === id)) {
-      return { valid: false, reason: `Original folder ${id} was removed` };
-    }
-  }
-
-  // Unique tag IDs
-  const tagIds = m.containerVersion.tag!.map((t) => t.tagId);
-  if (new Set(tagIds).size !== tagIds.length) {
-    return { valid: false, reason: "Duplicate tag IDs" };
-  }
-
-  // Unique trigger IDs
-  const triggerIds = (m.containerVersion.trigger ?? []).map((t) => t.triggerId);
-  if (new Set(triggerIds).size !== triggerIds.length) {
-    return { valid: false, reason: "Duplicate trigger IDs" };
-  }
-
-  // Unique variable IDs
-  const varIds = (m.containerVersion.variable ?? []).map((v) => v.variableId);
-  if (new Set(varIds).size !== varIds.length) {
-    return { valid: false, reason: "Duplicate variable IDs" };
-  }
-
-  return { valid: true, reason: "OK" };
-}
-
-// ── Operation types for JSON-patch mutations ────────────────────────────────
-
-interface MutationOp {
-  op: "add_tag" | "add_trigger" | "add_variable" | "modify_tag" | "set_consent_all" | "rename_tags" | "assign_folders";
-  entity?: Record<string, unknown>;
-  tagId?: string;
-  /** For modify_tag: partial merge into existing tag */
-  merge?: Record<string, unknown>;
-  /** For rename_tags: array of {tagId, newName} pairs */
-  renames?: Array<{ tagId: string; newName: string }>;
-  /** For assign_folders: array of {tagId, folderId} pairs */
-  assignments?: Array<{ tagId: string; folderId: string }>;
-}
-
-interface MutationResponse {
-  operations: MutationOp[];
-  summary: string;
-}
-
-// ── Apply mutation operations to container ──────────────────────────────────
-
-function applyOperations(
-  container: GtmContainer,
-  ops: MutationOp[],
-): GtmContainer {
-  // Deep clone
-  const result: GtmContainer = JSON.parse(JSON.stringify(container));
-  const cv = result.containerVersion;
-
-  for (const op of ops) {
-    switch (op.op) {
-      case "add_tag":
-        if (op.entity) cv.tag = [...(cv.tag ?? []), op.entity as any];
-        break;
-      case "add_trigger":
-        if (op.entity) cv.trigger = [...(cv.trigger ?? []), op.entity as any];
-        break;
-      case "add_variable":
-        if (op.entity) cv.variable = [...(cv.variable ?? []), op.entity as any];
-        break;
-      case "modify_tag":
-        if (op.tagId && op.merge) {
-          const idx = (cv.tag ?? []).findIndex((t) => t.tagId === op.tagId);
-          if (idx >= 0) {
-            cv.tag![idx] = { ...cv.tag![idx], ...op.merge } as any;
-          }
-        }
-        break;
-      case "set_consent_all":
-        // Set consentStatus to "NEEDED" on all tags that don't already have it
-        for (const tag of cv.tag ?? []) {
-          if (!tag.consentSettings || tag.consentSettings.consentStatus === "NOT_SET") {
-            (tag as any).consentSettings = { consentStatus: "NEEDED" };
-          }
-        }
-        break;
-      case "rename_tags":
-        // Bulk rename: apply naming convention fixes to many tags at once
-        if (op.renames) {
-          for (const { tagId, newName } of op.renames) {
-            const idx = (cv.tag ?? []).findIndex((t) => t.tagId === tagId);
-            if (idx >= 0) {
-              (cv.tag![idx] as any).name = newName;
-            }
-          }
-        }
-        break;
-      case "assign_folders":
-        // Bulk folder assignment: move tags into correct logical folders
-        if (op.assignments) {
-          for (const { tagId, folderId } of op.assignments) {
-            const idx = (cv.tag ?? []).findIndex((t) => t.tagId === tagId);
-            if (idx >= 0) {
-              (cv.tag![idx] as any).parentFolderId = folderId;
-            }
-          }
-        }
-        break;
-    }
-  }
-
-  return result;
-}
+// ── Deterministic container mutation policy ───────────────────────────────
+//
+// The model emits operations. scripts/gtm-container-mutations.ts owns cloning,
+// ID allocation, reference checks, and baseline field preservation.
 
 // ── Build mutation prompt ────────────────────────────────────────────────────
 
@@ -825,14 +658,6 @@ function buildMutationPrompt(
     .map((i) => `  [${i.severity}] ${i.entity}: ${i.message}`)
     .join("\n");
 
-  // Provide existing entity IDs for reference
-  const existingTagIds = (container.containerVersion.tag ?? []).map(t => t.tagId);
-  const existingTriggerIds = (container.containerVersion.trigger ?? []).map(t => t.triggerId);
-  const existingVarIds = (container.containerVersion.variable ?? []).map(v => v.variableId);
-  const maxTagId = Math.max(0, ...existingTagIds.map(Number).filter(n => !isNaN(n)));
-  const maxTriggerId = Math.max(0, ...existingTriggerIds.map(Number).filter(n => !isNaN(n)));
-  const maxVarId = Math.max(0, ...existingVarIds.map(Number).filter(n => !isNaN(n)));
-
   // Show example tag for pattern reference (prefer GA4 gaawe, then Meta, then first tag)
   const exampleTag = (container.containerVersion.tag ?? []).find(t => t.type === "gaawe")
     ?? (container.containerVersion.tag ?? []).find(t => t.name?.includes("Meta"))
@@ -844,9 +669,6 @@ function buildMutationPrompt(
   const ga4ReferenceTag = !hasGa4Event ? `
 ## GA4 Event tag reference (type "gaawe" — container has none, use this pattern for new GA4 event tags):
 {
-  "accountId": "${container.containerVersion.tag?.[0]?.accountId ?? "%%ACCOUNT_ID%%"}",
-  "containerId": "${container.containerVersion.tag?.[0]?.containerId ?? "%%CONTAINER_ID%%"}",
-  "tagId": "NEW_ID",
   "name": "GA4 - event_name - DataLayer",
   "type": "gaawe",
   "parameter": [
@@ -903,45 +725,37 @@ ${triggerList}
 Variables:
 ${varList}
 
-## Next available IDs: tagId="${maxTagId + 1}", triggerId="${maxTriggerId + 1}", variableId="${maxVarId + 1}"
-
 ## Example tag (use as pattern for new tags):
 ${exampleSnippet}
 ${ga4ReferenceTag}
 ## Existing folders:
 ${(container.containerVersion.folder ?? []).map(f => `  - "${f.name}" (folderId: ${f.folderId})`).join("\n")}
 
-## Output format — respond with ONLY this JSON (no markdown fences, no commentary):
+## Output format — respond with ONLY valid JSON (no markdown fences or comments):
 {
   "operations": [
-    // To set consent on ALL tags at once:
     {"op": "set_consent_all"},
-    // To add a consent initialization tag:
-    {"op": "add_tag", "entity": { ...full tag object with all required fields... }},
-    // To add a trigger:
-    {"op": "add_trigger", "entity": { ...full trigger object... }},
-    // To add a variable:
-    {"op": "add_variable", "entity": { ...full variable object... }},
-    // To modify an existing tag (merge fields):
-    {"op": "modify_tag", "tagId": "123", "merge": { "parameter": [...updated params...] }},
-    // To bulk rename tags (naming convention fixes — unlimited count per op):
-    {"op": "rename_tags", "renames": [{"tagId": "5", "newName": "Bing - All Pages"}, {"tagId": "13", "newName": "DoubleClick - Purchase"}]},
-    // To bulk assign tags to folders (unlimited count per op):
-    {"op": "assign_folders", "assignments": [{"tagId": "5", "folderId": "4"}, {"tagId": "15", "folderId": "32"}]}
+    {"op": "add_tag", "entity": {"name": "Meta - Purchase", "type": "cvt_123456_1", "parameter": [], "firingTriggerId": ["42"], "parentFolderId": "4"}},
+    {"op": "add_trigger", "entity": {"name": "CE - purchase", "type": "CUSTOM_EVENT", "customEventFilter": []}},
+    {"op": "add_variable", "entity": {"name": "DLV - Event ID", "type": "v", "parameter": []}},
+    {"op": "add_folder", "entity": {"name": "Meta"}},
+    {"op": "modify_tag", "tagId": "123", "changes": {"parameter": []}},
+    {"op": "rename_tags", "renames": [{"tagId": "5", "newName": "Bing - All Pages"}]},
+    {"op": "assign_folders", "assignments": [{"tagId": "5", "folderId": "4"}]}
   ],
   "summary": "Brief description of changes"
 }
 
 ## Rules:
-- Output ONLY the operations JSON — no full container dump
-- Max ${MUTATION_BUDGET} add/modify operations per round (rename_tags and assign_folders are unlimited batch ops and do NOT count toward the budget)
-- New tags MUST include: accountId, containerId, tagId, name, type, parameter, firingTriggerId, parentFolderId
-- Preserve all %%PLACEHOLDER%% tokens exactly
-- Use naming: "Platform - Event" for tags, "CE - event" for triggers
-- For consent focus: use "set_consent_all" op + add a Consent Mode v2 init tag (type "googtag_init_consent", fires on "Consent Initialization - All Pages" trigger)
-- For Meta tags: use type "cvt_123456_1" matching existing Meta tag types, include eventID parameter referencing {{CJS - Event ID Generator}}
-- For naming: use rename_tags to batch-fix names to "Platform - Event" pattern (e.g. "AW_Bing_AllPages" → "Bing - All Pages", "AW_GoogleAds_ATC" → "GAds - Add to Cart", "Facebook Pixel - Purchase" → "Meta - Purchase")
-- For folders: use assign_folders to batch-assign tags to logical folders. Create new folders with add_trigger if needed. Common folders: GA4, Meta, Google Ads, Bing, LinkedIn, DoubleClick`;
+- Output operations only. Never output, edit, reconstruct, or repair a full container JSON document.
+- The deterministic mutation layer allocates IDs and copies account/container identity. Do not supply accountId, containerId, tagId, triggerId, variableId, folderId, or fingerprint in an add entity.
+- Max ${MUTATION_BUDGET} add, modify, or consent operations per round. Rename and folder batches do not count toward that limit.
+- For modify_tag, changes may contain only name, parameter, firingTriggerId, blockingTriggerId, parentFolderId, consentSettings, tagFiringOption, and notes. Never change tag type or other fields.
+- Refer only to listed trigger IDs, folder IDs, and existing variable names. Preserve all %%PLACEHOLDER%% tokens exactly.
+- Use naming: "Platform - Event" for tags and "CE - event" for triggers.
+- For consent focus: use set_consent_all plus an optional Consent Mode v2 initialization tag that references an existing Consent Initialization trigger.
+- For Meta tags: match an existing Meta template type and include eventID referencing {{CJS - Event ID Generator}} when that variable exists.
+- For folders: use add_folder to create a folder, then assign_folders with its code-assigned ID in a later round; do not invent its ID.`;
 }
 
 // ── Mutation providers ──────────────────────────────────────────────────────
@@ -1220,9 +1034,7 @@ async function main(): Promise<void> {
         .replace(/```\s*$/m, "")
         .trim();
       mutationResp = JSON.parse(cleaned);
-      if (!Array.isArray(mutationResp.operations)) {
-        throw new Error("Missing 'operations' array");
-      }
+      assertValidOperations(mutationResp.operations, MUTATION_BUDGET);
       consecutiveJsonFails = 0;
     } catch (err) {
       console.log(`[Mutate] Invalid operations JSON: ${(err as Error).message}`);
@@ -1266,8 +1078,9 @@ async function main(): Promise<void> {
       continue;
     }
 
-    // Validate mutation against invariants
-    const validation = validateMutation(mutated, seed, seedJson);
+    // Verify the candidate against this round's baseline before scoring it.
+    // Earlier accepted changes remain in working, which is itself derived from the seed.
+    const validation = validateCandidate(working, mutated, mutationResp.operations);
     if (!validation.valid) {
       console.log(`[Validate] REJECTED: ${validation.reason}`);
       results.push({
