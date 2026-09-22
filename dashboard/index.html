@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0c0b09">
+    <title>GTM Autoresearch · Shadow run</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="masthead" aria-label="OrganizedAI Decision Models Jev">
+      <span>ORGANIZEDAI</span><i aria-hidden="true">·</i><span>DECISION MODELS</span><i aria-hidden="true">·</i><strong>JEV</strong><span class="masthead-tail">RECORDED RUN VIEW</span>
+    </div>
+    <a class="skip-link" href="#main">Skip to run diagram</a>
+    <main id="main" class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> RESEARCH / SHADOW EVALUATION</p>
+          <h1>GTM <em>Autoresearch.</em></h1>
+          <p id="run-subtitle" class="subtitle" aria-live="polite">Loading the recorded pilot journal…</p>
+        </div>
+        <div id="run-seal" class="read-only-seal" aria-label="Recorded journal status loading">
+          <span aria-hidden="true">◆</span>
+          <div><strong id="run-status">READ ONLY</strong><small id="run-source">Recorded journal</small></div>
+        </div>
+      </header>
+
+      <section class="disclosure" aria-label="Scope notice">
+        <span id="scope-icon" class="scope-icon" aria-hidden="true">◆</span>
+        <p id="scope-message"><strong>Recorded journal.</strong> Replay and polling are read-only; this view cannot publish, mutate, or enter keep/revert.</p>
+      </section>
+
+      <section class="metric-strip" aria-label="Recorded pilot summary">
+        <article><span>Records</span><strong id="metric-records">—</strong><small id="metric-records-note">from journal</small></article>
+        <article><span>Atomic attempts</span><strong id="metric-attempts">—</strong><small id="metric-attempts-note">completed</small></article>
+        <article><span>Paired agreement</span><strong id="metric-agreement">—</strong><small id="metric-agreement-note">unreviewed synthetic labels</small></article>
+        <article><span>Insufficient answers</span><strong id="metric-insufficient">—</strong><small id="metric-insufficient-note">recorded predictions</small></article>
+      </section>
+
+      <div class="tabbar" role="tablist" aria-label="Run view">
+        <button id="diagram-tab" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="diagram-panel">Run diagram</button>
+        <button id="judgments-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="judgments-panel">Judgments <span id="judgment-count" class="tab-count">—</span></button>
+        <button id="comparison-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="comparison-panel" hidden>Comparison</button>
+        <button id="export-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="export-panel">Container export</button>
+        <button id="synthetic-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="synthetic-panel">Synthetic data</button>
+      </div>
+
+      <section id="diagram-panel" class="tab-panel" role="tabpanel" aria-labelledby="diagram-tab">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">SYSTEM MAP</p>
+            <h2>GTM optimization &amp; shadow evaluation</h2>
+          </div>
+          <p class="muted">Select a node to inspect its boundary.</p>
+        </div>
+
+        <div class="diagram-wrap">
+          <div class="lane architecture-lane">
+            <div class="lane-intro"><span class="lane-mark" aria-hidden="true">01</span><div><p class="lane-label">CONCEPTUAL</p><h3>GTM optimization architecture</h3><p>Architecture only — not executed in this pilot.</p></div></div>
+            <div class="node-track" aria-label="Conceptual GTM optimization pipeline">
+              <button class="flow-node conceptual" type="button" data-node="baseline"><b>Baseline</b><span>container state</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual" type="button" data-node="score"><b>Score</b><span>deterministic checks</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual" type="button" data-node="mutation"><b>Typed mutation</b><span>bounded operation</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual" type="button" data-node="validate"><b>Validate</b><span>structural guard</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual decision" type="button" data-node="decision"><b>Keep / revert</b><span>policy decision</span></button><span class="connector" aria-hidden="true">→</span>
+              <button class="flow-node conceptual" type="button" data-node="next"><b>Next round</b><span>only after decision</span></button>
+            </div>
+          </div>
+
+          <div class="lane shadow-lane">
+            <div class="lane-intro"><span class="lane-mark" aria-hidden="true">02</span><div><p class="lane-label">EXECUTED</p><h3>Recorded Jev shadow pipeline</h3><p id="shadow-caption">Reading the stored evidence sequence.</p></div></div>
+            <div class="node-track" aria-label="Executed Jev shadow pilot pipeline">
+              <button class="flow-node executed" type="button" data-node="evidence"><b>Synthetic GTM / site</b><span>Meta + Google evidence</span></button><span class="connector active" aria-hidden="true">→</span>
+              <button class="flow-node executed" type="button" data-node="preflight"><b>Preflight</b><span>frozen definitions</span></button><span class="connector active" aria-hidden="true">→</span>
+              <button class="flow-node executed is-selected" type="button" data-node="questions"><b>Cloudflare Jev</b><span>two atomic questions</span></button><span class="connector active" aria-hidden="true">→</span>
+              <button class="flow-node executed" type="button" data-node="journal"><b>Journal</b><span>durable record</span></button><span class="connector active" aria-hidden="true">→</span>
+              <button class="flow-node executed" type="button" data-node="comparison"><b>Offline comparison</b><span>labels read after run</span></button>
+            </div>
+            <p id="current-event-summary" class="current-event" aria-live="polite">Recorded event loading…</p>
+            <p class="shadow-boundary"><span aria-hidden="true">⊘</span> Shadow output is read-only research evidence. It cannot reach keep/revert or publishing.</p>
+          </div>
+        </div>
+
+        <aside class="explanation" aria-live="polite">
+          <div class="explanation-mark" id="explanation-number">02</div>
+          <div><p class="eyebrow" id="explanation-kicker">EXECUTED BOUNDARY</p><h3 id="explanation-title">Cloudflare Jev · two atomic questions</h3><p id="explanation-text">The pilot made two recorded judgments per observation: whether the evidence was sufficient, and whether tracking behavior was preserved. Answers were written to the journal; they did not decide a GTM mutation.</p></div>
+        </aside>
+
+        <section class="replay-card" aria-labelledby="replay-title">
+          <div class="replay-head"><div><p class="eyebrow">RECORDED REPLAY</p><h2 id="replay-title">Journal timeline</h2><p id="replay-detail" class="muted">Loading recorded events…</p></div><span id="replay-state" class="replay-state">PAUSED</span></div>
+          <div class="replay-controls">
+            <button id="replay-reset" class="icon-button" type="button" title="Reset replay" aria-label="Reset replay">↺</button>
+            <button id="replay-previous" class="icon-button" type="button" title="Previous recorded event" aria-label="Previous recorded event">‹</button>
+            <button id="replay-play" class="play-button" type="button" disabled><span aria-hidden="true">▶</span> Play replay</button>
+            <button id="replay-next" class="icon-button" type="button" title="Next recorded event" aria-label="Next recorded event">›</button>
+            <input id="replay-scrubber" type="range" min="0" max="0" value="0" step="1" aria-label="Recorded event position" disabled>
+            <output id="replay-position" for="replay-scrubber">0 / 0</output>
+          </div>
+          <div id="event-rail" class="event-rail" aria-label="Recorded event sequence"></div>
+        </section>
+      </section>
+
+      <section id="judgments-panel" class="tab-panel" role="tabpanel" aria-labelledby="judgments-tab" hidden>
+        <div class="judgment-layout">
+          <section class="judgment-list-card"><div class="panel-heading compact"><div><p class="eyebrow">RECORDED RESULTS</p><h2>Paired judgments</h2></div><p id="judgment-hint" class="muted">Choose a record</p></div><div id="judgment-list" class="judgment-list"></div></section>
+          <aside class="judgment-detail" aria-live="polite"><p class="eyebrow">SELECTED ATOMIC JUDGMENT</p><h2 id="detail-title">No recorded judgment selected</h2><div id="detail-body" class="detail-body"><p class="muted">Select a completed record to inspect its recorded answer, confidence, token usage, and request ID.</p></div></aside>
+        </div>
+      </section>
+
+      <section id="comparison-panel" class="tab-panel" role="tabpanel" aria-labelledby="comparison-tab" hidden>
+        <section id="comparison-card" class="comparison-card" aria-labelledby="comparison-title">
+          <div class="comparison-heading"><div><p class="eyebrow">VERIFIED BASELINE COMPARISON</p><h2 id="comparison-title">Frozen rubric v1 → v2</h2></div><p id="comparison-message" class="muted">A baseline comparison is unavailable.</p></div>
+          <div id="comparison-table" class="comparison-table" role="table" aria-label="Recorded v1 and v2 rubric comparison"></div>
+          <p class="comparison-note">Agreement uses unreviewed synthetic generator labels. No confidence cutoff or calibration claim is applied.</p>
+        </section>
+      </section>
+
+      <section id="export-panel" class="tab-panel" role="tabpanel" aria-labelledby="export-tab" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">YOUR OUTPUT</p><h2>Scored GTM container</h2></div><span id="export-status" class="replay-state">LOADING</span></div>
+        <p id="export-message" class="muted">Checking for a scored container…</p>
+        <div id="export-content" hidden>
+          <div id="export-metrics" class="detail-grid export-metrics"></div>
+          <div class="export-actions">
+            <a id="export-download" class="download-button" href="/exports/container.json" download="container.json" hidden>Download GTM JSON ↓</a>
+            <a class="download-button secondary" href="/exports/report.json" download="report.json">Download score report ↓</a>
+            <a class="download-button secondary" href="/exports/manifest.json" download="manifest.json">Download checksums ↓</a>
+          </div>
+          <p id="export-download-note" class="comparison-note"></p>
+          <div class="export-columns">
+            <section><h3>Score breakdown</h3><div id="export-dimensions" class="export-dimensions"></div></section>
+            <section><h3>Validation &amp; remaining work</h3><ul id="export-findings" class="export-findings"></ul></section>
+          </div>
+          <div class="export-columns import-help">
+            <section><p class="eyebrow">MANUAL IMPORT</p><h3>Import into a GTM workspace</h3><ol><li>Download the GTM JSON when its checks pass.</li><li>In the matching web or server container, open Admin → Import Container.</li><li>Select the JSON and a review workspace. Review GTM’s merge or overwrite preview.</li><li>Confirm the import, then preview and test tracking before publishing.</li></ol></section>
+            <section><p class="eyebrow">PROGRAMMATIC ACCESS</p><h3>Use the same verified artifact</h3><p class="muted">Fetch the report, require readiness to pass, then download the exact scored bytes. GTM’s API has no bulk JSON import endpoint; your importer must map resources into a workspace.</p><pre id="export-command"></pre><p class="comparison-note">The download endpoints are read-only and accessible through your Tailscale connection.</p></section>
+          </div>
+          <p class="comparison-note">Scores are deterministic checks, not measured conversion lift. GTM acceptance and live tracking still need workspace preview. The Jev pilot shown in the other tabs did not generate or approve this export.</p>
+        </div>
+      </section>
+
+      <section id="synthetic-panel" class="tab-panel" role="tabpanel" aria-labelledby="synthetic-tab" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">TRAINING DOWNLOAD</p><h2>Synthetic GTM evidence</h2></div><span id="synthetic-status" class="replay-state">LOADING</span></div>
+        <p id="synthetic-message" class="muted">Checking for a verified synthetic-data bundle…</p>
+        <div id="synthetic-content" hidden>
+          <div id="synthetic-metrics" class="detail-grid export-metrics"></div>
+          <div class="export-actions">
+            <a class="download-button" href="/synthetic/dataset.zip" download="dataset.zip">Download dataset ZIP ↓</a>
+            <a class="download-button secondary" href="/synthetic/summary.json" download="summary.json">Download summary ↓</a>
+          </div>
+          <div class="export-columns import-help">
+            <section><p class="eyebrow">SCOPE</p><h3>Training-only synthetic observations</h3><p id="synthetic-scope" class="muted"></p></section>
+            <section><p class="eyebrow">NOTICES</p><h3>Dataset notes</h3><ul id="synthetic-notices" class="export-findings"></ul></section>
+          </div>
+        </div>
+      </section>
+
+      <footer><span id="poll-indicator" class="poll-indicator" aria-hidden="true"></span><span id="poll-status">Polling the local journal every 3 seconds.</span><span> No provider actions are available here.</span></footer>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

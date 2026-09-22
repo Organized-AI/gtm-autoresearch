@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "blade-public-site-observations-v1",
+  "observedDate": "2026-09-22",
+  "method": "Manual read-only browser inspection of public pages and displayed controls",
+  "sourceSite": "https://www.blade.com/",
+  "pages": [
+    {
+      "url": "https://www.blade.com/",
+      "observed": [
+        "Homepage offers USA and Europe destination tabs.",
+        "USA links include BLADE Airport, Westchester, Hamptons, Westchester to JFK/EWR, and BLADE Anywhere private charter.",
+        "Sign In and Sign Up navigation links are visible.",
+        "Apple App Store and Google Play links support app handoff.",
+        "Cookie prompt offers Accept, Decline and Preferences; inspection chose Decline.",
+        "A promotional email signup popup appeared and was dismissed without entering information."
+      ]
+    },
+    {
+      "url": "https://www.blade.com/airport",
+      "observed": [
+        "Airport service is described between Manhattan and JFK or Newark.",
+        "Flight search controls include From, To, Date, Desired curbside arrival, Passengers and Find a flight.",
+        "Displayed defaults included Manhattan, JFK Airport and one passenger.",
+        "Page advertised fares from $195 per seat at inspection time; this is not a fare inventory or measured booking value.",
+        "A notice said Manhattan-JFK service was limited September 21-22 due to a temporary flight restriction during the UN assembly.",
+        "FAQs cover baggage, changes, cancellation, timing and lounges."
+      ]
+    },
+    {
+      "url": "https://www.blade.com/jets",
+      "observed": [
+        "BLADE Anywhere describes chartering helicopters, jets and turboprops.",
+        "BLADE Anywhere buttons link to /flight_search.",
+        "The cost-estimator link points to https://blade.flyblade.com/booking_inquiries/new.",
+        "Following that estimator link resolved to https://www.blade.com//booking_inquiries/new in this inspection."
+      ]
+    },
+    {
+      "url": "https://www.blade.com//booking_inquiries/new",
+      "observed": [
+        "Private Jet Charter Cost Estimator form displays Origin, Destination, Departure Date and Your Email fields.",
+        "The form has a GET ESTIMATE button.",
+        "Page text says aircraft and price choices appear on a next page; that next page was not visited."
+      ]
+    },
+    {
+      "url": "https://www.blade.com/users/sign_up",
+      "observed": [
+        "Signup form displays first name, last name, email, phone, password and optional referral code fields.",
+        "Phone is described as contact information regarding flights.",
+        "The page contains a Sign Up button and a Sign In link."
+      ]
+    },
+    {
+      "url": "https://www.blade.com/flight_search",
+      "observed": [
+        "Search Flights displays Origin, Destination, Swap direction, Passengers and a disabled Next button before route entry.",
+        "Key Routes include NYC to Hamptons, South Florida, Aspen and Nantucket/Cape; Los Angeles to Aspen is also offered.",
+        "Route buttons link to /flight_search with origin and destination query parameters. No search was submitted."
+      ]
+    }
+  ],
+  "notObserved": [
+    "No search, quote, signup, payment or reservation form was submitted.",
+    "No real visitor records, conversions, ad performance, cookies or user identifiers were collected.",
+    "Actual dataLayer event names, GTM firing behavior and network delivery success were not measured.",
+    "Flight results, checkout, payment, confirmation and app installation were not inspected.",
+    "A cross-domain booking boundary was not established; the estimator link resolved to the main site."
+  ],
+  "modelingAssumptions": [
+    "Session volumes, journey mix, channel shares, device mix, consent probabilities and dropoff rates are invented test parameters.",
+    "Event names, ad campaigns, conversion actions, identifiers, prices, lead values, timestamps and attribution are synthetic contracts.",
+    "Completed purchases and submitted inquiries/signup events are inferred modeled outcomes, not observed website completions.",
+    "Cross-domain attribution loss, server forwarding, deduplication, reporting delay and platform outage are stress models, not findings about BLADE.",
+    "Service-availability and business-demand changes are non-tracking-fault controls."
+  ]
+}

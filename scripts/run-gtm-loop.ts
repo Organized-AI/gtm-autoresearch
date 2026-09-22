@@ -21,6 +21,16 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { postAutoresearchRun } from "./post-to-linear.js";
 import {
+  buildEvidence,
+  freezeSeedDefinition,
+  frozenDefinitionFromManifest,
+  PythonJevJudge,
+  shadowPolicy,
+  writeEvidence,
+  hash,
+  type ShadowOutcome,
+} from "./jev-shadow.js";
+import {
   applyOperations,
   assertValidOperations,
   validateCandidate,
@@ -35,6 +45,7 @@ import {
   type MetaAdsSnapshot,
   type EnrichedAdsSnapshot,
 } from "../evals/eval_gtm_signal_quality.js";
+import { createScoredGtmExport } from "./gtm-scored-export.js";
 
 const PROJECT_ROOT = path.resolve(
   decodeURIComponent(new URL(".", import.meta.url).pathname),
@@ -51,6 +62,10 @@ const PLATEAU_STREAK = 3;
 const MAX_REGRESSIONS = 3;
 const MAX_JSON_FAILURES = 5;
 const MUTATION_BUDGET = 3;
+const JEV_MODE = process.env.JEV_MODE === "shadow" ? "shadow" : "off";
+const JEV_PYTHON = process.env.JEV_PYTHON ?? "python3";
+const JEV_WORKER_PATH = process.env.JEV_WORKER_PATH ?? path.join(PROJECT_ROOT, "scripts/jev_worker.py");
+const JEV_DEFINITION_PATH = process.env.JEV_DEFINITION_PATH ?? "";
 
 // Mutation provider config
 // "claude" = Claude Code CLI (authenticated via Claude plan)
@@ -75,6 +90,7 @@ interface RoundResult {
   issueCount: number;
   action: "improved" | "reverted" | "validation_fail" | "json_fail";
   mutationSummary: string;
+  shadow?: ShadowOutcome;
 }
 
 interface ClientManifest {
@@ -923,6 +939,14 @@ async function main(): Promise<void> {
   let bestScore = baselineScores.combinedScore;
   let bestJson = seedJson;
   let prevScore = baselineScores.combinedScore;
+  const shadowRunId = `shadow-${Date.now()}`;
+  let frozenJudgeDefinition = freezeSeedDefinition();
+  let shadowConfigurationError: string | undefined;
+  if (JEV_MODE === "shadow") {
+    if (!JEV_DEFINITION_PATH) shadowConfigurationError = "JEV_DEFINITION_PATH is required for shadow mode";
+    else try { frozenJudgeDefinition = frozenDefinitionFromManifest(JSON.parse(await readFile(JEV_DEFINITION_PATH, "utf8"))); }
+    catch (error) { shadowConfigurationError = error instanceof Error ? error.message : "invalid frozen manifest"; }
+  }
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     console.log(`\n${"═".repeat(60)}`);
@@ -1098,6 +1122,22 @@ async function main(): Promise<void> {
 
     // Re-score mutated version
     const mutatedScores = evaluateGtmSignalQuality(mutated, adsSnapshot);
+    let shadowBase: Omit<ShadowOutcome, "actualAction" | "disagreement"> | undefined;
+    if (JEV_MODE === "shadow") {
+      const evidence = buildEvidence({
+        runId: shadowRunId, parentId: hash(working).slice(0, 16), baseline: working, candidate: mutated,
+        operations: mutationResp.operations, targetedIssue: strategy, before: scores, after: mutatedScores,
+        validation, snapshot: { identity: adsSnapshot ? "loaded-snapshot" : "none", partial: Boolean((adsSnapshot as EnrichedAdsSnapshot | undefined)?.partial) },
+        qa: { status: "absent" }, frozen: frozenJudgeDefinition,
+      });
+      const judge = new PythonJevJudge(JEV_PYTHON, JEV_WORKER_PATH, JEV_DEFINITION_PATH);
+      const judgment = shadowConfigurationError
+        ? { status: "unavailable" as const, reason: shadowConfigurationError }
+        : await judge.judge(evidence);
+      const proposal = shadowPolicy(evidence, judgment);
+      shadowBase = { mode: "shadow", proposedRoute: proposal.route, reasonCodes: proposal.reasonCodes, judgment };
+      await writeEvidence(path.join(path.dirname(templatePath), "shadow-results", shadowRunId, `${round}-${evidence.candidateId}`), evidence, working, mutated);
+    }
     console.log(
       `[Mutate] New score: ${(mutatedScores.combinedScore * 100).toFixed(1)}% ` +
         `(was ${(scores.combinedScore * 100).toFixed(1)}%)`,
@@ -1108,6 +1148,7 @@ async function main(): Promise<void> {
       console.log("[Mutate] IMPROVED — keeping mutation");
       working = mutated;
       workingJson = JSON.stringify(mutated, null, 2);
+      if (mutatedScores.combinedScore > bestScore) { bestScore = mutatedScores.combinedScore; bestJson = workingJson; }
       results.push({
         round,
         score: mutatedScores.combinedScore,
@@ -1117,6 +1158,7 @@ async function main(): Promise<void> {
         issueCount: mutatedScores.issues.length,
         action: "improved",
         mutationSummary: `Score ${(scores.combinedScore * 100).toFixed(1)}% → ${(mutatedScores.combinedScore * 100).toFixed(1)}%`,
+        shadow: shadowBase && { ...shadowBase, actualAction: "improved", disagreement: shadowBase.proposedRoute !== "keep" },
       });
     } else {
       // Revert
@@ -1130,6 +1172,7 @@ async function main(): Promise<void> {
         issueCount: scores.issues.length,
         action: "reverted",
         mutationSummary: `${(mutatedScores.combinedScore * 100).toFixed(1)}% <= ${(scores.combinedScore * 100).toFixed(1)}%, reverted`,
+        shadow: shadowBase && { ...shadowBase, actualAction: "reverted", disagreement: shadowBase.proposedRoute === "keep" },
       });
     }
   }
@@ -1149,6 +1192,16 @@ async function main(): Promise<void> {
   );
   await writeFile(winningPath, bestJson);
   console.log(`\n[Save] Winning config → ${winningPath}`);
+  const scoredExportPath = `${winningPath}.scored-export`;
+  const scoredExport = await createScoredGtmExport({
+    containerBytes: bestJson,
+    baselineBytes: seedJson,
+    outputDir: scoredExportPath,
+    sourceKind: "optimization-winner",
+    sourceName: path.basename(winningPath),
+    adsSnapshot,
+  });
+  console.log(`[Save] Scored GTM export → ${scoredExportPath} (${scoredExport.report.readiness.status})`);
 
   // ── Write experiment log ──
 

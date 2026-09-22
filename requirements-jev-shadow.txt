@@ -1,0 +1,3 @@
+# Isolated worker dependency, pinned after inspecting upstream pyproject.toml (v0.1.4).
+# No dependency is installed by pilot tests and no live provider is invoked.
+jev-align @ git+https://github.com/sutro-sh/jev-align.git@3d997fc76593036655c28d4964de43b55f81fe2c

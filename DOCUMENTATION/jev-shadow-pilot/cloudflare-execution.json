@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "jev-pilot-execution-config-v1",
+  "mode": "shadow",
+  "provider": "cloudflare",
+  "model": "typesafe/jev"
+}

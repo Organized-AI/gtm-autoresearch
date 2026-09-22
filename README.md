@@ -79,6 +79,8 @@ Every run treats the selected GTM export as its baseline, then applies typed ope
 
 See [the container mutation policy](DOCUMENTATION/container-mutation-policy.md) for the operation boundary, Jev's post-validation judge role, and the planned OpenShell execution boundary.
 
+The implemented shadow-pilot contract, offline replay workflow, and operational limits are in [Jev shadow-pilot documentation](DOCUMENTATION/jev-shadow-pilot/CONTRACT.md).
+
 ## Ads data feedback loop
 
 The enriched snapshot pulls live data from Meta and Google Ads APIs before each loop run, giving the optimizer real signals to work with:
@@ -105,6 +107,37 @@ Google Ads API ──→ conversion actions, labels, attribution windows
 - Google Ads conversion actions with no matching GTM tag
 
 ## Usage
+
+### Get the scored GTM JSON
+
+The final deliverable is a GTM export-format-v2 `container.json`, with its deterministic score and validation findings in a separate `report.json`. The container itself has no added score fields. `manifest.json` binds both files by SHA-256. The optimization loop now packages its saved winner this way as well.
+
+To score and package a saved winner without running a model or contacting GTM:
+
+```bash
+npx tsx scripts/prepare-gtm-export.ts \
+  --container path/to/winning-config.json \
+  --baseline path/to/seed.json \
+  --output /tmp/gtm-scored-export
+```
+
+Omit `--baseline` for a standalone score. To include ads alignment, explicitly supply `--enriched-snapshot path/to/snapshot.json` or `--meta-snapshot path/to/meta.json`. With neither, scoring is structural only. Use a new output directory for each bundle. Unresolved hydration placeholders or broken references are reported as blockers; a high score does not override them.
+
+The run dashboard's **Container export** tab offers the JSON, report and checksums for an attached bundle. The export is separate from the recorded Jev pilot: pilot agreement is not a container score or an approval to import. To attach a bundle to the managed dashboard, add `--export-bundle /tmp/gtm-scored-export` to [the installer command](DOCUMENTATION/jev-shadow-pilot/RUN-VIEW.md).
+
+**Manual import:** download `container.json`, open **GTM → Admin → Import Container**, select the matching web/server container and a review workspace, inspect the merge/overwrite preview, and confirm the import. Preview and test tracking before publishing. Offline validation does not certify Google backend acceptance or runtime behavior.
+
+**Programmatic use:** fetch the report and the same JSON artifact from the private dashboard, checking readiness and the hash before passing it to your importer:
+
+```bash
+curl --fail http://jordans-mac-mini.tailb35295.ts.net:8765/exports/report.json -o report.json
+jq -e '.readiness.status == "ready-for-import-review"' report.json && \
+  curl --fail http://jordans-mac-mini.tailb35295.ts.net:8765/exports/container.json -o container.json
+```
+
+Compare the downloaded SHA-256 to `report.source.sha256`. Google's GTM API v2 has no bulk container-JSON import endpoint. An API importer must translate the resources into workspace create/update calls, resolve IDs and references, and handle templates and conflicts. These downloads perform no GTM writes or publishing. The container download returns HTTP 409 when checks are blocked and HTTP 404 when bundle integrity cannot be verified.
+
+### Run optimization
 
 ```bash
 # 1. refresh ads data (Meta + Google Ads APIs)
