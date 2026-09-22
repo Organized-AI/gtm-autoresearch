@@ -1,5 +1,7 @@
 # Direct Cloudflare verification — 2026-09-22
 
+This document preserves the initial diagnostic run. A separately authorized fresh paired run subsequently completed; see [PAIRED-PILOT-RESULTS.md](PAIRED-PILOT-RESULTS.md). The original diagnostic journal remains unchanged.
+
 The direct integration is verified against Cloudflare's `typesafe/jev` model, resolving to `jev-1.13.0`. It remains default-off and shadow-only. BLADE exports remain JSON-shape references. No GTM publishing, loop acceptance changes, calibration, holdout access, or merge occurred.
 
 The real provider response differed from the model page's example: the standard Cloudflare envelope contained a second gateway wrapper with `state: "Completed"` and `result: {model, answers, usage}`. The adapter now accepts that observed shape, the standard single envelope, and the documented direct response. Pending/failed gateway responses and API errors are rejected.

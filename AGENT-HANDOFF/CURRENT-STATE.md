@@ -1,4 +1,15 @@
-# Current State — 2026-09-22 (direct Cloudflare Jev verified)
+# Current State — 2026-09-22 (complete paired pilot scored)
+
+- Same active checkout `/private/tmp/gtm-jev-execution-20260922`, branch `feat/jev-shadow-pilot`, draft PR #5 stacked on unmerged PR #4. Do not merge or enable enforcement.
+- Following explicit user approval, a fresh run `cloudflare-training-paired-v2-20260922` completed 12 paired observations / 24 requests without errors or retries, all `jev-1.13.0`. Root launched the authenticated run; Terra scored/reviewed; root independently checked journal identity, result projection and score.
+- Actual new-run usage: 361,858 input tokens + 1,152 output tokens. No dollar cost calculated. Prior diagnostic run remains intact at 14 attempts; total requests across both runs: 38. Prior incomplete usage prevents a combined total usage/cost claim.
+- Both atomic questions match 9/12 unreviewed generator labels; both match together on the same 9/12 rows. Tracking answers match all six expected failures and three expected passes. All three expected `insufficient` rows disagree on both questions; Jev returned no `insufficient` answers.
+- Read `DOCUMENTATION/jev-shadow-pilot/PAIRED-PILOT-RESULTS.md` for evidence review, usage and checksums. Artifacts: `/private/tmp/gtm-jev-cloudflare-paired-v2-20260922/` (journal/results/score/audit and Terra review). No rubric, label or execution code changed during this evaluation. The executor read no labels; offline scoring read training expected labels after execution; validation and holdout remain unopened.
+- Next: review the three abstention disagreements, then draft separately versioned rubric instructions/examples and a bounded comparison plan. Preserve concrete-fault detection, keep original results/labels frozen, and do not treat training agreement as human accuracy or calibration. No further paid run was launched after the 24-request allowance was consumed.
+
+---
+
+# Previous State — 2026-09-22 (direct Cloudflare Jev verified)
 
 ## Active work
 - Checkout `/private/tmp/gtm-jev-execution-20260922`, branch `feat/jev-shadow-pilot`, draft PR #5 stacked on unmerged PR #4. Preserve the original cloud-offloaded workspace. Do not merge or enable enforcement.

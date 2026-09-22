@@ -1,5 +1,7 @@
 # Frozen training pilot — 2026-09-21
 
+This document records the original offline preparation. The same frozen package has since completed a live paired Cloudflare evaluation; see [PAIRED-PILOT-RESULTS.md](PAIRED-PILOT-RESULTS.md) for the 2026-09-22 results and remaining review work.
+
 The offline package is prepared at `data/jev-shadow/training-pilot-v1-final/REPORT.md` (generated files are ignored by git). It contains a versioned seed rubric, time-aware generator labels, and 12 unique training observations. No provider has evaluated these inputs. Jev remains default-off and shadow-only; no judgment can change legacy acceptance.
 
 ## Package and selection
