@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Install a verified recorded-run viewer as a per-user macOS LaunchAgent."""
+import argparse
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import plistlib
+import shutil
+import subprocess
+import sys
+import tempfile
+
+import gtm_run_view as viewer
+
+LABEL = 'com.organizedai.gtm-run-view'
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-dir', type=Path, required=True)
+    parser.add_argument('--package', type=Path, required=True)
+    parser.add_argument('--baseline-run-dir', type=Path, required=True)
+    parser.add_argument('--baseline-package', type=Path, required=True)
+    parser.add_argument('--allow-origin', action='append', default=[], type=viewer.parse_allowed_origin)
+    parser.add_argument('--port', type=int, default=8765)
+    args = parser.parse_args()
+    if sys.platform != 'darwin': parser.error('This installer requires macOS.')
+    sources = [(args.run_dir, args.package), (args.baseline_run_dir, args.baseline_package)]
+    snapshots = [viewer.snapshot(run, package, include_comparison_identity=True) for run, package in sources]
+    if not viewer.compare_completed_snapshots(*snapshots)['available']:
+        parser.error('Installation requires a complete, verified comparison; active runs are not copied.')
+    home = Path.home()
+    service_root = home / 'Library/Application Support/GTM Autoresearch'
+    releases = service_root / 'releases'
+    releases.mkdir(parents=True, exist_ok=True)
+    release = Path(tempfile.mkdtemp(prefix=datetime.datetime.now().strftime('%Y%m%d-%H%M%S-'), dir=releases))
+    (release / 'scripts').mkdir()
+    for name in ('gtm_run_view.py', 'jev_pilot.py', 'jev_pilot_execute.py', 'jev_cloudflare_direct.py'):
+        shutil.copy2(ROOT / 'scripts' / name, release / 'scripts' / name)
+    shutil.copytree(ROOT / 'dashboard', release / 'dashboard')
+    for label, (run, package) in zip(('current-run', 'baseline'), sources):
+        for folder, source, names in (
+            ('run', run, ('journal.jsonl', 'results.jsonl', 'score.json')),
+            ('package', package, ('checksums.json', 'rubric.json', 'pilot-inputs.jsonl', 'manifest.json', 'pilot-expected.jsonl')),
+        ):
+            target = release / label / folder
+            target.mkdir(parents=True)
+            for name in names: shutil.copy2(source / name, target / name)
+    copied = [viewer.snapshot(release / label / 'run', release / label / 'package', include_comparison_identity=True) for label in ('current-run', 'baseline')]
+    if not viewer.compare_completed_snapshots(*copied)['available']:
+        raise RuntimeError('Copied artifacts failed verification; service was not changed.')
+    manifest = {str(path.relative_to(release)): hashlib.sha256(path.read_bytes()).hexdigest()
+                for path in release.rglob('*') if path.is_file()}
+    (release / 'deployment.json').write_text(json.dumps({'sourceCheckout': str(ROOT), 'files': manifest}, indent=2) + '\n')
+    # The stable link keeps launchd independent of the task session and /tmp.
+    current = service_root / 'current'
+    pending = service_root / ('current-' + release.name)
+    pending.symlink_to(release, target_is_directory=True)
+    os.replace(pending, current)
+    logs = service_root / 'logs'; logs.mkdir(exist_ok=True)
+    interpreter = next((str(alias) for alias in (Path('/opt/homebrew/bin/python3'), Path('/usr/local/bin/python3'))
+                        if alias.exists() and os.path.samefile(alias, sys.executable)), sys.executable)
+    program = [interpreter, '-u', str(current / 'scripts/gtm_run_view.py'),
+               '--run-dir', str(current / 'current-run/run'), '--package', str(current / 'current-run/package'),
+               '--baseline-run-dir', str(current / 'baseline/run'), '--baseline-package', str(current / 'baseline/package'),
+               '--port', str(args.port)]
+    for origin in args.allow_origin: program.extend(['--allow-origin', origin])
+    definition = {'Label': LABEL, 'ProgramArguments': program, 'WorkingDirectory': str(current),
+                  'RunAtLoad': True, 'KeepAlive': True, 'ThrottleInterval': 5,
+                  'StandardOutPath': str(logs / 'stdout.log'), 'StandardErrorPath': str(logs / 'stderr.log')}
+    agents = home / 'Library/LaunchAgents'; agents.mkdir(exist_ok=True)
+    plist = agents / (LABEL + '.plist')
+    plist.write_bytes(plistlib.dumps(definition))
+    domain = f'gui/{os.getuid()}'
+    loaded = subprocess.run(['launchctl', 'print', f'{domain}/{LABEL}'], capture_output=True).returncode == 0
+    if loaded: subprocess.run(['launchctl', 'bootout', f'{domain}/{LABEL}'], check=True)
+    subprocess.run(['launchctl', 'bootstrap', domain, str(plist)], check=True)
+    print(json.dumps({'service': LABEL, 'release': str(release), 'plist': str(plist),
+                      'port': args.port, 'providerCalls': 0}, indent=2))
+
+
+if __name__ == '__main__': main()

@@ -1,5 +1,30 @@
 # Local GTM run interface
 
+## Managed macOS service
+
+The private dashboard is now managed by the per-user LaunchAgent `com.organizedai.gtm-run-view`. The earlier foreground process ended with its task session, causing Tailscale to return HTTP 502. The service starts at login and restarts after exit. It uses a versioned copy of the viewer, fonts, and verified completed-run artifacts under `~/Library/Application Support/GTM Autoresearch/`, outside temporary task storage. The existing Tailscale Serve route is unchanged.
+
+To install or update the managed viewer from a healthy checkout, run:
+
+```sh
+/opt/homebrew/bin/python3 scripts/install_gtm_run_view.py \
+  --run-dir /private/tmp/gtm-jev-cloudflare-rubric-v2-run-20260922 \
+  --package data/jev-shadow/training-pilot-rubric-v2-prepared \
+  --baseline-run-dir /private/tmp/gtm-jev-cloudflare-paired-v2-20260922 \
+  --baseline-package data/jev-shadow/training-pilot-v1-final \
+  --port 8765 \
+  --allow-origin http://jordans-mac-mini.tailb35295.ts.net:8765 \
+  --allow-origin http://100.86.248.8:8765
+```
+
+The installer validates both completed runs before copying a fixed list of scripts and artifacts. It copies no credentials, validation data or holdout data and makes no provider calls. A deployment manifest records copied file hashes. **Rerun the installer after frontend changes or to display a newly completed comparison**; the service serves its installed copy, not the working checkout. It intentionally refuses active or unverified comparisons.
+
+Service definition: `~/Library/LaunchAgents/com.organizedai.gtm-run-view.plist`. Logs: `~/Library/Application Support/GTM Autoresearch/logs/`. Check with `launchctl print gui/$(id -u)/com.organizedai.gtm-run-view`; restart with `launchctl kickstart -k gui/$(id -u)/com.organizedai.gtm-run-view`. To stop it, use `launchctl bootout gui/$(id -u)/com.organizedai.gtm-run-view`. Do not run a second foreground server on its port.
+
+Verified recovery by terminating only the managed viewer process: launchd restarted it with a new PID, and the private page and comparison API returned HTTP 200 again.
+
+## Manual foreground mode
+
 Run from the repository checkout:
 
 ```sh
