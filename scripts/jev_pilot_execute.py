@@ -3,8 +3,8 @@
 
 This driver never reads pilot labels.  It validates the package and frozen saved
 functions before a provider call, journals each atomic attempt durably before it
-starts, and makes no retry.  It enforces a cap on logical AIFunction attempts,
-not a billing or physical HTTP-request cap.
+starts, and makes no retry. Direct Cloudflare sends at most one HTTP POST per
+reserved attempt. No billing cap is claimed.
 """
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ from typing import Any, Callable, Mapping
 # Import the package-only checker; it deliberately does not open expected labels.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import jev_pilot
+from jev_cloudflare_direct import safe_reason
 
 FUNCTIONS = ("evidenceSufficient", "trackingBehaviorPreserved")
 LABELS = {"pass", "fail", "insufficient"}
@@ -253,6 +254,10 @@ def load_native_functions(prepared: PreparedRun) -> dict[str, Any]:
         raise
 
 
+class DirectCloudflareError(ValueError):
+    """A sanitized error from the direct transport; never contains response bodies."""
+
+
 class DirectCloudflareFunction:
     """One killable no-retry subprocess per reserved atomic evaluation."""
     def __init__(self, name: str, state: Mapping[str, Any], model: str, environment: Mapping[str, str]):
@@ -265,18 +270,32 @@ class DirectCloudflareFunction:
         for key in ("CLOUDFLARE_ACCOUNT_ID","CLOUDFLARE_API_TOKEN"): env[key]=self.environment[key]
         child=subprocess.Popen([sys.executable,str(Path(__file__).with_name("jev_cloudflare_direct.py"))],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,start_new_session=True,env=env)
         try: output,_=child.communicate(json.dumps(request),timeout=MAX_ATOMIC_SECONDS)
-        except subprocess.TimeoutExpired:
-            os.killpg(child.pid, signal.SIGKILL); child.communicate(); raise AtomicTimeout("direct Cloudflare subprocess timed out")
-        if child.returncode != 0: fail("direct Cloudflare evaluation failed")
+        except BaseException as error:
+            if child.poll() is None:
+                try: os.killpg(child.pid, signal.SIGKILL)
+                except ProcessLookupError: pass
+            child.communicate()
+            if isinstance(error, subprocess.TimeoutExpired):
+                raise AtomicTimeout("direct Cloudflare subprocess timed out") from error
+            raise
         try: value=json.loads(output)
         except json.JSONDecodeError as error: raise ValueError("direct Cloudflare response malformed") from error
+        if child.returncode != 0 or isinstance(value, dict) and "error" in value:
+            reason = value.get("reason") if isinstance(value, dict) else None
+            raise DirectCloudflareError(safe_reason(ValueError(reason)) if isinstance(reason, str) else "direct Cloudflare evaluation failed")
         if not isinstance(value,dict) or "error" in value or value.get("choice") not in LABELS or not isinstance(value.get("metadata"),dict): fail("direct Cloudflare response rejected")
         return type("Prediction",(),{"choice":value["choice"],"metadata":value["metadata"]})()
     def close(self) -> None: pass
 
 def load_direct_cloudflare_functions(prepared: PreparedRun, environment: Mapping[str,str]) -> dict[str, Any]:
-    if prepared.provider != "cloudflare": fail("direct Cloudflare transport requires a cloudflare seed")
-    return {name: DirectCloudflareFunction(name,read_json(Path(prepared.seed_manifest["functions"][name]["path"])/"state.json"),prepared.model,environment) for name in FUNCTIONS}
+    if prepared.provider != "cloudflare" or prepared.model != "typesafe/jev":
+        fail("direct Cloudflare transport requires cloudflare/typesafe/jev")
+    return {name: DirectCloudflareFunction(name,read_json(saved_function_path(prepared, name)/"state.json"),prepared.model,environment) for name in FUNCTIONS}
+
+
+def saved_function_path(prepared: PreparedRun, name: str) -> Path:
+    path = Path(prepared.seed_manifest["functions"][name]["path"]).expanduser()
+    return path if path.is_absolute() else prepared.seed_manifest_path.parent / path
 
 
 def close_native_functions(functions: Mapping[str, Any]) -> None:
@@ -332,16 +351,16 @@ def call_with_timeout(function: Any, observation: Mapping[str, Any]) -> Any:
         signal.signal(signal.SIGALRM, previous)
 
 
-def run_header(prepared: PreparedRun, run_id: str, config: Mapping[str, Any]) -> dict[str, Any]:
+def run_header(prepared: PreparedRun, run_id: str, config: Mapping[str, Any], transport: str = "native-guarded-v1") -> dict[str, Any]:
     return {"event": "run-started", "runId": run_id, "rubricHash": prepared.rubric_hash,
             "seedManifestHash": prepared.seed_manifest["manifestHash"], "provider": prepared.provider,
-            "model": prepared.model, "configHash": digest(config),
+            "model": prepared.model, "configHash": digest(config), "transport": transport,
             "inputs": [{"recordId": row["recordId"], "inputHash": row["inputHash"]} for row in prepared.rows]}
 
 
-def journal_state(path: Path, prepared: PreparedRun, run_id: str, config: Mapping[str, Any]) -> tuple[dict[tuple[str, str], dict[str, Any]], dict[str, dict[str, Any]]]:
+def journal_state(path: Path, prepared: PreparedRun, run_id: str, config: Mapping[str, Any], transport: str = "native-guarded-v1") -> tuple[dict[tuple[str, str], dict[str, Any]], dict[str, dict[str, Any]]]:
     events = existing_jsonl(path)
-    header = run_header(prepared, run_id, config)
+    header = run_header(prepared, run_id, config, transport)
     if not events:
         append_jsonl(path, header); events = [header]
     if events[0] != header:
@@ -425,24 +444,20 @@ def execute(
     provider_guard: Callable[[PreparedRun, Mapping[str, Any]], None] | None = None,
     direct_cloudflare: bool = False,
 ) -> dict[str, Any]:
-    """Execute a fake/reviewed transport only after a caller-supplied hard-control guard.
-
-    The CLI intentionally supplies no guard in this milestone, so it cannot make
-    provider calls. Tests inject an in-memory fake guard and transport.
-    """
+    """Execute the bounded direct transport, or an explicitly guarded test adapter."""
     config = validate_execution_config_object(config, prepared)
     inventory = read_json(prepared.package / "checksums.json")
     protected = {prepared.package / name for name in inventory}
     protected.update({prepared.package / "checksums.json", prepared.seed_manifest_path})
     for function_name in FUNCTIONS:
-        protected.add(Path(prepared.seed_manifest["functions"][function_name]["path"]) / "state.json")
+        protected.add(saved_function_path(prepared, function_name) / "state.json")
     paths = {results_path.resolve(), journal_path.resolve(), journal_path.with_name(journal_path.name + ".lock").resolve()}
     if len(paths) != 3 or any(item.resolve() in paths for item in protected):
         fail("results/journal path collides with a protected artifact")
     if provider_guard is None and not direct_cloudflare:
         fail("no reviewed transport is available; provider calls remain blocked")
-    if direct_cloudflare and prepared.provider != "cloudflare":
-        fail("direct Cloudflare transport requires a cloudflare seed")
+    if direct_cloudflare and (prepared.provider != "cloudflare" or prepared.model != "typesafe/jev"):
+        fail("direct Cloudflare transport requires cloudflare/typesafe/jev")
     # Pinned TypeSafe retries are opaque to AIFunction. Refuse this path rather
     # than let one logical attempt silently consume multiple transport requests.
     if prepared.provider == "typesafe":
@@ -453,12 +468,16 @@ def execute(
         fail(error)
     if provider_guard is not None: provider_guard(prepared, config)
     if direct_cloudflare: loader = lambda _: load_direct_cloudflare_functions(prepared, environment)
+    transport = "cloudflare-direct-v1" if direct_cloudflare else "native-guarded-v1"
     with journal_lock(journal_path.with_name(journal_path.name + ".lock")):
-        attempts, completed = journal_state(journal_path, prepared, run_id, config)
+        attempts, completed = journal_state(journal_path, prepared, run_id, config, transport)
         synchronize_results(results_path, prepared, completed)
         functions = loader(prepared)
+        stopped_after_direct_error = False
         try:
             for row in prepared.rows:
+                if stopped_after_direct_error:
+                    break
                 record_id = row["recordId"]
                 if record_id in completed:
                     continue
@@ -487,11 +506,13 @@ def execute(
                     attempts[(record_id, name)] = attempt
                     try:
                         # The only object crossing the judge boundary is this observation.
-                        prediction = call_with_timeout(functions[name], row["input"]["observation"])
+                        prediction = functions[name](observation=row["input"]["observation"]) if direct_cloudflare else call_with_timeout(functions[name], row["input"]["observation"])
                         answer = prediction_choice(prediction)
                         metadata = getattr(prediction, "metadata", None)
                     except Exception as exc:
                         failure = f"atomic function error: {type(exc).__name__}"
+                        if isinstance(exc, DirectCloudflareError):
+                            failure += f": {safe_reason(exc)}"
                         finished_event = {**attempt, "event": "attempt-finished", "status": "error", "reason": failure}
                         append_jsonl(journal_path, finished_event); attempts[(record_id, name)] = finished_event
                         break
@@ -505,11 +526,14 @@ def execute(
                 if provider_evaluations: record["providerEvaluations"] = provider_evaluations
                 finished = {"event": "record-finished", "seedManifestHash": prepared.seed_manifest["manifestHash"], **record}
                 append_jsonl(journal_path, finished); completed[record_id] = finished
+                if direct_cloudflare and failure is not None:
+                    stopped_after_direct_error = True
         finally:
             close_native_functions(functions)
         synchronize_results(results_path, prepared, completed)
     records = existing_jsonl(results_path)
-    return {"mode": "shadow", "runId": run_id, "records": len(records), "atomicAttempts": len(attempts), "atomicAttemptCap": MAX_ATOMIC_ATTEMPTS, "results": str(results_path.resolve()), "journal": str(journal_path.resolve()), "requestLimit": "logical AIFunction attempts only; no physical HTTP or dollar cap is claimed"}
+    remaining_rows = sum(1 for row in prepared.rows if row["recordId"] not in completed)
+    return {"mode": "shadow", "runId": run_id, "records": len(records), "remainingRows": remaining_rows, "stoppedAfterDirectError": direct_cloudflare and stopped_after_direct_error, "atomicAttempts": len(attempts), "atomicAttemptCap": MAX_ATOMIC_ATTEMPTS, "transport": transport, "results": str(results_path.resolve()), "journal": str(journal_path.resolve()), "requestLimit": "at most one HTTP POST per reserved attempt; no dollar cap is claimed" if direct_cloudflare else "logical AIFunction attempts only; no physical HTTP or dollar cap is claimed"}
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)

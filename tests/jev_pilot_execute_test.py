@@ -6,6 +6,9 @@ import unittest
 import sys
 import time
 import multiprocessing
+import os
+import subprocess
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +45,84 @@ class FakeFunction:
 
 
 class ExecutePilotTest(unittest.TestCase):
+    def test_direct_worker_failure_preserves_safe_status_and_redacts_other_text(self):
+        state = {"current_candidate": {"instructions": "fixed", "criteria": {"pass": "p"}},
+                 "backend": {}, "selected_columns": ["observation"]}
+        function = pilot.DirectCloudflareFunction("evidenceSufficient", state, "typesafe/jev",
+                    {"CLOUDFLARE_ACCOUNT_ID": "0" * 32, "CLOUDFLARE_API_TOKEN": "secret"})
+        class FailedChild:
+            returncode = 2
+            def communicate(self, *args, **kwargs):
+                return json.dumps({"error": "ValueError", "reason": self.reason}), None
+        for reason, expected in [("Cloudflare HTTP 403", "Cloudflare HTTP 403"),
+                                 ("Authorization Bearer secret", "direct Cloudflare evaluation failed")]:
+            child = FailedChild(); child.reason = reason
+            with patch.object(pilot.subprocess, "Popen", return_value=child):
+                with self.assertRaises(pilot.DirectCloudflareError) as caught:
+                    function(observation={"synthetic": True})
+            self.assertEqual(str(caught.exception), expected)
+
+    def test_direct_timeout_kills_child_process(self):
+        state = {"current_candidate": {"instructions": "fixed", "criteria": {"pass": "p"}},
+                 "backend": {}, "selected_columns": ["observation"]}
+        function = pilot.DirectCloudflareFunction("evidenceSufficient", state, "typesafe/jev",
+                    {"CLOUDFLARE_ACCOUNT_ID": "0" * 32, "CLOUDFLARE_API_TOKEN": "secret"})
+        children = []
+        real_popen = subprocess.Popen
+        def slow_worker(_args, **kwargs):
+            child = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
+            children.append(child)
+            return child
+        with patch.object(pilot.subprocess, "Popen", side_effect=slow_worker), patch.object(pilot, "MAX_ATOMIC_SECONDS", .1):
+            with self.assertRaises(pilot.AtomicTimeout): function(observation={"synthetic": True})
+        self.assertEqual(len(children), 1)
+        self.assertIsNotNone(children[0].poll())
+        with self.assertRaises(ProcessLookupError): os.kill(children[0].pid, 0)
+
+    def test_direct_run_preserves_metadata_and_transport_on_resume(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            rubric_hash, _ = self.make_package(root, count=12)
+            seed = self.make_seed(root, rubric_hash, model="typesafe/jev")
+            prepared = pilot.prepare(root, seed)
+            config = pilot.validate_execution_config(self.config(root, model="typesafe/jev"), prepared)
+            calls = []
+            class DirectFake(FakeFunction):
+                def __call__(self, **kwargs):
+                    prediction = super().__call__(**kwargs)
+                    prediction.metadata = {"reportedModel": "jev-test", "usage": {"input_tokens": 12, "output_tokens": 3}}
+                    return prediction
+            kwargs = dict(config=config, results_path=root / "results.jsonl", journal_path=root / "journal.jsonl",
+                          run_id="direct-run", environment={"CLOUDFLARE_ACCOUNT_ID": "0" * 32, "CLOUDFLARE_API_TOKEN": "secret"})
+            with patch.object(pilot, "load_direct_cloudflare_functions", side_effect=lambda *_: {name: DirectFake(name, calls) for name in pilot.FUNCTIONS}), patch.object(pilot, "call_with_timeout", side_effect=AssertionError("direct path must use child timeout")):
+                report = pilot.execute(prepared, direct_cloudflare=True, **kwargs)
+                pilot.execute(prepared, direct_cloudflare=True, **kwargs)
+            self.assertEqual(len(calls), 24)
+            self.assertEqual(report["transport"], "cloudflare-direct-v1")
+            records = pilot.existing_jsonl(root / "results.jsonl")
+            self.assertEqual(records[0]["providerEvaluations"]["evidenceSufficient"]["usage"]["input_tokens"], 12)
+            with self.assertRaisesRegex(ValueError, "immutable run header"):
+                pilot.execute(prepared, provider_guard=lambda *_: None, loader=lambda _: {}, **kwargs)
+
+    def test_direct_failure_stops_new_rows_then_explicit_resume_continues(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); rubric_hash, _ = self.make_package(root, count=12)
+            prepared = pilot.prepare(root, self.make_seed(root, rubric_hash, model="typesafe/jev"))
+            kwargs = dict(config=pilot.validate_execution_config(self.config(root, model="typesafe/jev"), prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="direct-stop", environment={"CLOUDFLARE_ACCOUNT_ID": "0" * 32, "CLOUDFLARE_API_TOKEN": "secret"}, direct_cloudflare=True)
+            calls = []
+            class Failing:
+                def __call__(self, **_):
+                    calls.append("failed"); raise pilot.DirectCloudflareError("Cloudflare response model missing")
+                def close(self): pass
+            with patch.object(pilot, "load_direct_cloudflare_functions", return_value={name: Failing() for name in pilot.FUNCTIONS}):
+                report = pilot.execute(prepared, **kwargs)
+            self.assertEqual(report["atomicAttempts"], 1); self.assertTrue(report["stoppedAfterDirectError"]); self.assertEqual(report["remainingRows"], 11); self.assertEqual(calls, ["failed"])
+            resumed = []
+            with patch.object(pilot, "load_direct_cloudflare_functions", return_value={name: FakeFunction(name, resumed) for name in pilot.FUNCTIONS}):
+                report = pilot.execute(prepared, **kwargs)
+            self.assertFalse(report["stoppedAfterDirectError"]); self.assertEqual(report["remainingRows"], 0); self.assertEqual(len(resumed), 22)
+            self.assertEqual([item["status"] for item in pilot.existing_jsonl(root / "results.jsonl")].count("error"), 1)
+
     def make_package(self, directory, count=1, expected=False):
         labels = {"pass": "p", "fail": "f", "insufficient": "i"}
         rubric = {"status": "seed", "rubricVersion": "r1", "preprocessingVersion": "synthetic-gtm-observation-v2", "functions": {name: {"description": name, "labels": labels} for name in pilot.FUNCTIONS}}
