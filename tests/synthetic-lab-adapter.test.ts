@@ -6,6 +6,8 @@ import path from "node:path";
 import test from "node:test";
 import { buildSyntheticReplayRows, compactSyntheticJudgeInput, observeSyntheticCase, validateSyntheticShape } from "../scripts/synthetic-lab-adapter.js";
 import { assertGroupDisjoint, splitByGroup } from "../scripts/jev-offline.js";
+import { buildEvidence, compactJudgeInput, FakeJudge, shadowPolicy } from "../scripts/jev-shadow.js";
+import { evaluateGtmSignalQuality, type GtmContainer } from "../evals/eval_gtm_signal_quality.js";
 
 type Json = Record<string, unknown>;
 function canonical(v: unknown): string {
@@ -119,4 +121,23 @@ test("reference-shape validation detects duplicate IDs and broken relationships"
   assert.equal(validateSyntheticShape(container("wrong", true)).valid, false);
   const duplicate = container("duplicate"); duplicate.containerVersion.tag.push(duplicate.containerVersion.tag[0]);
   assert.ok(validateSyntheticShape(duplicate).issues.includes("tag: duplicate IDs"));
+});
+
+test("bounded synthetic evidence reaches the shadow contract without asserting real QA", async () => {
+  const f = await fixture();
+  try {
+    const observation = await observeSyntheticCase(f.root, "case-001", "2026-01-01T12:00:00Z");
+    const container = f.a as unknown as GtmContainer;
+    const scores = evaluateGtmSignalQuality(container);
+    const state = compactSyntheticJudgeInput(observation);
+    const evidence = buildEvidence({ parentId: "synthetic-parent", baseline: container, candidate: container,
+      operations: [], targetedIssue: "Assess tracking behavior from the supplied observations",
+      before: scores, after: scores, supportingEvidence: state,
+      validation: { valid: true, reason: "fixture checks passed", changedEntityIds: { tag: [], trigger: [], variable: [], folder: [] } } });
+    assert.deepEqual(compactJudgeInput(evidence).supportingEvidence, state);
+    assert.equal(evidence.qa.status, "absent");
+    const result = await new FakeJudge().judge(evidence);
+    assert.equal(result.status, "success");
+    assert.equal(shadowPolicy(evidence, result).route, "review");
+  } finally { await f.cleanup(); }
 });
