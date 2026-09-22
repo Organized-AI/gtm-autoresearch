@@ -37,6 +37,7 @@
       <div class="tabbar" role="tablist" aria-label="Run view">
         <button id="diagram-tab" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="diagram-panel">Run diagram</button>
         <button id="judgments-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="judgments-panel">Judgments <span id="judgment-count" class="tab-count">—</span></button>
+        <button id="comparison-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="comparison-panel" hidden>Comparison</button>
       </div>
 
       <section id="diagram-panel" class="tab-panel" role="tabpanel" aria-labelledby="diagram-tab">
@@ -99,6 +100,14 @@
           <section class="judgment-list-card"><div class="panel-heading compact"><div><p class="eyebrow">RECORDED RESULTS</p><h2>Paired judgments</h2></div><p id="judgment-hint" class="muted">Choose a record</p></div><div id="judgment-list" class="judgment-list"></div></section>
           <aside class="judgment-detail" aria-live="polite"><p class="eyebrow">SELECTED ATOMIC JUDGMENT</p><h2 id="detail-title">No recorded judgment selected</h2><div id="detail-body" class="detail-body"><p class="muted">Select a completed record to inspect its recorded answer, confidence, token usage, and request ID.</p></div></aside>
         </div>
+      </section>
+
+      <section id="comparison-panel" class="tab-panel" role="tabpanel" aria-labelledby="comparison-tab" hidden>
+        <section id="comparison-card" class="comparison-card" aria-labelledby="comparison-title">
+          <div class="comparison-heading"><div><p class="eyebrow">VERIFIED BASELINE COMPARISON</p><h2 id="comparison-title">Frozen rubric v1 → v2</h2></div><p id="comparison-message" class="muted">A baseline comparison is unavailable.</p></div>
+          <div id="comparison-table" class="comparison-table" role="table" aria-label="Recorded v1 and v2 rubric comparison"></div>
+          <p class="comparison-note">Agreement uses unreviewed synthetic generator labels. No confidence cutoff or calibration claim is applied.</p>
+        </section>
       </section>
 
       <footer><span id="poll-indicator" class="poll-indicator" aria-hidden="true"></span><span id="poll-status">Polling the local journal every 3 seconds.</span><span> No provider actions are available here.</span></footer>

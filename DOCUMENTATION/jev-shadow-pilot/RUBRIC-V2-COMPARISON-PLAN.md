@@ -66,4 +66,4 @@ python3 scripts/jev_prepare_comparison.py \
 
 Use fresh output directories when reproducing; preparation refuses overwrites. Preflight accepted 12 rows with a 24-attempt ceiling. Rubric SHA256: `0160e726c0ccf80a7bd095a19bf72e3c1a7f6370a1269852d6d5ce4bd7662de8`. Native manifest SHA256: `07e35d2b520ea255a418640c79ce17b20f46e8940b2d5aa380d4e2ce055acf2e`.
 
-This v2 seed has not been evaluated. The baseline run ID contains `paired-v2`, but that run used rubric v1; run numbering and rubric versions are independent. See [RUN-VIEW.md](RUN-VIEW.md) for the local recorded-run interface.
+The separately authorized v2 run is now complete; see [RUBRIC-V2-RESULTS.md](RUBRIC-V2-RESULTS.md). Evidence agreement is 11/12, tracking and paired agreement remain 9/12. The baseline run ID contains `paired-v2`, but that run used rubric v1; run numbering and rubric versions are independent. See [RUN-VIEW.md](RUN-VIEW.md) for the local recorded-run interface.

@@ -5,6 +5,7 @@
   const els = {
     subtitle: $('run-subtitle'), status: $('run-status'), source: $('run-source'), seal: $('run-seal'), scopeIcon: $('scope-icon'), scopeMessage: $('scope-message'),
     records: $('metric-records'), recordsNote: $('metric-records-note'), attempts: $('metric-attempts'), attemptsNote: $('metric-attempts-note'), agreement: $('metric-agreement'), agreementNote: $('metric-agreement-note'), insufficient: $('metric-insufficient'), insufficientNote: $('metric-insufficient-note'),
+    comparisonCard: $('comparison-card'), comparisonTab: $('comparison-tab'), comparisonPanel: $('comparison-panel'), comparisonMessage: $('comparison-message'), comparisonTable: $('comparison-table'),
     judgmentCount: $('judgment-count'), shadowCaption: $('shadow-caption'), currentEvent: $('current-event-summary'), replayDetail: $('replay-detail'), replayState: $('replay-state'), play: $('replay-play'), previous: $('replay-previous'), next: $('replay-next'), reset: $('replay-reset'), scrubber: $('replay-scrubber'), position: $('replay-position'), rail: $('event-rail'),
     list: $('judgment-list'), hint: $('judgment-hint'), detailTitle: $('detail-title'), detailBody: $('detail-body'), poll: $('poll-status'), pollIndicator: $('poll-indicator'),
     explanationNumber: $('explanation-number'), explanationKicker: $('explanation-kicker'), explanationTitle: $('explanation-title'), explanationText: $('explanation-text')
@@ -62,6 +63,41 @@
     text(els.shadowCaption, isComplete ? `Completed: ${number(run.completedRows)} records and ${number(run.attemptsFinished)} recorded attempts.` : isActive ? `Observed journal: ${number(run.completedRows)} durable records and ${number(run.attemptsFinished)} completed attempts.` : 'Recorded journal state is not complete.');
   }
 
+  function metricText(metric) {
+    if (!metric || !Number.isFinite(metric.matches) || !Number.isFinite(metric.denominator)) return '—';
+    return metric.denominator ? `${metric.matches}/${metric.denominator} · ${Math.round((metric.matches / metric.denominator) * 100)}%` : '0/0 · —';
+  }
+  function runtimeText(metric) {
+    if (!metric || !Number.isFinite(metric.successfulPairs) || !Number.isFinite(metric.completedRows) || !Number.isFinite(metric.denominator)) return '—';
+    return `${metric.successfulPairs}/${metric.denominator} successful pairs · ${metric.completedRows}/${metric.denominator} completed`;
+  }
+  function comparisonHeader(run) {
+    if (!run || !run.rubric) return '—';
+    const version = run.rubric.version || 'frozen rubric';
+    return `${version} · ${shortId(run.rubric.id)}`;
+  }
+  function comparisonCell(content, className = '') { const cell = document.createElement('div'); cell.className = `comparison-cell${className ? ` ${className}` : ''}`; cell.setAttribute('role', 'cell'); cell.textContent = content; return cell; }
+  function renderComparison(comparison) {
+    if (!comparison) { els.comparisonCard.hidden = true; els.comparisonTab.hidden = true; if (!els.comparisonPanel.hidden) switchTab('diagram'); return; }
+    els.comparisonCard.hidden = false; els.comparisonTab.hidden = false; els.comparisonTable.replaceChildren();
+    if (!comparison.available) { text(els.comparisonMessage, comparison.reason || 'Baseline comparison is unavailable.'); return; }
+    const baseline = comparison.baseline || {}, current = comparison.current || {};
+    text(els.comparisonMessage, 'Exact record IDs and input hashes match; expected answers are unchanged. The two frozen rubric identities are distinct.');
+    const rows = [
+      ['Metric', comparisonHeader(baseline), comparisonHeader(current)],
+      ['Evidence sufficient agreement', metricText(value(baseline, ['agreement', 'evidenceSufficient'])), metricText(value(current, ['agreement', 'evidenceSufficient']))],
+      ['Tracking behavior agreement', metricText(value(baseline, ['agreement', 'trackingBehaviorPreserved'])), metricText(value(current, ['agreement', 'trackingBehaviorPreserved']))],
+      ['Paired agreement', metricText(value(baseline, ['agreement', 'paired'])), metricText(value(current, ['agreement', 'paired']))],
+      ['Expected fail retained', metricText(value(baseline, ['trackingRetention', 'expectedFail'])), metricText(value(current, ['trackingRetention', 'expectedFail']))],
+      ['Expected pass retained', metricText(value(baseline, ['trackingRetention', 'expectedPass'])), metricText(value(current, ['trackingRetention', 'expectedPass']))],
+      ['Expected insufficient · evidence', metricText(value(baseline, ['expectedInsufficient', 'evidenceSufficient'])), metricText(value(current, ['expectedInsufficient', 'evidenceSufficient']))],
+      ['Expected insufficient · tracking', metricText(value(baseline, ['expectedInsufficient', 'trackingBehaviorPreserved'])), metricText(value(current, ['expectedInsufficient', 'trackingBehaviorPreserved']))],
+      ['Expected insufficient · both answers', metricText(value(baseline, ['expectedInsufficient', 'bothQuestionMatches'])), metricText(value(current, ['expectedInsufficient', 'bothQuestionMatches']))],
+      ['Runtime coverage', runtimeText(baseline.runtimeCoverage), runtimeText(current.runtimeCoverage)]
+    ];
+    rows.forEach((row, rowIndex) => row.forEach((item, index) => els.comparisonTable.append(comparisonCell(item, rowIndex === 0 ? 'is-header' : index === 0 ? 'is-metric' : ''))));
+  }
+
   function activeEvent() { return state.data && state.data.events[state.replayIndex]; }
   function eventLabel(event) {
     if (!event) return 'No recorded event';
@@ -117,14 +153,14 @@
   }
 
   function setUnavailable(message) {
-    pause(); state.data = null; els.scopeMessage.parentElement.classList.add('is-unavailable'); els.scopeMessage.parentElement.classList.remove('is-partial'); text(els.status, 'UNAVAILABLE'); text(els.source, 'Local journal unavailable'); els.seal.setAttribute('aria-label', 'Recorded journal unavailable'); els.scopeIcon.className = 'scope-icon is-unavailable'; text(els.scopeIcon, '×'); text(els.scopeMessage, 'Recorded journal state unavailable. This screen will not infer activity, create requests, publish, mutate a container, or affect a keep/revert decision.'); text(els.subtitle, message); ['records','attempts','agreement','insufficient'].forEach((key) => text(els[key], '—')); text(els.recordsNote, 'journal unavailable'); text(els.attemptsNote, 'journal unavailable'); text(els.agreementNote, 'comparison unavailable'); text(els.insufficientNote, 'comparison unavailable'); text(els.judgmentCount, '—'); text(els.shadowCaption, 'The recorded journal is unavailable. No live run is implied.'); text(els.poll, 'Unable to read /api/state. Retrying every 3 seconds.'); els.pollIndicator.className = 'poll-indicator is-error'; updateReplay(); renderJudgments(); renderDetail();
+    pause(); state.data = null; renderComparison(null); els.scopeMessage.parentElement.classList.add('is-unavailable'); els.scopeMessage.parentElement.classList.remove('is-partial'); text(els.status, 'UNAVAILABLE'); text(els.source, 'Local journal unavailable'); els.seal.setAttribute('aria-label', 'Recorded journal unavailable'); els.scopeIcon.className = 'scope-icon is-unavailable'; text(els.scopeIcon, '×'); text(els.scopeMessage, 'Recorded journal state unavailable. This screen will not infer activity, create requests, publish, mutate a container, or affect a keep/revert decision.'); text(els.subtitle, message); ['records','attempts','agreement','insufficient'].forEach((key) => text(els[key], '—')); text(els.recordsNote, 'journal unavailable'); text(els.attemptsNote, 'journal unavailable'); text(els.agreementNote, 'comparison unavailable'); text(els.insufficientNote, 'comparison unavailable'); text(els.judgmentCount, '—'); text(els.shadowCaption, 'The recorded journal is unavailable. No live run is implied.'); text(els.poll, 'Unable to read /api/state. Retrying every 3 seconds.'); els.pollIndicator.className = 'poll-indicator is-error'; updateReplay(); renderJudgments(); renderDetail();
   }
   async function refresh() {
-    try { const response = await fetch('/api/state', { headers: { Accept: 'application/json' }, cache: 'no-store' }); if (!response.ok) throw new Error(`HTTP ${response.status}`); const data = await response.json(); if (!safeState(data)) throw new Error('unsupported state payload'); const previousLength = state.data ? state.data.events.length : 0; state.data = data; if (!state.selectedRecord && data.records[0]) state.selectedRecord = data.records[0].recordId; if (state.replayIndex >= previousLength && data.events.length) state.replayIndex = 0; renderSummary(data); updateReplay(); renderJudgments(); renderDetail(); text(els.poll, `Recorded journal checked ${new Date().toLocaleTimeString()}. Polling every 3 seconds.`); els.pollIndicator.className = 'poll-indicator'; } catch (error) { setUnavailable('The recorded pilot journal is unavailable. This screen will retry locally; it will not start an optimizer.'); }
+    try { const response = await fetch('/api/state', { headers: { Accept: 'application/json' }, cache: 'no-store' }); if (!response.ok) throw new Error(`HTTP ${response.status}`); const data = await response.json(); if (!safeState(data)) throw new Error('unsupported state payload'); const previousLength = state.data ? state.data.events.length : 0; state.data = data; if (!state.selectedRecord && data.records[0]) state.selectedRecord = data.records[0].recordId; if (state.replayIndex >= previousLength && data.events.length) state.replayIndex = 0; renderSummary(data); renderComparison(data.comparison); updateReplay(); renderJudgments(); renderDetail(); text(els.poll, `Recorded journal checked ${new Date().toLocaleTimeString()}. Polling every 3 seconds.`); els.pollIndicator.className = 'poll-indicator'; } catch (error) { setUnavailable('The recorded pilot journal is unavailable. This screen will retry locally; it will not start an optimizer.'); }
   }
-  function switchTab(which) { const diagram = which === 'diagram'; $('diagram-tab').classList.toggle('is-active', diagram); $('judgments-tab').classList.toggle('is-active', !diagram); $('diagram-tab').setAttribute('aria-selected', String(diagram)); $('judgments-tab').setAttribute('aria-selected', String(!diagram)); $('diagram-panel').hidden = !diagram; $('judgments-panel').hidden = diagram; }
+  function switchTab(which) { ['diagram', 'judgments', 'comparison'].forEach((name) => { const selected = name === which; const tab = $(`${name}-tab`); const panel = $(`${name}-panel`); tab.classList.toggle('is-active', selected); tab.setAttribute('aria-selected', String(selected)); panel.hidden = !selected; }); }
   document.querySelectorAll('.flow-node').forEach((node) => node.addEventListener('click', () => { document.querySelectorAll('.flow-node').forEach((item) => item.classList.remove('is-selected')); node.classList.add('is-selected'); const detail = descriptions[node.dataset.node]; text(els.explanationNumber, detail[0]); text(els.explanationKicker, detail[1]); text(els.explanationTitle, detail[2]); text(els.explanationText, detail[3]); }));
-  $('diagram-tab').addEventListener('click', () => switchTab('diagram')); $('judgments-tab').addEventListener('click', () => switchTab('judgments'));
+  $('diagram-tab').addEventListener('click', () => switchTab('diagram')); $('judgments-tab').addEventListener('click', () => switchTab('judgments')); $('comparison-tab').addEventListener('click', () => switchTab('comparison'));
   els.play.addEventListener('click', () => state.playing ? (pause(), updateReplay()) : play()); els.previous.addEventListener('click', () => { pause(); state.replayIndex -= 1; updateReplay(); selectFromEvent(activeEvent()); }); els.next.addEventListener('click', () => { pause(); state.replayIndex += 1; updateReplay(); selectFromEvent(activeEvent()); }); els.reset.addEventListener('click', () => { pause(); state.replayIndex = 0; updateReplay(); selectFromEvent(activeEvent()); }); els.scrubber.addEventListener('input', () => { pause(); state.replayIndex = Number(els.scrubber.value); updateReplay(); selectFromEvent(activeEvent()); });
   refresh(); window.setInterval(refresh, 3000);
 })();

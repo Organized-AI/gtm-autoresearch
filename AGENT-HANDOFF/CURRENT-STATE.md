@@ -1,4 +1,17 @@
-# Current State — 2026-09-22 (run interface and rubric v2 prepared)
+# Current State — 2026-09-22 (rubric v2 comparison completed)
+
+- Checkout `/private/tmp/gtm-jev-execution-20260922`, branch `feat/jev-shadow-pilot`, draft PR #5 stacked on unmerged #4. Do not merge, publish GTM, or activate enforcement.
+- User authorized the proposed 12-row / max 24 paid rubric v2 run by saying “Continue.” Root executed exactly 24 successful requests with frozen v2 questions and unchanged observations. No retries/errors; allowance exhausted. Runtime model `jev-1.13.0` throughout. Actual usage 365,362 input +1,158 output tokens. All 62 requests across diagnostic/v1/v2; all-run usage remains incomplete due to first 12 diagnostic responses.
+- Evidence agreement 11/12 vs 9/12 baseline; tracking and paired agreement 9/12 unchanged. Retained 6/6 failures and 3/3 passes. Expected-insufficient evidence 2/3, tracking 0/3, both 0/3. Two pairs say insufficient evidence and tracking pass; retain these raw results unchanged.
+- New run: `/private/tmp/gtm-jev-cloudflare-rubric-v2-run-20260922/` with journal/results/score/audit/comparison/execution-status and Terra independent REVIEW.md. Root and Terra independently verified exact journal projection, score, same canonical inputs/expected labels except rubricHash, 24 unique request IDs and frozen seed identity. V1 and diagnostic artifacts unchanged; validation and holdout unopened.
+- See `DOCUMENTATION/jev-shadow-pilot/RUBRIC-V2-RESULTS.md` for outcomes/confusion/usage/hashes and `RUN-VIEW.md` for the comparison viewer command. Main run is now v2 with v1 baseline options; the browser diagram replays real v2 events and the Comparison tab separates outcomes.
+- Private route remains `http://jordans-mac-mini.tailb35295.ts.net:8765/`; viewer binds loopback and permits only explicit local/Tailscale origins. Existing Serve routes retained; no Funnel. Keep the viewer process running. Use prior `--allow-origin` settings when restarting.
+- Verification: 13 viewer tests pass, plus JavaScript syntax and diff checks. Browser verified v2 metrics, the Comparison tab, unchanged tracking/paired agreement, and raw inconsistent pairs over the private Tailscale URL. No execution adapter or TypeScript implementation changed in this step.
+- Next: review independent-question inconsistency and evidence-gap semantics offline. A separately defined evidence gate is a design choice, not a retroactive Jev result. Broaden training fixtures for missing reports coexisting with real faults and contradictory evidence before another bounded experiment. No rubric v3, further paid calls, confidence relabeling or promotion is authorized by this result.
+
+---
+
+# Previous State — 2026-09-22 (run interface and rubric v2 prepared)
 
 - Active checkout `/private/tmp/gtm-jev-execution-20260922`, branch `feat/jev-shadow-pilot`, draft PR #5 stacked on unmerged PR #4. Preserve the original cloud-offloaded workspace; do not merge or enable enforcement.
 - Two Terra agents implemented the diagram frontend, abstention review, revised rubric, and viewer validation; root reviewed and verified integration.

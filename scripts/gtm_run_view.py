@@ -109,7 +109,7 @@ def metadata(value):
     }
 
 
-def snapshot(run_dir: Path, package: Path):
+def snapshot(run_dir: Path, package: Path, *, include_comparison_identity=False):
     notices = ["Read-only viewer. Replay does not send requests.",
                "The optimization loop diagram is architecture; this journal records the Jev shadow pilot."]
     value = {"schemaVersion": "gtm-run-view-v1", "source": "recorded-journal",
@@ -212,7 +212,7 @@ def snapshot(run_dir: Path, package: Path):
                 expected_predictions = {r["recordId"]: r["answers"] for r in value["records"] if r["status"] == "success"}
                 if score["rubricHash"] != header["rubricHash"] or predictions != expected_predictions:
                     raise ValueError("stale score")
-                package_rows, package_rubric_hash, _ = executable_package_rows(package)
+                package_rows, package_rubric_hash, rubric = executable_package_rows(package)
                 package_inputs = {row["recordId"]: row["inputHash"] for row in package_rows}
                 if package_rubric_hash != header["rubricHash"] or package_inputs != inputs:
                     raise ValueError("package rubric identity mismatch")
@@ -234,12 +234,66 @@ def snapshot(run_dir: Path, package: Path):
                     for name in FUNCTIONS: matches[name] += record["answers"][name] == labels["expectedAnswers"][name]
                 value["score"] = {"available": True, "agreement": {name: {"matches": n, "denominator": len(predictions)} for name, n in matches.items()},
                                   "pairedMatches": paired, "insufficientAnswers": insufficient, "labelStatus": "unreviewed synthetic generator labels"}
+                if include_comparison_identity:
+                    value["_comparisonIdentity"] = {
+                        "rubricHash": header["rubricHash"], "rubricVersion": text(rubric.get("rubricVersion")),
+                        "inputs": inputs,
+                        "expectedAnswers": {record_id: expected[record_id]["expectedAnswers"] for record_id in inputs},
+                    }
             except (OSError, ValueError, KeyError, TypeError):
                 notices.append("Scoring unavailable: matching completed score and expected labels are required.")
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         value.update(run={"status": "unavailable", "active": False}, events=[], records=[])
         notices.append("Run journal is missing or invalid. No run activity is inferred.")
     return value
+
+
+def fraction(matches, denominator):
+    return {"matches": matches, "denominator": denominator}
+
+
+def comparison_metrics(snapshot_value):
+    score = snapshot_value["score"]
+    records = snapshot_value["records"]
+    total_rows = snapshot_value["run"].get("totalRows")
+    successful = [record for record in records if record.get("status") == "success"]
+    expected = snapshot_value["_comparisonIdentity"]["expectedAnswers"]
+    predictions = {record["recordId"]: record["answers"] for record in successful}
+
+    def tracking_retention(label):
+        selected = [record_id for record_id, answers in expected.items() if answers["trackingBehaviorPreserved"] == label]
+        return fraction(sum(record_id in predictions and predictions[record_id]["trackingBehaviorPreserved"] == label for record_id in selected), len(selected))
+
+    insufficient = [record_id for record_id, answers in expected.items() if answers["evidenceSufficient"] == "insufficient" and answers["trackingBehaviorPreserved"] == "insufficient"]
+    evidence_insufficient = [record_id for record_id, answers in expected.items() if answers["evidenceSufficient"] == "insufficient"]
+    tracking_insufficient = [record_id for record_id, answers in expected.items() if answers["trackingBehaviorPreserved"] == "insufficient"]
+    return {
+        "rubric": {"id": snapshot_value["_comparisonIdentity"]["rubricHash"], "version": snapshot_value["_comparisonIdentity"]["rubricVersion"]},
+        "runtimeCoverage": {"successfulPairs": len(successful), "completedRows": len(records), "denominator": total_rows,
+                            "attemptsFinished": snapshot_value["run"].get("attemptsFinished"), "errors": snapshot_value["run"].get("errors")},
+        "agreement": {name: score["agreement"][name] for name in FUNCTIONS} | {"paired": fraction(score["pairedMatches"], score["agreement"][FUNCTIONS[0]]["denominator"])},
+        "trackingRetention": {"expectedFail": tracking_retention("fail"), "expectedPass": tracking_retention("pass")},
+        "expectedInsufficient": {
+            "evidenceSufficient": fraction(sum(record_id in predictions and predictions[record_id]["evidenceSufficient"] == "insufficient" for record_id in evidence_insufficient), len(evidence_insufficient)),
+            "trackingBehaviorPreserved": fraction(sum(record_id in predictions and predictions[record_id]["trackingBehaviorPreserved"] == "insufficient" for record_id in tracking_insufficient), len(tracking_insufficient)),
+            "bothQuestionMatches": fraction(sum(record_id in predictions and predictions[record_id] == expected[record_id] for record_id in insufficient), len(insufficient)),
+        },
+    }
+
+
+def compare_completed_snapshots(current, baseline):
+    unavailable = {"available": False, "reason": "Baseline comparison requires two complete, unlocked, score-verified recorded journals."}
+    for candidate in (current, baseline):
+        if candidate["run"].get("status") != "complete" or candidate["run"].get("active") or not candidate["score"].get("available") or "_comparisonIdentity" not in candidate:
+            return unavailable
+    current_identity, baseline_identity = current["_comparisonIdentity"], baseline["_comparisonIdentity"]
+    if current_identity["rubricHash"] == baseline_identity["rubricHash"]:
+        return {"available": False, "reason": "Baseline comparison requires distinct frozen rubric identities."}
+    if current_identity["inputs"] != baseline_identity["inputs"]:
+        return {"available": False, "reason": "Baseline comparison withheld: record ID and input-hash correspondence did not verify."}
+    if current_identity["expectedAnswers"] != baseline_identity["expectedAnswers"]:
+        return {"available": False, "reason": "Baseline comparison withheld: expected answers changed between frozen packages."}
+    return {"available": True, "labelStatus": "unreviewed synthetic generator labels", "baseline": {"runId": baseline["run"].get("id"), **comparison_metrics(baseline)}, "current": {"runId": current["run"].get("id"), **comparison_metrics(current)}}
 
 
 def parse_allowed_origin(value):
@@ -255,7 +309,9 @@ def parse_allowed_origin(value):
     return value
 
 
-def handler_for(run_dir: Path, package: Path, allowed_origins=()):
+def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_dir=None, baseline_package=None):
+    if (baseline_run_dir is None) != (baseline_package is None):
+        raise ValueError("baseline run directory and package must be supplied together")
     configured_origins = {parse_allowed_origin(origin) for origin in allowed_origins}
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -270,7 +326,13 @@ def handler_for(run_dir: Path, package: Path, allowed_origins=()):
             if route.query:
                 self.send_error(404); return
             if route.path == "/api/state":
-                body = json.dumps(snapshot(run_dir, package), allow_nan=False).encode()
+                state = snapshot(run_dir, package, include_comparison_identity=baseline_run_dir is not None)
+                if baseline_run_dir is not None:
+                    baseline = snapshot(baseline_run_dir, baseline_package, include_comparison_identity=True)
+                    state["comparison"] = compare_completed_snapshots(state, baseline)
+                    baseline.pop("_comparisonIdentity", None)
+                state.pop("_comparisonIdentity", None)
+                body = json.dumps(state, allow_nan=False).encode()
                 mime = "application/json"
             elif route.path in static:
                 name, mime = static[route.path]
@@ -294,11 +356,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-dir", required=True, type=Path)
     parser.add_argument("--package", required=True, type=Path)
+    parser.add_argument("--baseline-run-dir", type=Path,
+                        help="Completed, unlocked recorded baseline journal for a verified comparison")
+    parser.add_argument("--baseline-package", type=Path,
+                        help="Frozen package matching --baseline-run-dir")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--allow-origin", action="append", default=[], type=parse_allowed_origin,
                         help="Exact additional browser origin for a trusted private reverse proxy; repeatable")
     args = parser.parse_args()
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(args.run_dir.resolve(), args.package.resolve(), args.allow_origin))
+    if (args.baseline_run_dir is None) != (args.baseline_package is None):
+        parser.error("--baseline-run-dir and --baseline-package must be supplied together")
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(
+        args.run_dir.resolve(), args.package.resolve(), args.allow_origin,
+        args.baseline_run_dir.resolve() if args.baseline_run_dir else None,
+        args.baseline_package.resolve() if args.baseline_package else None,
+    ))
     print(f"Read-only GTM run viewer: http://127.0.0.1:{server.server_port}", flush=True)
     try: server.serve_forever()
     except KeyboardInterrupt: pass

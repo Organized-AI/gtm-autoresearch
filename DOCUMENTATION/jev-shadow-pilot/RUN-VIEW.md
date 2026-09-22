@@ -4,8 +4,10 @@ Run from the repository checkout:
 
 ```sh
 python3 scripts/gtm_run_view.py \
-  --run-dir /private/tmp/gtm-jev-cloudflare-paired-v2-20260922 \
-  --package data/jev-shadow/training-pilot-v1-final \
+  --run-dir /private/tmp/gtm-jev-cloudflare-rubric-v2-run-20260922 \
+  --package data/jev-shadow/training-pilot-rubric-v2-prepared \
+  --baseline-run-dir /private/tmp/gtm-jev-cloudflare-paired-v2-20260922 \
+  --baseline-package data/jev-shadow/training-pilot-v1-final \
   --port 8765
 ```
 
@@ -17,7 +19,7 @@ The interface polls every three seconds. It reports complete, partial, unavailab
 
 The server binds only to loopback, exposes fixed read-only routes, rejects unrelated Host/Origin values and path queries, and projects limited journal metadata. It does not read credentials or expose raw observations. Label comparison requires a completed, unlocked journal, matching score predictions and a verified training package. Missing or invalid data is shown explicitly.
 
-Current recorded baseline: 12 rows, 24 successful requests, paired agreement 9/12 against **unreviewed synthetic generator labels**, and zero insufficient answers. This is research agreement, not human accuracy or calibration. No optimizer loop or GTM publication is running through this interface.
+Current v2 replay: 12 rows, 24 successful requests, paired agreement 9/12 against **unreviewed synthetic generator labels**, and two insufficient answers. The Comparison tab shows v1 versus v2 evidence agreement (9/12 → 11/12), unchanged tracking/paired agreement (9/12), fixed fail/pass retention, expected-insufficient results and runtime coverage. Both baseline options must be supplied together; omit both for a single-run viewer. Comparison requires distinct frozen rubric identities, exact record-ID/input-hash correspondence, unchanged expected answers and independently score-verified completed journals. This is research agreement, not human accuracy or calibration. No optimizer loop or GTM publication is running through this interface.
 
 ## Private Tailscale access
 
@@ -25,8 +27,10 @@ The viewer still binds to loopback. For access from another Tailscale device, pa
 
 ```sh
 python3 scripts/gtm_run_view.py \
-  --run-dir /private/tmp/gtm-jev-cloudflare-paired-v2-20260922 \
-  --package data/jev-shadow/training-pilot-v1-final \
+  --run-dir /private/tmp/gtm-jev-cloudflare-rubric-v2-run-20260922 \
+  --package data/jev-shadow/training-pilot-rubric-v2-prepared \
+  --baseline-run-dir /private/tmp/gtm-jev-cloudflare-paired-v2-20260922 \
+  --baseline-package data/jev-shadow/training-pilot-v1-final \
   --port 8765 \
   --allow-origin http://YOUR-HOST.YOUR-TAILNET.ts.net:8765
 

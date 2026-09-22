@@ -26,9 +26,9 @@ class RunViewTest(unittest.TestCase):
         if (root / "unrelated-sentinel.json").is_file(): names.append("unrelated-sentinel.json")
         (root / "checksums.json").write_text(json.dumps({name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in names}))
 
-    def fixture(self, root, complete=True):
+    def fixture(self, root, complete=True, rubric_version="synthetic-tracking-assessment-test", terminal_status="success"):
         labels = {"pass": "pass", "fail": "fail", "insufficient": "insufficient"}
-        rubric = {"rubricVersion": "synthetic-tracking-assessment-test", "status": "seed", "preprocessingVersion": "synthetic-gtm-observation-v2", "functions": {name: {"description": name, "labels": labels} for name in view.FUNCTIONS}}
+        rubric = {"rubricVersion": rubric_version, "status": "seed", "preprocessingVersion": "synthetic-gtm-observation-v2", "functions": {name: {"description": name, "labels": labels} for name in view.FUNCTIONS}}
         rubric_hash = self.digest(self.canonical(rubric))
         observation = {"schemaVersion": "synthetic-gtm-observation-v2", "decisionTime": "2026-01-01T00:00:00.000Z", "synthetic": True, "facts": {}, "cautions": []}
         input_value = {"observation": observation}
@@ -52,9 +52,14 @@ class RunViewTest(unittest.TestCase):
             if not complete: break
             events.append({**attempt, "event": "attempt-finished", "status": "success", "answer": "pass", "providerMetadata": {"reportedModel": "jev-1.13.0", "confidence": .8, "probabilities": {"pass": .9, "fail": .1, "insufficient": 0}, "usage": {"input_tokens": 10, "output_tokens": 2}, "rawToken": "DO_NOT_EXPOSE", "requestId": f"request-{n}"}})
         answers = {name: "pass" for name in view.FUNCTIONS}
-        if complete: events.append({**base, "event": "record-finished", "status": "success", "answers": answers, "rawObservation": {"secret": "DO_NOT_EXPOSE"}})
+        if complete:
+            terminal = {**base, "event": "record-finished", "status": terminal_status, "rawObservation": {"secret": "DO_NOT_EXPOSE"}}
+            if terminal_status == "success": terminal["answers"] = answers
+            else: terminal["reason"] = "recorded failure"
+            events.append(terminal)
         (root / "journal.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events))
-        (root / "score.json").write_text(json.dumps({"rubricHash": rubric_hash, "predictions": [{"recordId": "one", "answers": answers}]}))
+        predictions = [{"recordId": "one", "answers": answers}] if terminal_status == "success" else []
+        (root / "score.json").write_text(json.dumps({"rubricHash": rubric_hash, "predictions": predictions}))
         return events
 
     def test_completed_snapshot_derives_metrics_and_excludes_raw_fields(self):
@@ -113,6 +118,38 @@ class RunViewTest(unittest.TestCase):
             label = json.loads((root / "pilot-expected.jsonl").read_text()); label["inputHash"] = "other"
             (root / "pilot-expected.jsonl").write_text(json.dumps(label) + "\n")
             self.assertFalse(view.snapshot(root, root)["score"]["available"])
+
+    def test_completed_baseline_comparison_requires_distinct_rubrics_and_exact_frozen_identity(self):
+        with tempfile.TemporaryDirectory() as baseline_temp, tempfile.TemporaryDirectory() as current_temp:
+            baseline_root, current_root = Path(baseline_temp), Path(current_temp)
+            self.fixture(baseline_root, rubric_version="rubric-v1")
+            self.fixture(current_root, rubric_version="rubric-v2")
+            baseline = view.snapshot(baseline_root, baseline_root, include_comparison_identity=True)
+            current = view.snapshot(current_root, current_root, include_comparison_identity=True)
+            comparison = view.compare_completed_snapshots(current, baseline)
+            self.assertTrue(comparison["available"])
+            self.assertEqual(comparison["baseline"]["agreement"]["paired"], {"matches": 1, "denominator": 1})
+            self.assertEqual(comparison["current"]["trackingRetention"]["expectedPass"], {"matches": 1, "denominator": 1})
+            self.assertEqual(comparison["current"]["expectedInsufficient"]["bothQuestionMatches"], {"matches": 0, "denominator": 0})
+
+            current["_comparisonIdentity"]["inputs"]["one"] = "different-input"
+            self.assertFalse(view.compare_completed_snapshots(current, baseline)["available"])
+            current["_comparisonIdentity"]["inputs"]["one"] = baseline["_comparisonIdentity"]["inputs"]["one"]
+            current["_comparisonIdentity"]["expectedAnswers"]["one"]["evidenceSufficient"] = "fail"
+            self.assertFalse(view.compare_completed_snapshots(current, baseline)["available"])
+
+    def test_comparison_retention_denominators_include_error_records(self):
+        with tempfile.TemporaryDirectory() as baseline_temp, tempfile.TemporaryDirectory() as current_temp:
+            baseline_root, current_root = Path(baseline_temp), Path(current_temp)
+            self.fixture(baseline_root, rubric_version="rubric-v1", terminal_status="error")
+            self.fixture(current_root, rubric_version="rubric-v2", terminal_status="error")
+            comparison = view.compare_completed_snapshots(
+                view.snapshot(current_root, current_root, include_comparison_identity=True),
+                view.snapshot(baseline_root, baseline_root, include_comparison_identity=True),
+            )
+            self.assertTrue(comparison["available"])
+            self.assertEqual(comparison["current"]["runtimeCoverage"]["successfulPairs"], 0)
+            self.assertEqual(comparison["current"]["trackingRetention"]["expectedPass"], {"matches": 0, "denominator": 1})
 
     def test_invalid_terminal_record_never_reads_or_exposes_labels(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -183,6 +220,26 @@ class RunViewTest(unittest.TestCase):
                 self.assertEqual(request("GET", "/%2e%2e/scripts/gtm_run_view.py", {"Host": host})[0], 404)
                 self.assertEqual(request("GET", "/api/state?unexpected=1", {"Host": host})[0], 404)
                 self.assertEqual(request("POST", "/api/state", {"Host": host})[0], 501)
+            finally:
+                server.shutdown(); server.server_close(); thread.join(timeout=2)
+
+    def test_api_exposes_only_verified_baseline_comparison(self):
+        with tempfile.TemporaryDirectory() as baseline_temp, tempfile.TemporaryDirectory() as current_temp:
+            baseline_root, current_root = Path(baseline_temp), Path(current_temp)
+            self.fixture(baseline_root, rubric_version="rubric-v1")
+            self.fixture(current_root, rubric_version="rubric-v2")
+            server = view.ThreadingHTTPServer(("127.0.0.1", 0), view.handler_for(
+                current_root, current_root, (), baseline_root, baseline_root,
+            ))
+            thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+            try:
+                host = f"127.0.0.1:{server.server_port}"
+                connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=2)
+                connection.request("GET", "/api/state", headers={"Host": host, "Origin": f"http://{host}"})
+                response = connection.getresponse(); payload = json.loads(response.read()); connection.close()
+                self.assertEqual(response.status, 200)
+                self.assertTrue(payload["comparison"]["available"])
+                self.assertNotIn("_comparisonIdentity", payload)
             finally:
                 server.shutdown(); server.server_close(); thread.join(timeout=2)
 
