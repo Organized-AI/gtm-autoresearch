@@ -41,8 +41,15 @@ export function stableJson(value: unknown): string {
   return JSON.stringify(value);
 }
 export function hash(value: unknown): string { return createHash("sha256").update(stableJson(value)).digest("hex"); }
-export function freezeSeedDefinition(content = "evidence sufficiency and purchase behavior preservation"): FrozenDefinition {
+export function freezeSeedDefinition(content = "evidence sufficiency and tracking behavior preservation"): FrozenDefinition {
   return { id: SEED_DEFINITION_ID, content, contentHash: hash(content), preprocessingVersion: "compact-evidence-v1", backend: "jev_align.AIFunction", requestedModel: "unconfigured", policyVersion: POLICY_VERSION, status: "seed" };
+}
+export function frozenDefinitionFromManifest(raw: unknown): FrozenDefinition {
+  if (!raw || typeof raw !== "object") throw new Error("frozen manifest must be an object");
+  const value = raw as RecordValue; const required = ["definitionHash", "requestedModel", "preprocessingVersion", "policyVersion"];
+  if (required.some(key => typeof value[key] !== "string" || value[key] === "")) throw new Error("frozen manifest is missing required identity fields");
+  if (!value.functions || typeof value.functions !== "object") throw new Error("frozen manifest is missing atomic functions");
+  return { id: "frozen-manifest-v1", content: `manifest:${value.definitionHash}`, contentHash: value.definitionHash as string, preprocessingVersion: value.preprocessingVersion as string, backend: "jev_align.AIFunction", requestedModel: value.requestedModel as string, policyVersion: value.policyVersion as string, status: "accepted" };
 }
 function byId(items: Array<RecordValue> | undefined, id: string): Map<string, RecordValue> { return new Map((items ?? []).map(x => [String(x[id]), x])); }
 function diffCollection(before: Array<RecordValue> | undefined, after: Array<RecordValue> | undefined, id: string) { const a=byId(before,id), b=byId(after,id); return { added:[...b.keys()].filter(k=>!a.has(k)).sort(), removed:[...a.keys()].filter(k=>!b.has(k)).sort(), changed:[...a.keys()].filter(k=>b.has(k)&&stableJson(a.get(k))!==stableJson(b.get(k))).sort() }; }

@@ -23,6 +23,7 @@ import { postAutoresearchRun } from "./post-to-linear.js";
 import {
   buildEvidence,
   freezeSeedDefinition,
+  frozenDefinitionFromManifest,
   PythonJevJudge,
   shadowPolicy,
   writeEvidence,
@@ -938,7 +939,13 @@ async function main(): Promise<void> {
   let bestJson = seedJson;
   let prevScore = baselineScores.combinedScore;
   const shadowRunId = `shadow-${Date.now()}`;
-  const frozenJudgeDefinition = freezeSeedDefinition();
+  let frozenJudgeDefinition = freezeSeedDefinition();
+  let shadowConfigurationError: string | undefined;
+  if (JEV_MODE === "shadow") {
+    if (!JEV_DEFINITION_PATH) shadowConfigurationError = "JEV_DEFINITION_PATH is required for shadow mode";
+    else try { frozenJudgeDefinition = frozenDefinitionFromManifest(JSON.parse(await readFile(JEV_DEFINITION_PATH, "utf8"))); }
+    catch (error) { shadowConfigurationError = error instanceof Error ? error.message : "invalid frozen manifest"; }
+  }
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     console.log(`\n${"═".repeat(60)}`);
@@ -1123,7 +1130,9 @@ async function main(): Promise<void> {
         qa: { status: "absent" }, frozen: frozenJudgeDefinition,
       });
       const judge = new PythonJevJudge(JEV_PYTHON, JEV_WORKER_PATH, JEV_DEFINITION_PATH);
-      const judgment = await judge.judge(evidence);
+      const judgment = shadowConfigurationError
+        ? { status: "unavailable" as const, reason: shadowConfigurationError }
+        : await judge.judge(evidence);
       const proposal = shadowPolicy(evidence, judgment);
       shadowBase = { mode: "shadow", proposedRoute: proposal.route, reasonCodes: proposal.reasonCodes, judgment };
       await writeEvidence(path.join(path.dirname(templatePath), "shadow-results", shadowRunId, `${round}-${evidence.candidateId}`), evidence, working, mutated);
