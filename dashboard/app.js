@@ -192,10 +192,29 @@
     try { const response = await fetch('/api/export', {cache:'no-store'}); if (!response.ok) throw new Error('Export unavailable'); renderExport(await response.json()); }
     catch { renderExport({available:false, reason:'Unable to load the scored export. Retrying automatically.'}); }
   }
-  function switchTab(which) { ['diagram', 'judgments', 'comparison', 'export'].forEach((name) => { const selected = name === which; const tab = $(`${name}-tab`); const panel = $(`${name}-panel`); tab.classList.toggle('is-active', selected); tab.setAttribute('aria-selected', String(selected)); panel.hidden = !selected; }); }
+  function renderSynthetic(data) {
+    const available = Boolean(data && data.available && data.summary);
+    $('synthetic-content').hidden = !available;
+    text($('synthetic-status'), available ? 'VERIFIED · TRAIN ONLY' : 'UNAVAILABLE');
+    if (!available) { text($('synthetic-message'), data && data.reason || 'The synthetic-data bundle is unavailable.'); return; }
+    const summary = data.summary;
+    text($('synthetic-message'), `Verified ${summary.datasetSchema} archive · ${summary.archive.sha256.slice(0, 12)}…`);
+    $('synthetic-metrics').replaceChildren(
+      field('Cases', number(summary.caseCount)), field('Sessions per case', number(summary.sessionsPerCase)),
+      field('Observed date', summary.observedDate), field('Dataset schema', summary.datasetSchema),
+      field('Journey families', (summary.journeyFamilies || []).join(' · ') || '—'), field('Archive · SHA-256', summary.archive.sha256));
+    text($('synthetic-scope'), `Synthetic training data only · ${summary.trainOnly ? 'train split only' : 'scope unavailable'} · no truth or expected labels are included in this download.`);
+    $('synthetic-notices').replaceChildren();
+    (summary.notices || []).forEach((notice) => { const item = document.createElement('li'); item.textContent = notice; $('synthetic-notices').append(item); });
+  }
+  async function refreshSynthetic() {
+    try { const response = await fetch('/api/synthetic', {cache:'no-store'}); if (!response.ok) throw new Error('Synthetic bundle unavailable'); renderSynthetic(await response.json()); }
+    catch { renderSynthetic({available:false, reason:'Unable to load the synthetic-data bundle. Retrying automatically.'}); }
+  }
+  function switchTab(which) { ['diagram', 'judgments', 'comparison', 'export', 'synthetic'].forEach((name) => { const selected = name === which; const tab = $(`${name}-tab`); const panel = $(`${name}-panel`); tab.classList.toggle('is-active', selected); tab.setAttribute('aria-selected', String(selected)); panel.hidden = !selected; }); }
   document.querySelectorAll('.flow-node').forEach((node) => node.addEventListener('click', () => { document.querySelectorAll('.flow-node').forEach((item) => item.classList.remove('is-selected')); node.classList.add('is-selected'); const detail = descriptions[node.dataset.node]; text(els.explanationNumber, detail[0]); text(els.explanationKicker, detail[1]); text(els.explanationTitle, detail[2]); text(els.explanationText, detail[3]); }));
   $('diagram-tab').addEventListener('click', () => switchTab('diagram')); $('judgments-tab').addEventListener('click', () => switchTab('judgments')); $('comparison-tab').addEventListener('click', () => switchTab('comparison'));
   els.play.addEventListener('click', () => state.playing ? (pause(), updateReplay()) : play()); els.previous.addEventListener('click', () => { pause(); state.replayIndex -= 1; updateReplay(); selectFromEvent(activeEvent()); }); els.next.addEventListener('click', () => { pause(); state.replayIndex += 1; updateReplay(); selectFromEvent(activeEvent()); }); els.reset.addEventListener('click', () => { pause(); state.replayIndex = 0; updateReplay(); selectFromEvent(activeEvent()); }); els.scrubber.addEventListener('input', () => { pause(); state.replayIndex = Number(els.scrubber.value); updateReplay(); selectFromEvent(activeEvent()); });
-  $('export-tab').addEventListener('click', () => switchTab('export'));
-  refresh(); refreshExport(); window.setInterval(refresh, 3000); window.setInterval(refreshExport, 15000);
+  $('export-tab').addEventListener('click', () => switchTab('export')); $('synthetic-tab').addEventListener('click', () => switchTab('synthetic'));
+  refresh(); refreshExport(); refreshSynthetic(); window.setInterval(refresh, 3000); window.setInterval(refreshExport, 15000); window.setInterval(refreshSynthetic, 15000);
 })();

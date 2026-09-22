@@ -15,6 +15,7 @@ import time
 
 import gtm_run_view as viewer
 from gtm_export_view import load_bundle, FILES as EXPORT_FILES
+from gtm_synthetic_view import load_bundle as load_synthetic_bundle, FILES as SYNTHETIC_FILES
 
 LABEL = 'com.organizedai.gtm-run-view'
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +30,7 @@ def main():
     parser.add_argument('--allow-origin', action='append', default=[], type=viewer.parse_allowed_origin)
     parser.add_argument('--port', type=int, default=8765)
     parser.add_argument('--export-bundle', type=Path, help='Scored container bundle; retain installed bundle if omitted')
+    parser.add_argument('--synthetic-bundle', type=Path, help='Synthetic-data bundle; retain installed bundle if omitted')
     args = parser.parse_args()
     if sys.platform != 'darwin': parser.error('This installer requires macOS.')
     sources = [(args.run_dir, args.package), (args.baseline_run_dir, args.baseline_package)]
@@ -41,11 +43,15 @@ def main():
     if export_source is None and (service_root / 'current/export').is_dir():
         export_source = service_root / 'current/export'
     export_files = load_bundle(export_source)[1] if export_source else None
+    synthetic_source = args.synthetic_bundle
+    if synthetic_source is None and (service_root / 'current/synthetic').is_dir():
+        synthetic_source = service_root / 'current/synthetic'
+    synthetic_files = load_synthetic_bundle(synthetic_source)[1] if synthetic_source else None
     releases = service_root / 'releases'
     releases.mkdir(parents=True, exist_ok=True)
     release = Path(tempfile.mkdtemp(prefix=datetime.datetime.now().strftime('%Y%m%d-%H%M%S-'), dir=releases))
     (release / 'scripts').mkdir()
-    for name in ('gtm_run_view.py', 'gtm_export_view.py', 'jev_pilot.py', 'jev_pilot_execute.py', 'jev_cloudflare_direct.py'):
+    for name in ('gtm_run_view.py', 'gtm_export_view.py', 'gtm_synthetic_view.py', 'jev_pilot.py', 'jev_pilot_execute.py', 'jev_cloudflare_direct.py'):
         shutil.copy2(ROOT / 'scripts' / name, release / 'scripts' / name)
     shutil.copytree(ROOT / 'dashboard', release / 'dashboard')
     if export_files:
@@ -53,6 +59,11 @@ def main():
         for name in EXPORT_FILES:
             (release / 'export' / name).write_bytes(export_files[name])
         load_bundle(release / 'export')
+    if synthetic_files:
+        (release / 'synthetic').mkdir()
+        for name in SYNTHETIC_FILES:
+            (release / 'synthetic' / name).write_bytes(synthetic_files[name])
+        load_synthetic_bundle(release / 'synthetic')
     for label, (run, package) in zip(('current-run', 'baseline'), sources):
         for folder, source, names in (
             ('run', run, ('journal.jsonl', 'results.jsonl', 'score.json')),
@@ -81,6 +92,7 @@ def main():
                '--port', str(args.port)]
     for origin in args.allow_origin: program.extend(['--allow-origin', origin])
     if export_files: program.extend(['--export-bundle', str(current / 'export')])
+    if synthetic_files: program.extend(['--synthetic-bundle', str(current / 'synthetic')])
     definition = {'Label': LABEL, 'ProgramArguments': program, 'WorkingDirectory': str(current),
                   'RunAtLoad': True, 'KeepAlive': True, 'ThrottleInterval': 5,
                   'StandardOutPath': str(logs / 'stdout.log'), 'StandardErrorPath': str(logs / 'stderr.log')}

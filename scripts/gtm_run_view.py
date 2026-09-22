@@ -14,10 +14,12 @@ from urllib.parse import urlsplit
 
 try:
     from gtm_export_view import export_snapshot
+    from gtm_synthetic_view import synthetic_snapshot
     from jev_pilot import parse_json as strict_parse_json
     from jev_pilot_execute import input_preflight
 except ModuleNotFoundError:  # Imported as scripts.gtm_run_view by tests or tooling.
     from scripts.gtm_export_view import export_snapshot
+    from scripts.gtm_synthetic_view import synthetic_snapshot
     from scripts.jev_pilot import parse_json as strict_parse_json
     from scripts.jev_pilot_execute import input_preflight
 
@@ -311,7 +313,7 @@ def parse_allowed_origin(value):
     return value
 
 
-def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_dir=None, baseline_package=None, export_bundle=None):
+def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_dir=None, baseline_package=None, export_bundle=None, synthetic_bundle=None):
     if (baseline_run_dir is None) != (baseline_package is None):
         raise ValueError("baseline run directory and package must be supplied together")
     configured_origins = {parse_allowed_origin(origin) for origin in allowed_origins}
@@ -344,6 +346,17 @@ def handler_for(run_dir: Path, package: Path, allowed_origins=(), baseline_run_d
                         self.send_error(409, "Container requires corrections before import"); return
                     body = artifacts[download]
                 mime = "application/json"
+            elif route.path == "/api/synthetic" or route.path in {"/synthetic/summary.json", "/synthetic/dataset.zip"}:
+                synthetic, artifacts = synthetic_snapshot(synthetic_bundle)
+                if route.path == "/api/synthetic":
+                    body = json.dumps(synthetic, allow_nan=False).encode()
+                    mime = "application/json"
+                else:
+                    download = route.path.rsplit("/", 1)[-1]
+                    if not synthetic["available"]:
+                        self.send_error(404); return
+                    body = artifacts[download]
+                    mime = "application/zip" if download == "dataset.zip" else "application/json"
             elif route.path == "/api/state":
                 state = snapshot(run_dir, package, include_comparison_identity=baseline_run_dir is not None)
                 if baseline_run_dir is not None:
@@ -383,6 +396,7 @@ def main():
                         help="Frozen package matching --baseline-run-dir")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--export-bundle", type=Path, help="Scored GTM export bundle to offer for download")
+    parser.add_argument("--synthetic-bundle", type=Path, help="Verified synthetic-data bundle to offer for download")
     parser.add_argument("--allow-origin", action="append", default=[], type=parse_allowed_origin,
                         help="Exact additional browser origin for a trusted private reverse proxy; repeatable")
     args = parser.parse_args()
@@ -393,6 +407,7 @@ def main():
         args.baseline_run_dir.resolve() if args.baseline_run_dir else None,
         args.baseline_package.resolve() if args.baseline_package else None,
         args.export_bundle.resolve() if args.export_bundle else None,
+        args.synthetic_bundle.resolve() if args.synthetic_bundle else None,
     ))
     print(f"Read-only GTM run viewer: http://127.0.0.1:{server.server_port}", flush=True)
     try: server.serve_forever()

@@ -82,3 +82,7 @@ On macOS with the GUI app installed, the CLI may be `/Applications/Tailscale.app
 ## Visual design
 
 The viewer follows the [OrganizedAI Jev field guide](https://talk.organizedai.vip/jev/): warm near-black surfaces, cream text, JetBrains Mono headings, gold emphasis, restrained cyan and fine borders. Typography is bundled locally under `dashboard/fonts/` with SIL Open Font licenses; the browser does not need Google Fonts access. Diagram/replay, judgment data and frozen comparison checks retain their existing behavior.
+
+## Synthetic data downloads
+
+Pass `--synthetic-bundle /absolute/path/to/bundle` to the installer after running `scripts/prepare_blade_synthetic.py`. It validates and copies exactly `summary.json` and `dataset.zip`; reinstalls retain the installed bundle when omitted. The Synthetic data tab offers `/synthetic/dataset.zip` and `/synthetic/summary.json`; `/api/synthetic` reports verified availability. These fixed routes inherit the private Host/Origin rules. The ZIP excludes local oracle files. Its GTM-shaped simulation fixtures are distinct from the real scored container in Container export.

@@ -42,6 +42,7 @@
         <button id="judgments-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="judgments-panel">Judgments <span id="judgment-count" class="tab-count">—</span></button>
         <button id="comparison-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="comparison-panel" hidden>Comparison</button>
         <button id="export-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="export-panel">Container export</button>
+        <button id="synthetic-tab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="synthetic-panel">Synthetic data</button>
       </div>
 
       <section id="diagram-panel" class="tab-panel" role="tabpanel" aria-labelledby="diagram-tab">
@@ -134,6 +135,22 @@
             <section><p class="eyebrow">PROGRAMMATIC ACCESS</p><h3>Use the same verified artifact</h3><p class="muted">Fetch the report, require readiness to pass, then download the exact scored bytes. GTM’s API has no bulk JSON import endpoint; your importer must map resources into a workspace.</p><pre id="export-command"></pre><p class="comparison-note">The download endpoints are read-only and accessible through your Tailscale connection.</p></section>
           </div>
           <p class="comparison-note">Scores are deterministic checks, not measured conversion lift. GTM acceptance and live tracking still need workspace preview. The Jev pilot shown in the other tabs did not generate or approve this export.</p>
+        </div>
+      </section>
+
+      <section id="synthetic-panel" class="tab-panel" role="tabpanel" aria-labelledby="synthetic-tab" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">TRAINING DOWNLOAD</p><h2>Synthetic GTM evidence</h2></div><span id="synthetic-status" class="replay-state">LOADING</span></div>
+        <p id="synthetic-message" class="muted">Checking for a verified synthetic-data bundle…</p>
+        <div id="synthetic-content" hidden>
+          <div id="synthetic-metrics" class="detail-grid export-metrics"></div>
+          <div class="export-actions">
+            <a class="download-button" href="/synthetic/dataset.zip" download="dataset.zip">Download dataset ZIP ↓</a>
+            <a class="download-button secondary" href="/synthetic/summary.json" download="summary.json">Download summary ↓</a>
+          </div>
+          <div class="export-columns import-help">
+            <section><p class="eyebrow">SCOPE</p><h3>Training-only synthetic observations</h3><p id="synthetic-scope" class="muted"></p></section>
+            <section><p class="eyebrow">NOTICES</p><h3>Dataset notes</h3><ul id="synthetic-notices" class="export-findings"></ul></section>
+          </div>
         </div>
       </section>
 

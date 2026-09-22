@@ -1,3 +1,14 @@
+# Current State — 2026-09-22 (BLADE synthetic journeys)
+
+- Read-only public BLADE inspection informed a separate training corpus. Facts and caveats are in `DOCUMENTATION/blade-synthetic/site-observations.json`; guide in that directory's README. No forms submitted, real visitors collected, or live GTM/ads/model calls made.
+- `scripts/synthetic-lab/generate_blade_journeys.py` generates 13 paired cases × 192 shared sessions over 48 hours, drift at hour 24, four journeys, seeded dropoffs/consent/acquisition, Meta browser/server and Google deliveries, timestamp-filtered reports, simulated GTM-shaped config changes. These fictional model configs are NOT importable GTM files and do not run BLADE's actual tags. Generator truth is unreviewed and separate.
+- `scripts/prepare_blade_synthetic.py` packages observations/source facts/manifest/guide with checksums, excluding truth. New Synthetic data dashboard tab serves fixed verified `/api/synthetic`, `/synthetic/dataset.zip`, `/synthetic/summary.json` routes. Installer retains this bundle on subsequent export updates.
+- Final generated corpus: `/private/tmp/blade-journeys-20260922-final`; download bundle `/private/tmp/blade-download-20260922-final`. ZIP SHA-256 `223a7bc7aea16908158aa1b79df4cbf38da41b2ad83c9c134435f3f4f2b3991a` (460,608 bytes). Install persistent copies under the service root before finishing; use a new installed benchmark code snapshot so the next daily refresh preserves the new UI/download.
+- Verified 32 simulator tests, 18 viewer/download tests, one real archive packaging test, 47 TypeScript tests, JavaScript syntax and diff checks. Initial broad simulator test hit disk exhaustion; deleting only disposable pip HTTP download cache allowed the full suite to pass. Preserve frozen pilot artifacts and reserved validation/holdout data.
+- Behavioral daily integration remains NEXT: cutoff-safe adapter (full raw corpus has future rows), explicit paired behavioral evaluation, then bounded model evaluation if authorized. The current daily loop remains deterministic hygiene; `--evidence` only records a hash. Do not represent this dataset as Jev training execution, measured conversion lift, or live BLADE validation.
+
+---
+
 # Current State — 2026-09-22 (scored container export)
 
 - Product direction clarified: user explicitly selected BLADE as the benchmark baseline for daily improvement. See `DOCUMENTATION/daily-container-improvement.md`. New `run-daily-benchmark.ts` begins from the original BLADE web seed, carries forward accepted hygiene changes, records immutable history, and binds state to baseline/export hashes. It does not access live BLADE or use paid inference. `run-daily-benchmark-service.py` can install its result into the private viewer. Synthetic behavioral evaluation and immediate change watching remain next-stage work.
