@@ -36,9 +36,11 @@ export type JudgeResult =
 export interface ShadowOutcome { mode: ShadowMode; actualAction: "improved" | "reverted" | "validation_fail" | "json_fail"; proposedRoute?: ProposedRoute; reasonCodes: string[]; judgment?: JudgeResult; disagreement?: boolean; }
 
 export function stableJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
-  if (value && typeof value === "object") return `{${Object.keys(value as RecordValue).sort().map(k => `${JSON.stringify(k)}:${stableJson((value as RecordValue)[k])}`).join(",")}}`;
-  return JSON.stringify(value);
+  // Match JSON persistence: omit undefined object properties and encode undefined
+  // array entries as null. This keeps evidence hashes stable after JSON round trips.
+  if (Array.isArray(value)) return `[${value.map(item => item === undefined ? "null" : stableJson(item)).join(",")}]`;
+  if (value && typeof value === "object") { const record=value as RecordValue; return `{${Object.keys(record).filter(key=>record[key]!==undefined).sort().map(key => `${JSON.stringify(key)}:${stableJson(record[key])}`).join(",")}}`; }
+  return value === undefined ? "null" : JSON.stringify(value);
 }
 export function hash(value: unknown): string { return createHash("sha256").update(stableJson(value)).digest("hex"); }
 export function freezeSeedDefinition(content = "evidence sufficiency and tracking behavior preservation"): FrozenDefinition {
