@@ -1138,6 +1138,7 @@ async function main(): Promise<void> {
       console.log("[Mutate] IMPROVED — keeping mutation");
       working = mutated;
       workingJson = JSON.stringify(mutated, null, 2);
+      if (mutatedScores.combinedScore > bestScore) { bestScore = mutatedScores.combinedScore; bestJson = workingJson; }
       results.push({
         round,
         score: mutatedScores.combinedScore,
