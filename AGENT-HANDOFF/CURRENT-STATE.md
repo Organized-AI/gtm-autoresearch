@@ -14,10 +14,11 @@
 - `npm run typecheck`
 - `npm test`
 - `npm run eval:gtm -- content/gtm-templates/BLADE/seed/blade-sgtm.json`
-- Pending: review, commit, push, and PR creation.
+- Committed as `e3969d4` and opened as PR #4.
 
 ## Next Steps
-- Review, commit, push, and open the feature PR.
+- Review and merge PR #4.
+- Add the post-validation Jev worker and OpenShell worker sandbox only when the runtime execution phase is scheduled.
 
 ---
 
