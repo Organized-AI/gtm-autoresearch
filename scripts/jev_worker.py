@@ -2,7 +2,7 @@
 """JSON protocol for two frozen atomic jev_align AIFunction shadow calls."""
 import hashlib, json, math, sys
 
-def stable(value): return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+def stable(value): return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str)
 def digest(value): return hashlib.sha256(stable(value).encode()).hexdigest()
 def unavailable(reason): return {"status":"unavailable","reason":reason}
 def prediction_result(prediction):
@@ -25,7 +25,8 @@ def main():
       with open(manifest_path,encoding="utf-8") as handle: manifest=json.load(handle)
     except OSError: return unavailable("frozen manifest missing")
     frozen=evidence["frozen"]
-    if manifest.get("definitionHash") != frozen.get("contentHash") or manifest.get("requestedModel") != frozen.get("requestedModel") or manifest.get("preprocessingVersion") != frozen.get("preprocessingVersion"):
+    payload=dict(manifest); declared_hash=payload.pop("manifestHash",None)
+    if not isinstance(declared_hash,str) or digest(payload) != declared_hash or declared_hash != frozen.get("contentHash") or manifest.get("requestedModel") != frozen.get("requestedModel") or manifest.get("preprocessingVersion") != frozen.get("preprocessingVersion") or manifest.get("policyVersion") != frozen.get("policyVersion"):
       return {"status":"error","reason":"frozen manifest identity mismatch"}
     functions=manifest.get("functions",{})
     if set(functions) != {"evidenceSufficient","trackingBehaviorPreserved"}: return {"status":"error","reason":"manifest must contain two atomic functions"}

@@ -44,12 +44,20 @@ export function hash(value: unknown): string { return createHash("sha256").updat
 export function freezeSeedDefinition(content = "evidence sufficiency and tracking behavior preservation"): FrozenDefinition {
   return { id: SEED_DEFINITION_ID, content, contentHash: hash(content), preprocessingVersion: "compact-evidence-v1", backend: "jev_align.AIFunction", requestedModel: "unconfigured", policyVersion: POLICY_VERSION, status: "seed" };
 }
+export function manifestHash(raw: unknown): string {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("frozen manifest must be an object");
+  const payload = structuredClone(raw as RecordValue); delete payload.manifestHash; return hash(payload);
+}
 export function frozenDefinitionFromManifest(raw: unknown): FrozenDefinition {
-  if (!raw || typeof raw !== "object") throw new Error("frozen manifest must be an object");
-  const value = raw as RecordValue; const required = ["definitionHash", "requestedModel", "preprocessingVersion", "policyVersion"];
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("frozen manifest must be an object");
+  const value = raw as RecordValue; const required = ["manifestHash", "definitionHash", "requestedModel", "preprocessingVersion", "policyVersion"];
   if (required.some(key => typeof value[key] !== "string" || value[key] === "")) throw new Error("frozen manifest is missing required identity fields");
-  if (!value.functions || typeof value.functions !== "object") throw new Error("frozen manifest is missing atomic functions");
-  return { id: "frozen-manifest-v1", content: `manifest:${value.definitionHash}`, contentHash: value.definitionHash as string, preprocessingVersion: value.preprocessingVersion as string, backend: "jev_align.AIFunction", requestedModel: value.requestedModel as string, policyVersion: value.policyVersion as string, status: "accepted" };
+  if (value.manifestHash !== manifestHash(value)) throw new Error("frozen manifest content hash mismatch");
+  const functions = value.functions as RecordValue | undefined;
+  if (!functions || Object.keys(functions).sort().join(",") !== "evidenceSufficient,trackingBehaviorPreserved") throw new Error("frozen manifest is missing atomic functions");
+  for (const spec of Object.values(functions)) if (!spec || typeof spec !== "object" || ["path","definitionHash","provider","model"].some(key => typeof (spec as RecordValue)[key] !== "string")) throw new Error("frozen manifest has invalid function identity");
+  // A manifest freezes a seed snapshot; it never means human acceptance or calibration.
+  return { id: "frozen-manifest-v1", content: `manifest:${value.manifestHash}`, contentHash: value.manifestHash as string, preprocessingVersion: value.preprocessingVersion as string, backend: "jev_align.AIFunction", requestedModel: value.requestedModel as string, policyVersion: value.policyVersion as string, status: "seed" };
 }
 function byId(items: Array<RecordValue> | undefined, id: string): Map<string, RecordValue> { return new Map((items ?? []).map(x => [String(x[id]), x])); }
 function diffCollection(before: Array<RecordValue> | undefined, after: Array<RecordValue> | undefined, id: string) { const a=byId(before,id), b=byId(after,id); return { added:[...b.keys()].filter(k=>!a.has(k)).sort(), removed:[...a.keys()].filter(k=>!b.has(k)).sort(), changed:[...a.keys()].filter(k=>b.has(k)&&stableJson(a.get(k))!==stableJson(b.get(k))).sort() }; }
@@ -77,7 +85,7 @@ export class PythonJevJudge implements Judge {
   constructor(private readonly python:string,private readonly worker:string,private readonly definitionPath:string,private readonly timeoutMs=10_000,private readonly maxOutput=128_000,private readonly environment:NodeJS.ProcessEnv={}) {}
   async judge(evidence:CandidateEvidence):Promise<JudgeResult>{
     const input=JSON.stringify({protocol:"jev-shadow-v1",definitionPath:this.definitionPath,evidence:compactJudgeInput(evidence)});
-    const output=await new Promise<{code:number|null;out:string;err:string;timedOut:boolean}>((resolve)=>{let settled=false,out="",err="",timedOut=false;const finish=(code:number|null)=>{if(!settled){settled=true;resolve({code,out,err,timedOut});}};let child;try{child=spawn(this.python,[this.worker,"--protocol","jev-shadow-v1"],{stdio:["pipe","pipe","pipe"],shell:false,env:{...process.env,...this.environment}});}catch(error){return finish(null)}const timer=setTimeout(()=>{timedOut=true;child.kill("SIGTERM");setTimeout(()=>child.kill("SIGKILL"),250).unref();},this.timeoutMs);child.on("error",error=>{err=String(error);clearTimeout(timer);finish(null)});child.stdout.on("data",data=>{out+=String(data);if(out.length>this.maxOutput){err="worker output exceeded limit";child.kill("SIGTERM")}});child.stderr.on("data",data=>{err+=String(data).slice(0,4096)});child.on("close",code=>{clearTimeout(timer);finish(code)});child.stdin.end(input);});
+    const output=await new Promise<{code:number|null;out:string;err:string;timedOut:boolean}>((resolve)=>{let settled=false,out="",err="",timedOut=false;const finish=(code:number|null)=>{if(!settled){settled=true;resolve({code,out,err,timedOut});}};let child;try{child=spawn(this.python,[this.worker,"--protocol","jev-shadow-v1"],{stdio:["pipe","pipe","pipe"],shell:false,env:{...process.env,...this.environment}});}catch(error){return finish(null)}const timer=setTimeout(()=>{timedOut=true;child.kill("SIGTERM");setTimeout(()=>child.kill("SIGKILL"),250).unref();},this.timeoutMs);child.on("error",error=>{err=String(error);clearTimeout(timer);finish(null)});child.stdout.on("data",data=>{const chunk=String(data);if(out.length+chunk.length>this.maxOutput){out+=chunk.slice(0,Math.max(0,this.maxOutput-out.length));err="worker output exceeded limit";child.kill("SIGTERM")}else out+=chunk});child.stdin.on("error",error=>{err=String(error);finish(null)});child.stderr.on("data",data=>{err+=String(data).slice(0,4096)});child.on("close",code=>{clearTimeout(timer);finish(code)});child.stdin.end(input);});
     if(output.timedOut)return{status:"unavailable",reason:"worker timeout"};if(output.code!==0)return{status:"unavailable",reason:`worker exit ${output.code}: ${output.err.slice(0,240)}`};try{return validateJudgeResult(JSON.parse(output.out),evidence)}catch{return{status:"error",reason:"malformed worker JSON"};}
   }
 }

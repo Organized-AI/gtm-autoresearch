@@ -26,3 +26,24 @@ The separate `synthetic-gtm-lab` repository is consumed read-only through `scrip
 Run `SYNTHETIC_GTM_LAB_PATH='/absolute/path/to/synthetic-gtm-lab' npm run demo:synthetic-lab`. The lab contains a shared topology and generator-defined synthetic cases, including healthy and benign controls, transport outages, business/traffic changes, collection faults, and reporting delays. It establishes neither causality from ratios nor generalization, calibration, or enforcement readiness.
 
 `buildSyntheticReplayRows` exposes all 12 cases as unlabeled synthetic replay rows. Because `demo-v1` declares one shared lineage group, the deterministic splitter places all 12 in exactly one bucket; empty validation/holdout buckets are reported as insufficient rather than silently mixing cases across partitions.
+
+
+## Frozen worker manifest
+
+`JEV_DEFINITION_PATH` must point to a JSON manifest. Its `manifestHash` is the SHA-256 of the canonical JSON payload with `manifestHash` omitted: recursively sorted object keys, original array order, UTF-8, and no ASCII escaping. It binds `definitionHash`, `requestedModel`, `preprocessingVersion`, `policyVersion`, and both atomic function specifications. Each function requires `path`, `definitionHash` (the canonical SHA-256 of the loaded private `_definition`), `provider`, and `model`. The worker loads and validates both definitions before invoking either one.
+
+A valid manifest is a frozen **seed snapshot**, not a calibration or promotion decision. The policy therefore records review for all seed-manifest outcomes. It does not enable keep/enforcement. A second, explicitly approved acceptance workflow is required before changing that behavior.
+
+```json
+{
+  "definitionHash": "seed-definition-content-hash",
+  "requestedModel": "pinned-provider-model",
+  "preprocessingVersion": "compact-evidence-v1",
+  "policyVersion": "tracking-shadow-policy-v1",
+  "functions": {
+    "evidenceSufficient": { "path": "/secure/frozen/evidence", "definitionHash": "…", "provider": "…", "model": "…" },
+    "trackingBehaviorPreserved": { "path": "/secure/frozen/tracking", "definitionHash": "…", "provider": "…", "model": "…" }
+  },
+  "manifestHash": "canonical-payload-sha256"
+}
+```
