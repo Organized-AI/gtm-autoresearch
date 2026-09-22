@@ -18,3 +18,21 @@ The interface polls every three seconds. It reports complete, partial, unavailab
 The server binds only to loopback, exposes fixed read-only routes, rejects unrelated Host/Origin values and path queries, and projects limited journal metadata. It does not read credentials or expose raw observations. Label comparison requires a completed, unlocked journal, matching score predictions and a verified training package. Missing or invalid data is shown explicitly.
 
 Current recorded baseline: 12 rows, 24 successful requests, paired agreement 9/12 against **unreviewed synthetic generator labels**, and zero insufficient answers. This is research agreement, not human accuracy or calibration. No optimizer loop or GTM publication is running through this interface.
+
+## Private Tailscale access
+
+The viewer still binds to loopback. For access from another Tailscale device, pass the exact private origin with `--allow-origin` (repeatable), then proxy through Tailscale Serve on a dedicated port:
+
+```sh
+python3 scripts/gtm_run_view.py \
+  --run-dir /private/tmp/gtm-jev-cloudflare-paired-v2-20260922 \
+  --package data/jev-shadow/training-pilot-v1-final \
+  --port 8765 \
+  --allow-origin http://YOUR-HOST.YOUR-TAILNET.ts.net:8765
+
+tailscale serve --bg --http=8765 http://127.0.0.1:8765
+```
+
+Open that private origin from a connected Tailscale device. HTTP travels inside the encrypted Tailscale network. This uses Serve, not public Funnel. Host and Origin checks remain exact; no wildcard access is enabled. The viewer process must remain running. Stop just this route with `tailscale serve --http=8765 off`; do not reset other services.
+
+On macOS with the GUI app installed, the CLI may be `/Applications/Tailscale.app/Contents/MacOS/Tailscale`.

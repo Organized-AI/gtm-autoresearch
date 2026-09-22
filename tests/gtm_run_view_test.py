@@ -186,5 +186,31 @@ class RunViewTest(unittest.TestCase):
             finally:
                 server.shutdown(); server.server_close(); thread.join(timeout=2)
 
+    def test_private_proxy_origin_is_explicit_and_same_origin_only(self):
+        origin = "http://viewer.example.ts.net:8765"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); self.fixture(root)
+            server = view.ThreadingHTTPServer(("127.0.0.1", 0), view.handler_for(root, root, [origin]))
+            thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+            try:
+                for host, sent_origin, expected in [
+                    ("viewer.example.ts.net:8765", origin, 200),
+                    ("viewer.example.ts.net:8765", None, 200),
+                    ("viewer.example.ts.net:8765", "http://other.example", 403),
+                    ("viewer.example.ts.net:8766", origin, 403),
+                    ("unconfigured.example:8765", None, 403),
+                ]:
+                    connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=2)
+                    headers = {"Host": host}
+                    if sent_origin: headers["Origin"] = sent_origin
+                    connection.request("GET", "/api/state", headers=headers)
+                    response = connection.getresponse(); response.read()
+                    self.assertEqual(response.status, expected)
+                    connection.close()
+            finally:
+                server.shutdown(); server.server_close(); thread.join(timeout=2)
+        for invalid in ["*", "http://user:pass@example.test", "https://example.test/path", "https://example.test?query=1", "http://example.test:bad"]:
+            with self.assertRaises(view.argparse.ArgumentTypeError): view.parse_allowed_origin(invalid)
+
 
 if __name__ == "__main__": unittest.main()

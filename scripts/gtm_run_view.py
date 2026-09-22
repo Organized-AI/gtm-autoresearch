@@ -242,12 +242,28 @@ def snapshot(run_dir: Path, package: Path):
     return value
 
 
-def handler_for(run_dir: Path, package: Path):
+def parse_allowed_origin(value):
+    parsed = urlsplit(value)
+    if (parsed.scheme not in {"http", "https"} or not parsed.hostname
+            or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment
+            or any(c.isspace() for c in value)):
+        raise argparse.ArgumentTypeError("expected an exact http(s) origin without a path")
+    try:
+        parsed.port
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("invalid origin port") from error
+    return value
+
+
+def handler_for(run_dir: Path, package: Path, allowed_origins=()):
+    configured_origins = {parse_allowed_origin(origin) for origin in allowed_origins}
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             host = self.headers.get("Host", "")
             origin = self.headers.get("Origin")
-            if host not in {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"} or origin and origin not in {f"http://{host}"}:
+            origins = configured_origins | {f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"}
+            matching_origins = {item for item in origins if urlsplit(item).netloc == host}
+            if not matching_origins or origin and origin not in matching_origins:
                 self.send_error(403); return
             route = urlsplit(self.path)
             static = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "text/javascript"), "/styles.css": ("styles.css", "text/css")}
@@ -279,8 +295,10 @@ def main():
     parser.add_argument("--run-dir", required=True, type=Path)
     parser.add_argument("--package", required=True, type=Path)
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--allow-origin", action="append", default=[], type=parse_allowed_origin,
+                        help="Exact additional browser origin for a trusted private reverse proxy; repeatable")
     args = parser.parse_args()
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(args.run_dir.resolve(), args.package.resolve()))
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(args.run_dir.resolve(), args.package.resolve(), args.allow_origin))
     print(f"Read-only GTM run viewer: http://127.0.0.1:{server.server_port}", flush=True)
     try: server.serve_forever()
     except KeyboardInterrupt: pass
