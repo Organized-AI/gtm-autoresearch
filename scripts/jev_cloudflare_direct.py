@@ -22,8 +22,8 @@ def response_headers(headers: Any) -> dict[str, str]:
 def unwrap(body: Any) -> dict[str, Any]:
     if not isinstance(body, dict): fail("Cloudflare response is not an object")
     errors = body.get("errors")
-    if isinstance(errors, list) and errors:
-        code = errors[0].get("code") if isinstance(errors[0], dict) else None
+    if errors:
+        code = errors[0].get("code") if isinstance(errors, list) and isinstance(errors[0], dict) else None
         if isinstance(code, int) and not isinstance(code, bool): fail(f"Cloudflare API error {code}")
         fail("Cloudflare API error")
     if "success" in body:
@@ -31,8 +31,15 @@ def unwrap(body: Any) -> dict[str, Any]:
             fail("Cloudflare API error")
         result = body.get("result")
         if not isinstance(result, dict): fail("Cloudflare success response result missing")
-        return result
-    if isinstance(body.get("result"), dict): return body["result"]
+        body = result
+    elif isinstance(body.get("result"), dict):
+        body = body["result"]
+    # Workers AI's unified gateway wraps a completed third-party response.
+    # Unwrap only this observed shape; never accept pending/failed jobs.
+    if "state" in body:
+        if body.get("state") != "Completed" or not isinstance(body.get("result"), dict):
+            fail("Cloudflare gateway response is not completed")
+        body = body["result"]
     return body
 
 def evaluate(request: Mapping[str, Any]) -> dict[str, Any]:
@@ -74,6 +81,7 @@ def safe_reason(error: Exception) -> str:
     if re.fullmatch(r"Cloudflare HTTP [1-5][0-9]{2}", text): return text
     if re.fullmatch(r"Cloudflare API error [0-9]+", text): return text
     if text.startswith("Cloudflare API error"): return "Cloudflare API error"
+    if text == "Cloudflare gateway response is not completed": return text
     allowed = {"missing Cloudflare credentials", "invalid Cloudflare account identifier", "direct transport requires model typesafe/jev", "invalid direct Jev request", "invalid frozen choice question", "Cloudflare transport error", "Cloudflare response exceeds limit", "Cloudflare response is not JSON", "Cloudflare response is not an object", "Cloudflare success response result missing", "Cloudflare response model missing", "Cloudflare choice response is invalid", "Cloudflare confidence/probabilities are invalid", "Cloudflare usage is invalid", "invalid numeric response field"}
     return text if text in allowed else "direct Cloudflare evaluation failed"
 

@@ -1,4 +1,25 @@
-# Current State — 2026-09-22 (bounded execution driver)
+# Current State — 2026-09-22 (direct Cloudflare Jev verified)
+
+## Active work
+- Checkout `/private/tmp/gtm-jev-execution-20260922`, branch `feat/jev-shadow-pilot`, draft PR #5 stacked on unmerged PR #4. Preserve the original cloud-offloaded workspace. Do not merge or enable enforcement.
+- User chose direct Cloudflare Jev and approved Workers AI access. Wrangler OAuth now includes `ai:write`; credentials remain outside the repository. Terra implemented the direct adapter and first-error stop; root reviewed, fixed gateway parsing, verified, and ran live requests.
+- Direct REST uses `typesafe/jev` at `/accounts/{account_id}/ai/run`, one question per request, structured observation only, no redirects/retries, killable worker, durable journal, transport-bound resume, actual response metadata and sanitized errors. No verified dollar cap is claimed.
+- Checked-in configuration: `DOCUMENTATION/jev-shadow-pilot/cloudflare-execution.json`. Native seed: `/private/tmp/gtm-jev-cloudflare-seed-20260922/manifest.json`. Run instructions: `DOCUMENTATION/jev-shadow-pilot/DIRECT-CLOUDFLARE.md`.
+
+## Verified live outcome
+- Original pilot consumed 12 first-question attempts, all rejected by the initial parser because Cloudflare adds a completed gateway envelope. Those responses were not retained and are not reissued.
+- Attempt 13 used an unattempted second question and preserved its response. The observed wrapper is `{result:{state:"Completed",result:{model,answers,usage},gatewayMetadata},success:true,errors:[],messages:[]}`. Parser fixed and regression tested; attempt 13 was revalidated offline, without a request, in a separate recovery artifact.
+- Attempt 14 used a different unattempted second question and succeeded through the corrected direct adapter: resolved model `jev-1.13.0`, 14,123 input tokens and 49 output tokens, request ID `a3f2f3dff88745ee-DFW`.
+- Total 14 of 24 requests consumed, no replay. The initial 12 paired result records remain errors; there are no complete paired predictions for scoring. Usage is known for attempts 13 and 14 only; total usage/cost is unknown. See `DOCUMENTATION/jev-shadow-pilot/CLOUDFLARE-LIVE-VERIFICATION.md`.
+
+## Verification and next step
+- 29 Python tests, 37 TypeScript tests, and TypeScript typecheck pass. Includes real loopback redirect refusal, worker kill/reap, shared concurrent budget, no replay, secret redaction, gateway wrapper, and stop-on-first-direct-error resume.
+- Credentials and real integration are working. A fresh complete paired pilot is the next evaluation step; preserve the original journal and never replay consumed keys as a resume. The 12 original error records cannot support agreement/calibration claims. No label, validation or holdout data was read during this live integration.
+- Live artifacts: `/private/tmp/gtm-jev-cloudflare-live-20260922/` (`journal.jsonl`, `results.jsonl`, `attempt-13-response.txt`, `attempt-13-recovered.json`). Journal SHA256: `b332db234287652a836e7e22f33cb0fbf73072c0677de96722cc83b695cbda07`.
+
+---
+
+# Previous State — 2026-09-22 (bounded execution driver)
 
 ## Branch
 `feat/jev-shadow-pilot` — draft PR #5 against `feat/baseline-preserving-container-policy`.
