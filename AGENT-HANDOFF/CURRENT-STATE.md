@@ -23,7 +23,7 @@
 ## Jev Shadow Pilot — 2026-09-21
 
 - Stacked branch: `feat/jev-shadow-pilot`, based on the still-open container-policy PR #4.
-- Added shadow-only evidence, pure routing policy, fake-tested Python worker adapter, grouped offline dataset/replay tooling, and BLADE web/server fixture coverage.
+- Added shadow-only evidence, pure routing policy, fake-tested Python worker adapter, grouped offline dataset/replay tooling, and BLADE web/server JSON-shape compatibility coverage only.
 - `JEV_MODE=off` is default. `shadow` cannot change legacy keep/revert behavior.
 - No Teleios claim, live GTM action, provider evaluation, calibration, OpenShell enforcement, or enforcement activation occurred.
 
