@@ -17,6 +17,7 @@ import uuid
 import tempfile
 import fcntl
 import signal
+import subprocess
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -187,18 +188,14 @@ def prepare(package: Path, seed_manifest: Path) -> PreparedRun:
 
 
 def validate_execution_config_object(config: Mapping[str, Any], prepared: PreparedRun) -> dict[str, Any]:
-    """Require explicit external provider/model/spend binding; do not invent one."""
+    """Bind an explicit shadow provider/model; pricing is intentionally absent."""
     config = dict(config)
-    required = {"schemaVersion", "mode", "provider", "model", "providerSpendControl"}
+    required = {"schemaVersion", "mode", "provider", "model"}
     if set(config) != required or config.get("schemaVersion") != CONFIG_SCHEMA:
         fail("execution config identity is incomplete")
     if config.get("mode") != "shadow" or config.get("provider") != prepared.provider or config.get("model") != prepared.model:
         fail("execution config provider/model identity mismatch")
-    spend = config.get("providerSpendControl")
-    if not isinstance(spend, dict) or set(spend) != {"kind", "reference"} or spend.get("kind") != "provider-enforced-hard-limit" or not isinstance(spend.get("reference"), str) or not spend["reference"].strip():
-        fail("provider-side spend control configuration is required")
     return config
-
 
 def validate_execution_config(path: Path, prepared: PreparedRun) -> dict[str, Any]:
     return validate_execution_config_object(read_json(path), prepared)
@@ -254,6 +251,32 @@ def load_native_functions(prepared: PreparedRun) -> dict[str, Any]:
     except Exception:
         close_native_functions(loaded)
         raise
+
+
+class DirectCloudflareFunction:
+    """One killable no-retry subprocess per reserved atomic evaluation."""
+    def __init__(self, name: str, state: Mapping[str, Any], model: str, environment: Mapping[str, str]):
+        self.name, self.model, self.environment = name, model, environment
+        candidate = native_definition(state)["candidate"]
+        self.instructions, self.criteria = candidate["instructions"], candidate["criteria"]
+    def __call__(self, *, observation: Mapping[str, Any]) -> Any:
+        request={"model":self.model,"observation":observation,"question":{"name":self.name,"instructions":self.instructions,"criteria":self.criteria}}
+        env={"PATH":os.environ.get("PATH","")}
+        for key in ("CLOUDFLARE_ACCOUNT_ID","CLOUDFLARE_API_TOKEN"): env[key]=self.environment[key]
+        child=subprocess.Popen([sys.executable,str(Path(__file__).with_name("jev_cloudflare_direct.py"))],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,start_new_session=True,env=env)
+        try: output,_=child.communicate(json.dumps(request),timeout=MAX_ATOMIC_SECONDS)
+        except subprocess.TimeoutExpired:
+            os.killpg(child.pid, signal.SIGKILL); child.communicate(); raise AtomicTimeout("direct Cloudflare subprocess timed out")
+        if child.returncode != 0: fail("direct Cloudflare evaluation failed")
+        try: value=json.loads(output)
+        except json.JSONDecodeError as error: raise ValueError("direct Cloudflare response malformed") from error
+        if not isinstance(value,dict) or "error" in value or value.get("choice") not in LABELS or not isinstance(value.get("metadata"),dict): fail("direct Cloudflare response rejected")
+        return type("Prediction",(),{"choice":value["choice"],"metadata":value["metadata"]})()
+    def close(self) -> None: pass
+
+def load_direct_cloudflare_functions(prepared: PreparedRun, environment: Mapping[str,str]) -> dict[str, Any]:
+    if prepared.provider != "cloudflare": fail("direct Cloudflare transport requires a cloudflare seed")
+    return {name: DirectCloudflareFunction(name,read_json(Path(prepared.seed_manifest["functions"][name]["path"])/"state.json"),prepared.model,environment) for name in FUNCTIONS}
 
 
 def close_native_functions(functions: Mapping[str, Any]) -> None:
@@ -400,6 +423,7 @@ def execute(
     environment: Mapping[str, str] | None = None,
     loader: Callable[[PreparedRun], dict[str, Any]] = load_native_functions,
     provider_guard: Callable[[PreparedRun, Mapping[str, Any]], None] | None = None,
+    direct_cloudflare: bool = False,
 ) -> dict[str, Any]:
     """Execute a fake/reviewed transport only after a caller-supplied hard-control guard.
 
@@ -415,8 +439,10 @@ def execute(
     paths = {results_path.resolve(), journal_path.resolve(), journal_path.with_name(journal_path.name + ".lock").resolve()}
     if len(paths) != 3 or any(item.resolve() in paths for item in protected):
         fail("results/journal path collides with a protected artifact")
-    if provider_guard is None:
-        fail("no verified provider spending-control adapter is available; provider calls remain blocked")
+    if provider_guard is None and not direct_cloudflare:
+        fail("no reviewed transport is available; provider calls remain blocked")
+    if direct_cloudflare and prepared.provider != "cloudflare":
+        fail("direct Cloudflare transport requires a cloudflare seed")
     # Pinned TypeSafe retries are opaque to AIFunction. Refuse this path rather
     # than let one logical attempt silently consume multiple transport requests.
     if prepared.provider == "typesafe":
@@ -425,7 +451,8 @@ def execute(
     error = credential_error(prepared.provider, environment)
     if error:
         fail(error)
-    provider_guard(prepared, config)
+    if provider_guard is not None: provider_guard(prepared, config)
+    if direct_cloudflare: loader = lambda _: load_direct_cloudflare_functions(prepared, environment)
     with journal_lock(journal_path.with_name(journal_path.name + ".lock")):
         attempts, completed = journal_state(journal_path, prepared, run_id, config)
         synchronize_results(results_path, prepared, completed)
@@ -443,6 +470,7 @@ def execute(
                     append_jsonl(journal_path, finished); completed[record_id] = finished
                     continue
                 answers: dict[str, str] = {}
+                provider_evaluations: dict[str, Any] = {}
                 failure: str | None = None
                 for name in FUNCTIONS:
                     old = prior.get(name)
@@ -450,6 +478,7 @@ def execute(
                         if old.get("event") != "attempt-finished" or old.get("status") != "success" or old.get("answer") not in LABELS:
                             failure = "previous atomic attempt did not complete"; break
                         answers[name] = old["answer"]
+                        if isinstance(old.get("providerMetadata"), dict): provider_evaluations[name] = old["providerMetadata"]
                         continue
                     if len(attempts) >= MAX_ATOMIC_ATTEMPTS:
                         failure = "atomic attempt cap reached"; break
@@ -460,6 +489,7 @@ def execute(
                         # The only object crossing the judge boundary is this observation.
                         prediction = call_with_timeout(functions[name], row["input"]["observation"])
                         answer = prediction_choice(prediction)
+                        metadata = getattr(prediction, "metadata", None)
                     except Exception as exc:
                         failure = f"atomic function error: {type(exc).__name__}"
                         finished_event = {**attempt, "event": "attempt-finished", "status": "error", "reason": failure}
@@ -467,8 +497,12 @@ def execute(
                         break
                     answers[name] = answer
                     finished_event = {**attempt, "event": "attempt-finished", "status": "success", "answer": answer}
+                    if isinstance(metadata, dict):
+                        finished_event["providerMetadata"] = metadata
+                        provider_evaluations[name] = metadata
                     append_jsonl(journal_path, finished_event); attempts[(record_id, name)] = finished_event
                 record = result_record(row, prepared, run_id, status="success", answers=answers) if failure is None and set(answers) == set(FUNCTIONS) else result_record(row, prepared, run_id, status="error", reason=failure or "incomplete atomic answers")
+                if provider_evaluations: record["providerEvaluations"] = provider_evaluations
                 finished = {"event": "record-finished", "seedManifestHash": prepared.seed_manifest["manifestHash"], **record}
                 append_jsonl(journal_path, finished); completed[record_id] = finished
         finally:
@@ -487,6 +521,7 @@ def main() -> None:
     parser.add_argument("--journal", type=Path)
     parser.add_argument("--run-id")
     parser.add_argument("--execute", action="store_true", help="permit provider calls after all gates succeed")
+    parser.add_argument("--direct-cloudflare", action="store_true", help="use the direct no-retry Cloudflare Jev REST transport")
     args = parser.parse_args()
     prepared = prepare(args.package, args.seed_manifest)
     if args.command == "preflight":
@@ -504,7 +539,7 @@ def main() -> None:
     if not args.execution_config:
         fail("execution config is required before any provider call")
     config = validate_execution_config(args.execution_config, prepared)
-    print(json.dumps(execute(prepared, config=config, results_path=args.results, journal_path=args.journal, run_id=args.run_id or str(uuid.uuid4())), indent=2))
+    print(json.dumps(execute(prepared, config=config, results_path=args.results, journal_path=args.journal, run_id=args.run_id or str(uuid.uuid4()), direct_cloudflare=args.direct_cloudflare), indent=2))
 
 
 if __name__ == "__main__":

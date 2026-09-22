@@ -72,7 +72,7 @@ class ExecutePilotTest(unittest.TestCase):
         return seed
 
     def config(self, directory, provider="cloudflare", model="approved-model"):
-        value = {"schemaVersion": pilot.CONFIG_SCHEMA, "mode": "shadow", "provider": provider, "model": model, "providerSpendControl": {"kind": "provider-enforced-hard-limit", "reference": "external-control-id"}}
+        value = {"schemaVersion": pilot.CONFIG_SCHEMA, "mode": "shadow", "provider": provider, "model": model}
         path = directory / "execution.json"; path.write_text(json.dumps(value), encoding="utf-8"); return path
 
     def prepared(self, directory, count=1, provider="cloudflare", expected=False):
@@ -164,10 +164,10 @@ class ExecutePilotTest(unittest.TestCase):
             self.assertEqual([record["status"] for record in records], ["success", "error"])
             self.assertEqual(len(calls), 3)
 
-    def test_unverified_spend_reference_cannot_enable_provider_calls(self):
+    def test_unreviewed_transport_cannot_enable_provider_calls(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); prepared, config, _ = self.prepared(root); calls = []
-            with self.assertRaisesRegex(ValueError, "no verified provider"):
+            with self.assertRaisesRegex(ValueError, "no reviewed transport"):
                 pilot.execute(prepared, config=pilot.validate_execution_config(config, prepared), results_path=root / "results.jsonl", journal_path=root / "journal.jsonl", run_id="run", environment={"CLOUDFLARE_ACCOUNT_ID": "test", "CLOUDFLARE_API_TOKEN": "test"}, loader=lambda _: {name: FakeFunction(name, calls) for name in pilot.FUNCTIONS})
             self.assertEqual(calls, [])
 

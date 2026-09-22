@@ -10,37 +10,15 @@ python3 scripts/jev_pilot_execute.py preflight \
   --seed-manifest /secure/jev-seeds/tracking-v1/manifest.json
 ```
 
-Preflight makes zero provider calls. The `run` command also makes zero calls unless `--execute` is present. That flag requires an external execution configuration whose provider and model exactly match the frozen seed and that identifies a provider-enforced hard spend control. This configuration is deliberately not checked in and no provider, model, cost, usage, or spend value is supplied by this repository.
+Preflight makes zero provider calls. The `run` command remains default-off until `--execute` is supplied. Its execution configuration binds only the frozen shadow provider and model. It never supplies a price, spend ceiling, or provider account limit; those are not available in the Jev response contract.
 
 ```json
-{
-  "schemaVersion": "jev-pilot-execution-config-v1",
-  "mode": "shadow",
-  "provider": "EXTERNALLY_APPROVED_PROVIDER",
-  "model": "EXTERNALLY_APPROVED_MODEL",
-  "providerSpendControl": {
-    "kind": "provider-enforced-hard-limit",
-    "reference": "EXTERNAL_CONTROL_REFERENCE"
-  }
-}
+{"schemaVersion":"jev-pilot-execution-config-v1","mode":"shadow","provider":"cloudflare","model":"typesafe/jev"}
 ```
 
-The reference is an identity check, not evidence that a provider has enforced a limit. Do not claim a dollar ceiling without independently verifiable provider-side controls and provider usage receipts.
+Direct Cloudflare use and its no-retry/killable transport contract are documented in `DIRECT-CLOUDFLARE.md`.
 
-The command-line driver has no provider-side spending-control adapter in this milestone. It fails closed even when `--execute` and an externally supplied configuration are present, so it cannot make a live provider call. Its tested execution core accepts an injected, reviewed adapter only; a future integration must supply a verifiable provider-side hard-control check before it can expose a live command.
 
-No command-line invocation is eligible to execute a provider in this milestone. The command below is reserved for a future reviewed adapter and must not be treated as an authorization:
-
-```sh
-python3 scripts/jev_pilot_execute.py run \
-  --execute \
-  --package /path/to/pilot-package \
-  --seed-manifest /secure/jev-seeds/tracking-v1/manifest.json \
-  --execution-config /secure/jev-execution-config.json \
-  --results /secure/jev-results.jsonl \
-  --journal /secure/jev-attempt-journal.jsonl \
-  --run-id YOUR_RUN_ID
-```
 
 For every atomic function, the driver fsyncs an `attempt-started` journal entry before calling the native `AIFunction` and never retries that attempt. It obtains an exclusive journal lock and raises a cooperative 60-second timeout in the driver process; a future live adapter must add a killable process boundary before treating that timeout as a hard transport cutoff. It turns a resumed started-but-unfinished attempt into an error result rather than calling it again. The journal is authoritative; result files are atomically rebuilt from completed journal events, which avoids duplicate dispatch after interruption. It writes exact identity-bound `success` or `error` records for completed rows; it never makes confidence, cost, usage, or prediction fields up.
 
