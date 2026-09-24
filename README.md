@@ -186,3 +186,9 @@ First run: 5 rounds, **84.3% → 91.2%**. Two improvements accepted, three rever
 ## Cost
 
 ~30 rounds x ~3K tokens = ~90K tokens total. About $0.15 per full run on Claude Haiku.
+
+---
+
+Guide: [guide.organizedai.vip/gtm-autoresearch/](https://guide.organizedai.vip/gtm-autoresearch/), [guide.organizedai.vip/observability/](https://guide.organizedai.vip/observability/), [guide.organizedai.vip/observability/beginners/](https://guide.organizedai.vip/observability/beginners/), [guide.organizedai.vip/synter-gap-plan/](https://guide.organizedai.vip/synter-gap-plan/)
+
+Maintained by Jordaaan Hill ([LinkedIn](https://www.linkedin.com/in/jordaaanhill)).
