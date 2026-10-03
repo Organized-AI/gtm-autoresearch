@@ -84,10 +84,12 @@ async function autoloop() {
   for (const pr of a.proposals) {
     const after = applyProposal(read(pr.file), pr);
     console.log(`\n${C.c}proposal${C.x} ${pr.file} · section "${pr.section}" only\n${pr.add.map((l) => `  + ${l}`).join("\n")}`);
-    await emit("autoloop.proposal", { client: pr.client, file: pr.file, section: pr.section, lines: pr.add });
+    if (pr.owner?.length) console.log(`  ${C.d}for the owner (fixed rules, not applied):\n${pr.owner.map((l) => `    · ${l}`).join("\n")}${C.x}`);
+    await emit("autoloop.proposal", { client: pr.client, file: pr.file, section: pr.section, lines: pr.add, owner: pr.owner || [] });
     if (flags.has("--write")) {
       mkdirSync(outDir, { recursive: true });
       writeFileSync(join(outDir, `program.${pr.client}.proposed.md`), after);
+      if (pr.owner?.length) writeFileSync(join(outDir, `owner-notes.${pr.client}.md`), `# ${pr.client}: changes only the owner can make\n\nAutoLoop may not edit the scorer, the weights, the constraints or the loop code. These came out of the same evidence and need a person.\n\n${pr.owner.map((l) => `- ${l}`).join("\n")}\n`);
     }
   }
   await emit("loop.stage", { stage: "stage", note: `${a.proposals.length} proposals staged for owner review; program.md unchanged` });

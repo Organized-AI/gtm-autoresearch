@@ -1,0 +1,155 @@
+{
+  "$comment": "Question sets for Jev on GTM container review. Shared set plus a web set and a server set. Written for this guide. Unrun against a live Jev endpoint.",
+  "shared": {
+    "intent_fit": {
+      "type": "score",
+      "instructions": "Compare `change` with `request`. How well do the changes match what was asked?",
+      "criteria": {
+        "0": "Does not match the request",
+        "1": "Partly matches",
+        "2": "Matches"
+      }
+    },
+    "consent_impact": {
+      "type": "choice",
+      "instructions": "Read `consent` and `change`. Does this change alter which tags may fire or which data may leave under each consent state?",
+      "criteria": {
+        "none": "No effect on consent behavior",
+        "possible": "Might affect it; the state is not clear",
+        "material": "Clearly changes consent behavior",
+        "unknown": "The state does not say"
+      }
+    },
+    "name_fits_job": {
+      "type": "noul",
+      "instructions": "Do the names in `change` describe what each entity now does?",
+      "criteria": {
+        "true": "Names match function"
+      }
+    },
+    "route_hint": {
+      "type": "choice",
+      "instructions": "Given `request`, `change`, `probes` and `flags`, should this be kept, sent for review, or reverted?",
+      "criteria": {
+        "keep": "Matches the request",
+        "review": "A human should look",
+        "revert": "Clearly wrong"
+      }
+    }
+  },
+  "web": {
+    "trigger_scope": {
+      "type": "choice",
+      "instructions": "Compare `web.trigger_probes[].after_matches` with `request`. Does a changed trigger fire on more or fewer pages than the request allows?",
+      "criteria": {
+        "narrower": "Fewer pages than requested",
+        "as_requested": "Exactly the requested pages",
+        "broader": "Pages the request did not name",
+        "unknown": "The state does not say"
+      }
+    },
+    "consent_default_sane": {
+      "type": "choice",
+      "instructions": "Read `web.consent_init`. Are default consent states set before any measurement tag could fire?",
+      "criteria": {
+        "yes": "Defaults are set and denied or region-scoped as the request implies",
+        "no": "A tag could fire before defaults are set",
+        "unknown": "The state does not say"
+      }
+    },
+    "server_hop_intent": {
+      "type": "choice",
+      "instructions": "Read `web.transport` and `request`. Does a changed tag send to the server container when the request did not ask for that?",
+      "criteria": {
+        "as_requested": "Matches the request",
+        "unrequested": "Sends to the server without being asked",
+        "none": "No transport change",
+        "unknown": "The state does not say"
+      }
+    }
+  },
+  "server": {
+    "claim_shift": {
+      "type": "choice",
+      "instructions": "Compare `server.claim_probes[].before_claimed_by` with `after_claimed_by`. Did a request move to a different client or become unclaimed?",
+      "criteria": {
+        "none": "Every probe is claimed by the same client",
+        "moved": "At least one request is claimed by a different client",
+        "unclaimed": "At least one request is now claimed by none",
+        "unknown": "The state does not say"
+      }
+    },
+    "data_exposure": {
+      "type": "choice",
+      "instructions": "Compare `server.event_data_probes[].before_params` with `after_params`. Does any destination receive more user data classes than before?",
+      "criteria": {
+        "less": "Fewer or the same",
+        "same": "No change",
+        "more": "More user data classes reach a destination",
+        "unknown": "The state does not say"
+      }
+    },
+    "transformation_matches_request": {
+      "type": "noul",
+      "instructions": "Does each changed entry in `server.transformations` do what `request` describes, on the tags it names?",
+      "criteria": {
+        "true": "Kind, parameters and affected tags match the request"
+      }
+    },
+    "destination_complete": {
+      "type": "noul",
+      "instructions": "For each changed entry in `server.destinations`, does the tag have the fields the request names?",
+      "criteria": {
+        "true": "Nothing the request names is missing"
+      }
+    }
+  },
+  "hard_stops_in_code": [
+    "flags.unresolved_refs is not empty",
+    "flags.partial_export is true",
+    "flags.opaque_code_touched is true",
+    "consent.tags_without_consent_setting_that_send_user_data is not empty",
+    "consent.touched is true (route to review whatever Jev says)",
+    "server.event_data_probes[].required_params_missing is not empty",
+    "server.event_data_probes[].user_data_classes_after gains a class on any destination",
+    "server.claim_probes has an after_claimed_by of null",
+    "server.destinations has a live_only tag in the change (Preview cannot observe it)"
+  ],
+  "audit": {
+    "name_fits_job": {
+      "type": "noul",
+      "instructions": "Does the name of the entity in `change` describe what it does, judging from its type, parameters and notes?",
+      "criteria": {
+        "true": "Name matches function"
+      }
+    },
+    "scope_matches_name": {
+      "type": "choice",
+      "instructions": "Compare the entity name with `web.trigger_probes[].after_matches`. Does the trigger fire on fewer, the same, or more pages than its name says?",
+      "criteria": {
+        "narrower": "Fires on fewer pages than named",
+        "as_named": "Fires on the pages its name says",
+        "broader": "Fires on pages its name does not say",
+        "unknown": "The state does not say"
+      }
+    },
+    "consent_fits_destination": {
+      "type": "choice",
+      "instructions": "Read `consent` and `server.destinations`. Do the tag's consent settings fit the vendor it sends to?",
+      "criteria": {
+        "appropriate": "Settings fit the destination",
+        "too_loose": "Destination may receive data without matching consent",
+        "too_strict": "Settings block more than the destination needs",
+        "unknown": "The state does not say"
+      }
+    },
+    "purpose_documented": {
+      "type": "noul",
+      "instructions": "Do the notes on the entity say why it exists?",
+      "criteria": {
+        "true": "A reason is written down"
+      }
+    }
+  },
+  "audit_rules": "Jev answers may raise a finding to review. They never lower a code severity and never clear a hard stop."
+}

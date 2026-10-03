@@ -81,6 +81,15 @@ export function score(container, snapshot) {
   try { return JSON.parse(r.stdout); } catch { return { error: "scorer printed non-JSON" }; }
 }
 
+// The client's best winner: the file from its best ledger, else the manifest's pick.
+export function bestWinner(c) {
+  const best = [...c.ledgers].sort((a, b) => b.bestScore - a.bestScore)[0];
+  const w = best && winningFor(c, best);
+  if (w) return w;
+  const m = c.manifest?.best?.file && `${c.dir}/${c.manifest.best.file}`;
+  return m && exists(m) ? m : c.winning[c.winning.length - 1] || null;
+}
+
 // The winning file a ledger produced: same timestamp in the name, else newest.
 export function winningFor(c, ledger) {
   const stamp = ledger.file.split("/").pop().replace(".json", "");

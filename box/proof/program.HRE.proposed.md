@@ -41,6 +41,8 @@ Falls back to 8-dimension structural scoring when no ads snapshot is provided.
 ### Learned habits (AutoLoop, review before merging)
 
 - Before round 0, send the mutation provider a one-line ping and stop the run if it doesn't answer, so a dead provider costs one call instead of five rounds. (Evidence: HRE, 7 silent rounds in 2 runs.)
+- When a tag gets consentStatus NEEDED, list the consent types it depends on in the same edit: ad_storage (and ad_user_data, ad_personalization) for ad pixels and conversion tags, analytics_storage for GA4. NEEDED with no types is a high-severity audit finding. (Evidence: HRE best-95.7pct-2026-04-08.json, 20 tags.)
+- Don't add Custom HTML tags or Custom JavaScript variables. Use a built-in tag type or a gallery template; if neither fits, skip the change and note it for a human. (Evidence: HRE best-95.7pct-2026-04-08.json, +2 opaque entities.)
 
 ## Constraints (INVARIANTS — mutations that violate these are rejected)
 

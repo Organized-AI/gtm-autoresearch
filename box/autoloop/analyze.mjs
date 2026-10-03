@@ -3,7 +3,8 @@
 // "Edit Strategy" (how to work). It never touches the evaluator, the weights,
 // the constraints, the mutation budget or the stop conditions. Those are the
 // fixed rules; a human owns them, the same way a human approves the checks.
-import { clients, rows, sections, findSection, HOW_RE, weightsFromProgram, score, winningFor, read } from "../checks/repo.mjs";
+import { clients, rows, sections, findSection, HOW_RE, weightsFromProgram, score, winningFor, bestWinner, read } from "../checks/repo.mjs";
+import { audit } from "../jev/run.mjs";
 
 const STALL = 3; // consecutive reverts on an unchanged container
 
@@ -99,10 +100,40 @@ export function analyze() {
       lines.push(`Before round 0, send the mutation provider a one-line ping and stop the run if it doesn't answer, so a dead provider costs one call instead of five rounds. (Evidence: ${c.id}, ${silentTotal} silent rounds in ${silent.length} runs.)`);
     }
 
+    // Habits 3-5: what the loop's keeps did to the Jev container audit. The
+    // scorer rewarded these rounds; the guide's audit (code, no model) flags them.
+    const owner = [];
+    const win = bestWinner(c);
+    if (win && c.tmpl) {
+      const a = audit(c.tmpl), b = audit(win);
+      const rose = (k) => (b.byCheck[k] || 0) - (a.byCheck[k] || 0);
+      const name = win.split("/").pop();
+      if (rose("AUD-CON-02") > 0) {
+        habits.push({ id: "consent-without-types", client: c.id, count: rose("AUD-CON-02"), ledger: win,
+          claim: `The winner sets consentStatus NEEDED on ${rose("AUD-CON-02")} tags without listing any consent type. The scorer's consent dimension counts that as 100%; the Jev container audit counts each one as high severity (AUD-CON-02), so high findings went ${a.counts.high}→${b.counts.high} while the score went up.` });
+        lines.push(`When a tag gets consentStatus NEEDED, list the consent types it depends on in the same edit: ad_storage (and ad_user_data, ad_personalization) for ad pixels and conversion tags, analytics_storage for GA4. NEEDED with no types is a high-severity audit finding. (Evidence: ${c.id} ${name}, ${rose("AUD-CON-02")} tags.)`);
+        owner.push(`evals/: make consentSettings require at least one consent type per NEEDED tag, so the score agrees with AUD-CON-02.`);
+      }
+      if (rose("AUD-OPQ-01") > 0) {
+        habits.push({ id: "adds-opaque-code", client: c.id, count: rose("AUD-OPQ-01"), ledger: win,
+          claim: `The loop added ${rose("AUD-OPQ-01")} Custom HTML tags or Custom JavaScript variables (AUD-OPQ-01 ${a.byCheck["AUD-OPQ-01"] || 0}→${b.byCheck["AUD-OPQ-01"]}). Opaque code is a hard stop in the Jev guide: Jev can't judge it and a person must read it.` });
+        lines.push(`Don't add Custom HTML tags or Custom JavaScript variables. Use a built-in tag type or a gallery template; if neither fits, skip the change and note it for a human. (Evidence: ${c.id} ${name}, +${rose("AUD-OPQ-01")} opaque entities.)`);
+      }
+      const doc = JSON.parse(read(win)); const cv = doc.containerVersion || doc;
+      const seen = {}; for (const t of cv.trigger || []) seen[t.name] = (seen[t.name] || 0) + 1;
+      const dups = Object.keys(seen).filter((k) => seen[k] > 1);
+      if (dups.length) {
+        habits.push({ id: "duplicate-trigger", client: c.id, count: dups.length, ledger: win,
+          claim: `The winner has ${dups.length} trigger name${dups.length > 1 ? "s" : ""} used twice (${dups.join(", ")}); one copy fires no tag. Unused triggers went ${a.byCheck["AUD-TRG-02"] || 0}→${b.byCheck["AUD-TRG-02"] || 0}.` });
+        lines.push(`Before adding a trigger, look for an existing trigger with the same name or the same filter and reuse it. (Evidence: ${c.id} ${name}, duplicate ${dups.join(", ")}.)`);
+      }
+    }
+    owner.push(`scripts/jev-shadow.ts: add the guide's container hard stops (consent touched, opaque code touched, unresolved refs, partial export) to shadowPolicy() ahead of the judge.`);
+
     if (lines.length) {
       const secs = sections(c.program);
       const how = findSection(secs, HOW_RE);
-      if (how) proposals.push({ client: c.id, file: c.programFile, section: how, before: secs[how], add: lines });
+      if (how) proposals.push({ client: c.id, file: c.programFile, section: how, before: secs[how], add: lines, owner: [...new Set(owner)] });
     }
   }
   return { habits, blind, proposals };

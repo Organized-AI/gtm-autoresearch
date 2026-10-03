@@ -11,12 +11,15 @@
 //                        how to work = Edit Strategy (the only part AutoLoop may edit)
 //   results.tsv       -> content/gtm-templates/<CLIENT>/loop-results/*.json
 //   AutoLoop          -> box/autoloop/analyze.mjs
-//   "passing checks isn't done" -> staging QA, observed-vs-configured, the Jev shadow judge
+//   "passing checks isn't done" -> the Jev container pipeline (guide.organizedai.vip/jev-container-json):
+//                        reader + hard stops + audit run in code, typed questions to Jev, policy decides;
+//                        plus staging QA and observed-vs-configured
 import { readdirSync, mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { clients, rows, read, exists, p, sections, findSection, FIXED_RE, HOW_RE, weightsFromProgram, score, winningFor } from "./repo.mjs";
+import { clients, rows, read, exists, p, sections, findSection, FIXED_RE, HOW_RE, weightsFromProgram, score, winningFor, bestWinner } from "./repo.mjs";
 import { analyze, applyProposal } from "../autoloop/analyze.mjs";
+import { readDiff, audit, opaqueTouched } from "../jev/run.mjs";
 
 const pass = (reason, evidence) => ({ result: "pass", reason, evidence });
 const fail = (reason, evidence) => ({ result: "fail", reason, evidence });
@@ -26,6 +29,9 @@ const pct = (x) => `${(x * 100).toFixed(1)}%`;
 
 let _scoreCache = new Map();
 const scoreOnce = (f, s) => { const k = `${f}|${s}`; if (!_scoreCache.has(k)) _scoreCache.set(k, score(f, s)); return _scoreCache.get(k); };
+const _jev = new Map();
+const jevDiff = (a, b) => { const k = `d|${a}|${b}`; if (!_jev.has(k)) _jev.set(k, readDiff(a, b)); return _jev.get(k); };
+const jevAudit = (a) => { const k = `a|${a}`; if (!_jev.has(k)) _jev.set(k, audit(a)); return _jev.get(k); };
 let _auto = null;
 const auto = () => (_auto ||= analyze());
 
@@ -168,6 +174,48 @@ export const CHECKS = [
   { gate: "g4", id: "shadow-judge", why: "Jev watches each keep/revert in shadow mode, journaled, with no authority over the loop.", run() {
     return exists("scripts/jev-shadow.ts") && exists("DOCUMENTATION/jev-shadow-pilot/RUBRIC-V2-RESULTS.md")
       ? pass("Jev shadow mode is wired into run-gtm-loop.ts with a frozen journal; rubric v2 results recorded; enforcement off") : fail("no Jev shadow path");
+  } },
+  { gate: "g4", id: "container-hard-stops", why: "Jev container guide: unresolved refs, partial export, opaque code touched and consent touched stop in code before any Jev answer counts.", run() {
+    const src = read("scripts/jev-shadow.ts");
+    const policy = src.slice(src.indexOf("export function shadowPolicy"));
+    const have = { consent: /consent/i.test(policy), opaque: /opaque/i.test(policy), unresolved: /unresolved/i.test(policy), partial: /partial/i.test(policy) };
+    const missing = Object.keys(have).filter((k) => !have[k]);
+    return missing.length ? fail(`shadowPolicy() lacks the guide's container hard stops for ${missing.join(", ")}. Only qa_absent keeps a consent change out of "keep" today`, ["scripts/jev-shadow.ts shadowPolicy()", "guide §14 Hard stops, by side"])
+      : pass("shadowPolicy() applies consent, opaque-code, unresolved-ref and partial-export stops before the judge");
+  } },
+  { gate: "g4", id: "winner-hard-stops", why: "Run the guide's reader on seed → best winner. Any hard stop means the winner goes to a person, whatever the score says.", run() {
+    const out = [];
+    for (const c of clients()) {
+      const w = bestWinner(c); if (!w || !c.tmpl) continue;
+      const d = jevDiff(c.tmpl, w);
+      const op = opaqueTouched(d, w, (f) => JSON.parse(read(f)));
+      const stops = [d.consent_touched && "consent touched", op.length && `opaque code touched (${op.length})`, d.unresolved_refs.length && `unresolved refs (${d.unresolved_refs.length})`].filter(Boolean);
+      out.push(`${c.id} ${w.split("/").pop()}: +${d.diff.added.length} added, ${d.diff.changed.length} changed · ${stops.length ? "hard stops: " + stops.join(", ") : "no hard stop"}`);
+    }
+    if (!out.length) return manual("no seed/winner pair to read");
+    return manual(`${out.filter((o) => /hard stops/.test(o)).length} of ${out.length} best winners hit a hard stop and must be reviewed by a person before publishing. The loop never publishes, so this is the correct lane, but nothing records the review`, out);
+  } },
+  { gate: "g4", id: "audit-not-worse", why: "The guide's audit on seed and winner. A higher score must not come with more high or critical findings.", run() {
+    const bad = [], ok = [];
+    for (const c of clients()) {
+      const w = bestWinner(c); if (!w || !c.tmpl) continue;
+      const a = jevAudit(c.tmpl), b = jevAudit(w);
+      const worse = Object.keys(b.byCheck).filter((k) => (b.byCheck[k] || 0) > (a.byCheck[k] || 0));
+      const line = `${c.id}: high ${a.counts.high}→${b.counts.high}, critical ${a.counts.critical}→${b.counts.critical}, medium ${a.counts.medium}→${b.counts.medium}; rose: ${worse.map((k) => `${k} ${a.byCheck[k] || 0}→${b.byCheck[k]}`).join(", ") || "none"}`;
+      (b.counts.high > a.counts.high || b.counts.critical > a.counts.critical ? bad : ok).push(line);
+    }
+    return bad.length ? fail(`${bad.length} winner scored higher and has more high/critical audit findings than its seed`, [...bad, ...ok]) : pass("no winner has more high or critical findings than its seed", ok);
+  } },
+  { gate: "g4", id: "evidence-reader-sound", why: "The state Jev reads is only as good as the reader. It must not flag GTM's built-in triggers as missing.", run() {
+    const c = clients().find((x) => x.tmpl && bestWinner(x)); if (!c) return manual("nothing to read");
+    const d = jevDiff(c.tmpl, bestWinner(c));
+    return d.builtin_refs_flagged ? fail(`the guide's read-container.mjs reports ${d.builtin_refs_flagged} references to GTM built-in triggers (2147479553 All Pages, 2147479573 Initialization) as unresolved, which would hard-stop every change. The box filters them; the shared reader should resolve them`, [`${c.id}: ${d.builtin_refs_flagged} built-in refs flagged, ${d.unresolved_refs.length} real`])
+      : pass("reader resolves built-in triggers");
+  } },
+  { gate: "g4", id: "question-set", why: "Ask the guide's typed questions (intent_fit, trigger_scope, consent_impact, name_fits_job, route_hint) on one state in one pass.", run() {
+    return /evidenceSufficient/.test(read("scripts/jev-shadow.ts"))
+      ? notBuilt("the loop's judge asks 2 atomic seed questions (evidence sufficient, tracking preserved); the guide's shared + web set (jev-gtm-questions.json) isn't wired, and jev-gateway asks one question per call")
+      : manual("check the judge's question set by hand");
   } },
   { gate: "g4", id: "staging-qa", why: "The video's restaurant case: 11/11 checks passed and the order form was still missing. Each kept round needs a preview-mode tag-firing check.", run() {
     return /qa: \{ status: "absent" \}/.test(read("scripts/run-gtm-loop.ts"))

@@ -42,6 +42,8 @@ Falls back to 8-dimension structural scoring when no ads snapshot is provided.
 
 - Before targeting a dimension, count the entity changes its fix needs. If it needs more than the mutation budget (3), skip it for this run, write it to the run notes for a human, and take the next dimension. (Evidence: BLADE 2026-04-29T143650.json rounds 6–29, triggerQuality needed 6.)
 - After 3 reverts in a row on the same target, switch to the dimension with the largest weighted gap (1 − score) × weight instead of the lowest raw score. (Evidence: same run; folderOrganization 5.2pp was never targeted.)
+- When a tag gets consentStatus NEEDED, list the consent types it depends on in the same edit: ad_storage (and ad_user_data, ad_personalization) for ad pixels and conversion tags, analytics_storage for GA4. NEEDED with no types is a high-severity audit finding. (Evidence: BLADE 2026-04-29T143650-blade-web.json, 114 tags.)
+- Before adding a trigger, look for an existing trigger with the same name or the same filter and reuse it. (Evidence: BLADE 2026-04-29T143650-blade-web.json, duplicate CE - add_payment_info.)
 
 ## Constraints (INVARIANTS — mutations that violate these are rejected)
 
