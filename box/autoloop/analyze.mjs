@@ -47,6 +47,7 @@ export function analyze() {
     const weights = weightsFromProgram(c.program);
     const budget = Number(c.program.match(/Max (\d+) entit/i)?.[1] || 3);
     const lines = [];
+    const owner = [];
 
     // Blind spot: a revert that doesn't say what it tried can't teach anything.
     const reverts = all.filter((r) => r.action === "reverted");
@@ -87,6 +88,27 @@ export function analyze() {
         lines.push(`After ${STALL} reverts in a row on the same target, switch to the dimension with the largest weighted gap (1 − score) × weight instead of the lowest raw score. (Evidence: same run; ${h.biggestGaps[0]} was never targeted.)`);
       }
       habits.push(h);
+      owner.push(`scripts/run-gtm-loop.ts: count a revert as a regression, as the field guide says (ch04: MAX_REGRESSIONS = 3 consecutive reverts). Today regressionCount only moves when the working score drops, which a revert never causes.`);
+    }
+
+    // Habit: kept rounds that bought the composite by lowering a dimension.
+    {
+      const traded = [];
+      for (const L of c.ledgers) {
+        let prev = L.startDimensions || null;
+        for (const r of L.results) {
+          if (r.action !== "improved") continue;
+          if (prev) { const d = Object.keys(r.dimensions).filter((k) => k in prev && r.dimensions[k] < prev[k] - 1e-9); if (d.length) traded.push({ L, r, d }); }
+          prev = r.dimensions;
+        }
+      }
+      if (traded.length >= 2) {
+        const dims = [...new Set(traded.flatMap((t) => t.d))];
+        habits.push({ id: "trades-dimensions", client: c.id, count: traded.length,
+          claim: `${traded.length} kept rounds raised the composite while lowering ${dims.join(" and ")} (${traded.map((t) => `r${t.r.round}`).join(", ")}). The drops are small, but nothing stops a large one: the field guide (ch02) calls for per-dimension floors, and the loop has none.` });
+        lines.push(`Prefer edits that leave every dimension at or above its current score. When an edit lowers one, say which and by how much in the round record. (Evidence: ${c.id}, ${traded.length} kept rounds lowered ${dims.join(", ")}.)`);
+        owner.push(`program.md + scripts/run-gtm-loop.ts: write per-dimension floors before the run (field guide ch02) and reject any candidate that crosses one, whatever the composite does.`);
+      }
     }
 
     // Habit 2: the mutation provider went silent and rounds were burned on it.
@@ -102,7 +124,6 @@ export function analyze() {
 
     // Habits 3-5: what the loop's keeps did to the Jev container audit. The
     // scorer rewarded these rounds; the guide's audit (code, no model) flags them.
-    const owner = [];
     const win = bestWinner(c);
     if (win && c.tmpl) {
       const a = audit(c.tmpl), b = audit(win);
@@ -128,7 +149,7 @@ export function analyze() {
         lines.push(`Before adding a trigger, look for an existing trigger with the same name or the same filter and reuse it. (Evidence: ${c.id} ${name}, duplicate ${dups.join(", ")}.)`);
       }
     }
-    owner.push(`scripts/jev-shadow.ts: add the guide's container hard stops (consent touched, opaque code touched, unresolved refs, partial export) to shadowPolicy() ahead of the judge.`);
+    owner.push(`scripts/jev-shadow.ts: map the container guide's hard stops (consent touched, opaque code touched, unresolved refs, partial export) into shadowPolicy() as a versioned shadow change: recorded with reason codes, not enforced (field guide ch05).`);
 
     if (lines.length) {
       const secs = sections(c.program);

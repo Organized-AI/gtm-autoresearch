@@ -3,7 +3,8 @@
 // says "not_built"; it never passes by default.
 //
 // The gates follow the loop from the video (Karpathy loop + AutoLoop) mapped
-// onto this repo:
+// onto this repo, and hold the code to what the field guide says it does
+// (guide.organizedai.vip/gtm-autoresearch, chapters 01-08):
 //   train.py          -> the client's seed container JSON (the one mutable file)
 //   scoring file      -> evals/eval_gtm_signal_quality.ts (must be locked)
 //   program.md        -> content/gtm-templates/<CLIENT>/program.md
@@ -93,7 +94,7 @@ export const CHECKS = [
   { gate: "g1", id: "fixed-rules-enforced", why: "Editing the Constraints or Edit Strategy in program.md has to change what the loop does.", run() {
     const loop = read("scripts/run-gtm-loop.ts");
     const hard = /const strategyOrder = \[/.test(loop) && /const constraints = \[/.test(loop);
-    return hard ? fail("parseProgram() reads only the file paths from program.md. strategyOrder and constraints are hardcoded arrays, and pickStrategy() ignores strategyOrder, so editing either section changes nothing", ["scripts/run-gtm-loop.ts parseProgram(), pickStrategy()"])
+    return hard ? fail("parseProgram() reads only the file paths from program.md. strategyOrder and constraints are hardcoded arrays, and pickStrategy() ignores strategyOrder, so editing either section changes nothing. The field guide (ch01, step 2) says the strategy order and constraints from program.md become the mutation prompt", ["scripts/run-gtm-loop.ts parseProgram(), pickStrategy()", "guide ch01 · The five steps of one round"])
       : pass("parseProgram() reads Constraints and Edit Strategy from program.md");
   } },
   { gate: "g1", id: "weights-agree", why: "The weights a human reads in program.md must be the weights the scorer applies.", run() {
@@ -110,6 +111,37 @@ export const CHECKS = [
     return bad.length ? fail(`${bad.map((b) => b.split(":")[0]).join(", ")} is scored on different dimensions or weights than its program.md says`, [...bad, ...out]) : pass("program.md weights match the scorer for every client", out);
   } },
 
+  { gate: "g1", id: "dimension-floors", why: "Guide ch02: one weighted number is gameable. Per-dimension floors, written before the run and enforced in code, stop a critical property being traded for a better average.", run() {
+    const loop = read("scripts/run-gtm-loop.ts");
+    const kept = [], drops = [];
+    for (const c of clients()) for (const L of c.ledgers) {
+      let prev = L.startDimensions || null;
+      for (const r of L.results) {
+        if (r.action !== "improved") continue;
+        if (prev) {
+          kept.push(r);
+          const d = Object.keys(r.dimensions).filter((k) => k in prev && r.dimensions[k] < prev[k] - 1e-9);
+          if (d.length) drops.push(`${c.id} ${L.file.split("/").pop()} r${r.round} ${r.mutationSummary}: ${d.map((k) => `${k} ${(prev[k] * 100).toFixed(1)}→${(r.dimensions[k] * 100).toFixed(1)}`).join(", ")}`);
+        }
+        prev = r.dimensions;
+      }
+    }
+    const enforced = /floor/i.test(loop);
+    return enforced ? pass("the loop checks per-dimension floors before keeping")
+      : fail(`no floors in the loop: keep is combined score only. ${drops.length} of ${kept.length} measurable kept rounds lowered at least one dimension`, drops);
+  } },
+  { gate: "g1", id: "snapshot-fresh", why: "Guide ch02: a snapshot older than 72 hours refuses to run, older than 24 warns, and a partial snapshot means the ads dimensions are half-blind.", run() {
+    const out = [], bad = [];
+    for (const c of clients()) {
+      if (!c.snap) continue;
+      const snap = JSON.parse(read(c.snap));
+      const h = snap.generated_at ? (Date.now() - Date.parse(snap.generated_at)) / 36e5 : null;
+      const line = `${c.id}: ${c.snap} generated ${snap.generated_at || "?"} (${h == null ? "?" : Math.round(h / 24) + " days"} old), partial=${!!snap.partial}`;
+      (h == null || h > 72 || snap.partial ? bad : out).push(line);
+    }
+    return bad.length ? fail(`${bad.length} client snapshot${bad.length > 1 ? "s are" : " is"} stale or partial; the loop will exit until /refresh-ads-snapshot runs, and the recorded runs scored against partial data`, [...bad, ...out]) : pass("every snapshot is fresh and complete", out);
+  } },
+
   // ── G2 · The ledger can teach ─────────────────────────────────────────────
   { gate: "g2", id: "ledger-exists", why: "Every run leaves a round-by-round record: the results.tsv of this loop.", run() {
     const cs = clients(); const n = cs.reduce((a, c) => a + c.ledgers.length, 0); const r = cs.reduce((a, c) => a + rows(c).length, 0);
@@ -119,11 +151,11 @@ export const CHECKS = [
   { gate: "g2", id: "attempt-recorded", why: "AutoLoop learns from what was tried and what still failed. A revert that only says 'reverted' teaches nothing.", run() {
     const b = auto().blind; const rev = b.reduce((a, x) => a + x.reverted, 0), d = b.reduce((a, x) => a + x.described, 0);
     return rev && d === rev ? pass(`all ${rev} reverted rounds record strategy, operations and candidate scores`)
-      : fail(`${rev - d} of ${rev} reverted rounds record only "X% <= Y%, reverted": no strategy, no operations, no candidate dimensions`, b.map((x) => `${x.client}: ${x.described}/${x.reverted} described`));
+      : fail(`${rev - d} of ${rev} reverted rounds record only "X% <= Y%, reverted": no strategy, no operations, no candidate dimensions. The guide's receipt (ch04) also asks for baseline/candidate hashes, validator result, QA status, judge identity, typed answers and shadow route`, [...b.map((x) => `${x.client}: ${x.described}/${x.reverted} described`), "shadow-results/ holds most of the receipt, but only when JEV_MODE=shadow"]);
   } },
   { gate: "g2", id: "stall-stop", why: "Failed rounds still cost tokens. A run should stop when it stops learning.", run() {
     const stalls = auto().habits.filter((h) => h.id === "same-target-stall");
-    return stalls.length ? fail(stalls.map((h) => `${h.client}: ${h.count} of ${h.of} rounds reverted in a row (rounds ${h.rounds}) and no stop fired`).join("; "), stalls.map((h) => h.ledger))
+    return stalls.length ? fail(stalls.map((h) => `${h.client}: ${h.count} of ${h.of} rounds reverted in a row (rounds ${h.rounds}) and no stop fired`).join("; ") + ". The guide (ch01, ch04) says MAX_REGRESSIONS = 3 consecutive reverts; the code only counts a drop in the working score, which a revert never causes", [...stalls.map((h) => h.ledger), "scripts/run-gtm-loop.ts regressionCount", "guide ch04 · Stop conditions and knobs"])
       : pass("no run reverted 3+ rounds in a row on an unchanged container");
   } },
   { gate: "g2", id: "failure-stop", why: "Five provider failures in a row must end the run.", run() {
@@ -175,13 +207,13 @@ export const CHECKS = [
     return exists("scripts/jev-shadow.ts") && exists("DOCUMENTATION/jev-shadow-pilot/RUBRIC-V2-RESULTS.md")
       ? pass("Jev shadow mode is wired into run-gtm-loop.ts with a frozen journal; rubric v2 results recorded; enforcement off") : fail("no Jev shadow path");
   } },
-  { gate: "g4", id: "container-hard-stops", why: "Jev container guide: unresolved refs, partial export, opaque code touched and consent touched stop in code before any Jev answer counts.", run() {
+  { gate: "g4", id: "container-hard-stops", why: "Container guide §14: consent touched, opaque code, unresolved refs and partial exports stop in code before any Jev answer counts. Field guide ch05: in this pilot they arrive first as a versioned shadow policy change.", run() {
     const src = read("scripts/jev-shadow.ts");
     const policy = src.slice(src.indexOf("export function shadowPolicy"));
     const have = { consent: /consent/i.test(policy), opaque: /opaque/i.test(policy), unresolved: /unresolved/i.test(policy), partial: /partial/i.test(policy) };
     const missing = Object.keys(have).filter((k) => !have[k]);
-    return missing.length ? fail(`shadowPolicy() lacks the guide's container hard stops for ${missing.join(", ")}. Only qa_absent keeps a consent change out of "keep" today`, ["scripts/jev-shadow.ts shadowPolicy()", "guide §14 Hard stops, by side"])
-      : pass("shadowPolicy() applies consent, opaque-code, unresolved-ref and partial-export stops before the judge");
+    return missing.length ? notBuilt(`the container guide's hard stops for ${missing.join(", ")} aren't mapped into shadowPolicy() yet. Field guide ch05: map each rule to the implementation and version it as a shadow policy change; it doesn't become enforcement by appearing in a diagram`)
+      : pass("shadowPolicy() records consent, opaque-code, unresolved-ref and partial-export stops, as a versioned shadow change");
   } },
   { gate: "g4", id: "winner-hard-stops", why: "Run the guide's reader on seed → best winner. Any hard stop means the winner goes to a person, whatever the score says.", run() {
     const out = [];
@@ -204,7 +236,7 @@ export const CHECKS = [
       const line = `${c.id}: high ${a.counts.high}→${b.counts.high}, critical ${a.counts.critical}→${b.counts.critical}, medium ${a.counts.medium}→${b.counts.medium}; rose: ${worse.map((k) => `${k} ${a.byCheck[k] || 0}→${b.byCheck[k]}`).join(", ") || "none"}`;
       (b.counts.high > a.counts.high || b.counts.critical > a.counts.critical ? bad : ok).push(line);
     }
-    return bad.length ? fail(`${bad.length} winner scored higher and has more high/critical audit findings than its seed`, [...bad, ...ok]) : pass("no winner has more high or critical findings than its seed", ok);
+    return bad.length ? fail(`${bad.length} winners scored higher and have more high/critical audit findings than their seeds. The audit is a separate workflow (field guide ch08), used here as a second opinion on the winner, not a gate on rounds`, [...bad, ...ok]) : pass("no winner has more high or critical findings than its seed", ok);
   } },
   { gate: "g4", id: "evidence-reader-sound", why: "The state Jev reads is only as good as the reader. It must not flag GTM's built-in triggers as missing.", run() {
     const c = clients().find((x) => x.tmpl && bestWinner(x)); if (!c) return manual("nothing to read");
@@ -212,10 +244,21 @@ export const CHECKS = [
     return d.builtin_refs_flagged ? fail(`the guide's read-container.mjs reports ${d.builtin_refs_flagged} references to GTM built-in triggers (2147479553 All Pages, 2147479573 Initialization) as unresolved, which would hard-stop every change. The box filters them; the shared reader should resolve them`, [`${c.id}: ${d.builtin_refs_flagged} built-in refs flagged, ${d.unresolved_refs.length} real`])
       : pass("reader resolves built-in triggers");
   } },
-  { gate: "g4", id: "question-set", why: "Ask the guide's typed questions (intent_fit, trigger_scope, consent_impact, name_fits_job, route_hint) on one state in one pass.", run() {
-    return /evidenceSufficient/.test(read("scripts/jev-shadow.ts"))
-      ? notBuilt("the loop's judge asks 2 atomic seed questions (evidence sufficient, tracking preserved); the guide's shared + web set (jev-gtm-questions.json) isn't wired, and jev-gateway asks one question per call")
-      : manual("check the judge's question set by hand");
+  { gate: "g4", id: "judge-contract-frozen", why: "Field guide ch05-06: two atomic questions, a frozen rubric hashed into one manifest, and pending or modified definitions rejected before any provider call.", run() {
+    const src = read("scripts/jev-shadow.ts");
+    const ok = /evidenceSufficient/.test(src) && /trackingBehaviorPreserved/.test(src) && /manifestHash/.test(src) && exists("DOCUMENTATION/jev-shadow-pilot/rubric-v2.json");
+    return ok ? pass("two atomic questions, manifest-hashed frozen definition, rubric v2 on file (evidence agreement 11/12, tracking 9/12 against unreviewed synthetic labels)") : fail("the frozen two-question contract isn't intact");
+  } },
+  { gate: "g4", id: "broader-quiz", why: "The container guide's typed set (intent_fit, trigger_scope, mapping_complete, consent_impact, name_fits_job, route_hint). Field guide ch06: a different contract, not an alias.", run() {
+    return notBuilt("a migration to evaluate: freeze types, labels, escape behavior, policy mapping and thresholds first, then measure it against the two-question baseline. jev-gateway also asks one question per call today");
+  } },
+  { gate: "g4", id: "holdout-untouched", why: "Field guide ch07-08: promotion is decided on an untouched, group-disjoint holdout. Peeking turns it into development data.", run() {
+    const st = read("AGENT-HANDOFF/CURRENT-STATE.md");
+    return /holdout (remain|remains )?unopened|validation and holdout unopened|Validation\/holdout unopened/i.test(st)
+      ? pass("CURRENT-STATE records validation and holdout as unopened after every run so far") : manual("confirm the holdout is unopened");
+  } },
+  { gate: "g4", id: "promotion-stage", why: "Field guide ch08 adoption ladder: evidence builder → shadow baseline → reviewed evaluation → optional enforcement → production publishing (always human).", run() {
+    return manual("stage 2 of 5, shadow baseline. Stage 1 needs the evidence builder tested (the container guide's reader fails on built-in triggers); stage 3 needs reviewed real labels and Preview evidence");
   } },
   { gate: "g4", id: "staging-qa", why: "The video's restaurant case: 11/11 checks passed and the order form was still missing. Each kept round needs a preview-mode tag-firing check.", run() {
     return /qa: \{ status: "absent" \}/.test(read("scripts/run-gtm-loop.ts"))

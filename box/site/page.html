@@ -161,7 +161,7 @@
 <nav>
   <div class="wrap">
     <a class="brand" href="#top">OrganizedAI · <b>Autoresearch in a Box</b></a>
-    <div class="links"><a href="#proof">Proof</a><a href="#map">Map</a><a href="#gates">Gates</a><a href="#jev">Jev lane</a><a href="#autoloop">AutoLoop</a><a class="hide-sm" href="#plan">Plan</a><a class="hide-sm" href="#prompt">Prompt</a></div>
+    <div class="links"><a href="#proof">Proof</a><a href="#map">Map</a><a class="hide-sm" href="#guide">Guide</a><a href="#gates">Gates</a><a href="#jev">Jev lane</a><a href="#autoloop">AutoLoop</a><a class="hide-sm" href="#plan">Plan</a><a class="hide-sm" href="#prompt">Prompt</a></div>
   </div>
 </nav>
 
@@ -197,14 +197,14 @@
   <div class="wrap">
     <div class="kicker">Proof · first run on the real repo</div>
     <h2>Pointed at gtm-autoresearch, the box found why BLADE stalled at 77.3%.</h2>
-    <p class="lead">Everything here comes from the run in the stream above: <code>arb check all</code> and <code>arb autoloop</code> on <code>main</code> at <code>62dfaa3</code>, reading the 7 recorded run ledgers. Every score was produced by the repo's own scorer, and every audit finding by the Jev container guide's own scripts. The box reimplements neither, and it called no model, ad platform or GTM API.</p>
+    <p class="lead">The run checks the code against two references: the <a href="https://guide.organizedai.vip/gtm-autoresearch/">GTM AutoResearch field guide</a> (what the loop is supposed to do) and the <a href="https://guide.organizedai.vip/jev-container-json/">Jev container guide</a> (how a winner should be judged). Everything here comes from the run in the stream above: <code>arb check all</code> and <code>arb autoloop</code> on <code>main</code> at <code>62dfaa3</code>, reading the 7 recorded run ledgers. Every score was produced by the repo's own scorer, and every audit finding by the Jev container guide's own scripts. The box reimplements neither, and it called no model, ad platform or GTM API.</p>
     <div class="findings">
       <div class="f"><b class="bad">24/30</b><span>BLADE rounds reverted in a row, and no stop condition fired</span></div>
       <div class="f"><b class="bad">6 &gt; 3</b><span>entity changes the stuck fix needs, against a mutation budget of 3</span></div>
       <div class="f"><b class="bad">36/36</b><span>reverted rounds that don't record what was tried</span></div>
       <div class="f"><b class="ok">77.3%</b><span>BLADE's winner re-scored today, matching its ledger exactly</span></div>
       <div class="f"><b class="bad">0</b><span>program.md sections the loop reads besides file paths; strategy and constraints are hardcoded</span></div>
-      <div class="f"><b class="mid">11 vs 12</b><span>dimensions HRE is scored on vs what its program.md lists (no Google Ads data)</span></div>
+      <div class="f"><b class="mid">10 of 17</b><span>kept rounds that raised the composite by lowering a dimension; the loop has no floors</span></div>
       <div class="f"><b class="bad">43→157</b><span>high-severity Jev audit findings, BLADE seed to winner, while the score rose 53.6→77.3%</span></div>
       <div class="f"><b class="bad">2 of 2</b><span>best winners that trip a Jev hard stop (consent touched, opaque code touched)</span></div>
     </div>
@@ -239,6 +239,24 @@
         <thead><tr><th>In the video</th><th>In gtm-autoresearch</th><th>Check</th></tr></thead>
         <tbody id="mapRows"></tbody>
       </table>
+    </div>
+  </div>
+</section>
+
+<section id="guide">
+  <div class="wrap">
+    <div class="kicker">Exhibit A2 · The field guide, chapter by chapter</div>
+    <h2>Each chapter's claim, held to the code</h2>
+    <p class="lead">The field guide already maps the video in chapter 01 and names the meta layer: it "may not touch the scorer or the Jev gates." The box takes each chapter's checkable claims and runs them. Shadow stays shadow: where the guide calls a rule a future gate, the check reports "not built", never "fail".</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Chapter</th><th>The guide says</th><th>Checks</th></tr></thead>
+        <tbody id="guideRows"></tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <strong>Three places where the guide and the code disagree.</strong>
+      <p><b>Reverts and the regression stop.</b> Chapters 01 and 04 say a revert "increments the regression counter" and MAX_REGRESSIONS is "3 consecutive reverts". In <code>run-gtm-loop.ts</code>, <code>regressionCount</code> only moves when the working score drops, and a revert never drops it. That is why BLADE ran 24 reverts in a row. <b>program.md and the prompt.</b> Chapter 01 says the strategy order and constraints from program.md become the mutation prompt. <code>parseProgram()</code> reads only file paths; both lists are hardcoded. <b>The first run.</b> Chapter 04 records it as 84.3% → 91.2%, "2 kept, 3 reverted". The ledger <code>2026-04-07T231552.json</code> shows 3 kept, 0 reverted and 2 rounds with no response from the mutation provider. Fix the code for the first two and the table for the third.</p>
     </div>
   </div>
 </section>
@@ -302,15 +320,15 @@
           <tr><td class="id">2 · Resolve references</td><td>code</td><td>loop checks IDs it allocates</td><td>0 real unresolved refs; 35 built-in trigger refs the guide's reader wrongly flags</td></tr>
           <tr><td class="id">3 · Canonicalize</td><td>code</td><td><code>stableJson</code> + hash in shadow evidence</td><td>sha256:9b23… → sha256:d752…</td></tr>
           <tr><td class="id">4 · Diff + blast radius</td><td>code</td><td><code>entityDiff</code> in shadow evidence</td><td>17 added, 105 changed (consent status on all 105, 41 renames, 11 folder moves)</td></tr>
-          <tr><td class="id">5 · Hard stops</td><td>code</td><td><span class="chip fail">missing</span> shadowPolicy has none of these</td><td>consent touched · opaque code touched on 29 entities</td></tr>
-          <tr><td class="id">6 · Typed questions</td><td>Jev</td><td><span class="chip not_built">2 seed questions</span> evidence sufficient, tracking preserved</td><td>guide set not run: intent_fit, trigger_scope, consent_impact, name_fits_job, route_hint</td></tr>
-          <tr><td class="id">7 · Policy</td><td>code</td><td>keep / review / revert, shadow only</td><td>a hard stop caps it at review, whatever the score</td></tr>
-          <tr><td class="id">Audit</td><td>code</td><td><span class="chip fail">not run</span></td><td>high 43→157: AUD-CON-02 0→114 (consent NEEDED with no types), unused triggers 4→6</td></tr>
+          <tr><td class="id">5 · Hard stops</td><td>code</td><td><span class="chip not_built">not mapped</span> shadowPolicy records none of these yet</td><td>consent touched · opaque code touched on 29 entities</td></tr>
+          <tr><td class="id">6 · Typed questions</td><td>Jev</td><td><span class="chip pass">frozen</span> two atomic questions, rubric v2</td><td>the six-question review set is a separate contract (field guide ch06), not run</td></tr>
+          <tr><td class="id">7 · Policy</td><td>code</td><td>keep / review / revert, shadow only; the loop decides by score</td><td>under the container guide, a hard stop would cap it at review</td></tr>
+          <tr><td class="id">Audit</td><td>code</td><td><span class="chip not_built">not run</span> a separate workflow (ch08)</td><td>high 43→157: AUD-CON-02 0→114 (consent NEEDED with no types), unused triggers 4→6</td></tr>
         </tbody>
       </table>
     </div>
     <div class="callout">
-      <strong>Both clients show the same pattern, which makes it a habit, not an accident.</strong>
+      <strong>Both clients show the same pattern, so it's a habit, not an accident.</strong>
       <p>To raise the consent dimension, the loop set <code>consentStatus: NEEDED</code> and stopped there. The scorer counts that as 100%. The guide's audit counts a NEEDED tag with no consent types as high severity. BLADE went from 105 medium findings (no consent setting) to 114 high ones; HRE from 0 to 20, and HRE's winner also added 2 Custom HTML or Custom JavaScript entities, which the guide treats as a hard stop. AutoLoop turns this into a how-to-work rule below. The scorer fix goes to the owner, because AutoLoop may not touch <code>evals/</code>.</p>
     </div>
   </div>
@@ -319,7 +337,7 @@
 <section id="autoloop">
   <div class="wrap">
     <div class="kicker">Exhibit E · AutoLoop's first read</div>
-    <h2>Seven habits across two clients, and the rewrite it proposes</h2>
+    <h2>Nine habits across two clients, and the rewrite it proposes</h2>
     <p class="lead">AutoLoop may change one section of each program.md: "Edit Strategy", the how-to-work part. Constraints, the mutation budget, stop conditions, the weights and <code>evals/</code> are fixed rules a human owns. The <code>autoloop-scope</code> check applies each proposal to a copy and confirms every other section is byte-identical. Nothing has been written to program.md.</p>
     <div class="habits" id="habitList"></div>
     <div class="callout">
@@ -361,11 +379,11 @@ node box/cli/arb.mjs replay \
     <div class="kicker">Exhibit G · Phased plan</div>
     <h2>Build order, gate by gate</h2>
     <div class="phases">
-      <div class="ph"><div class="n">Phase 0<small>this session</small></div><p><b>Box exists and runs.</b> <code>arb</code> CLI with 27 checks, the Jev guide's reader and audit vendored in <code>box/jev/</code>, AutoLoop analyzer, Worker with SSE stream, D1 schema, <code>box.yml</code> CI, and a recorded proof run on the real repo. Branch <code>feat/autoresearch-in-a-box</code>.</p></div>
-      <div class="ph"><div class="n">Phase 1 · G1<small>lock the scorer</small></div><p><b>Make the contract real.</b> Add <code>.claude/settings.json</code> denying edits to <code>evals/**</code>. Rewrite <code>parseProgram()</code> to read Constraints, Mutation Budget and Edit Strategy from program.md, and make <code>pickStrategy()</code> follow them. Fix HRE's weights table or add Google Ads to its snapshot so 12 means 12.</p></div>
-      <div class="ph"><div class="n">Phase 2 · G2<small>a ledger that teaches</small></div><p><b>Record every attempt.</b> Each round writes strategy, operations, candidate dimensions and the dimensions still failing, reverted or not. Add a stall stop (3 reverts in a row on an unchanged container). Keep <code>manifest.json</code> pointed at the best winner automatically.</p></div>
+      <div class="ph"><div class="n">Phase 0<small>this session</small></div><p><b>Box exists and runs.</b> <code>arb</code> CLI with 32 checks tied to the field guide's chapters, the Jev guide's reader and audit vendored in <code>box/jev/</code>, AutoLoop analyzer, Worker with SSE stream, D1 schema, <code>box.yml</code> CI, and a recorded proof run on the real repo. Branch <code>feat/autoresearch-in-a-box</code>.</p></div>
+      <div class="ph"><div class="n">Phase 1 · G1<small>lock the scorer</small></div><p><b>Make the code match the guide.</b> Add <code>.claude/settings.json</code> denying edits to <code>evals/**</code>, the Jev rubric and <code>box/</code>. Rewrite <code>parseProgram()</code> to read Constraints, Mutation Budget and Edit Strategy, and make <code>pickStrategy()</code> follow them. Write per-dimension floors. Refresh both snapshots (the loop exits on them today). Fix HRE's weights table or add Google Ads data.</p></div>
+      <div class="ph"><div class="n">Phase 2 · G2<small>a ledger that teaches</small></div><p><b>Record every attempt.</b> Each round writes the field guide's receipt: strategy, operations, hashes, validator result, candidate dimensions, QA status and shadow route, reverted or not. Make a revert count as a regression, as chapter 04 says. Keep <code>manifest.json</code> pointed at the best winner. Correct the chapter 04 first-run row.</p></div>
       <div class="ph"><div class="n">Phase 3 · G3<small>AutoLoop live</small></div><p><b>Proposals as pull requests.</b> <code>arb autoloop --pr</code> opens a PR touching only Edit Strategy, with the evidence rounds in the body. Only the owner merges. Rerun BLADE with the merged habits and compare against 77.3%.</p></div>
-      <div class="ph"><div class="n">Phase 4 · G4<small>the Jev lane</small></div><p><b>Passing the scorer isn't done.</b> Put the guide's hard stops in <code>shadowPolicy()</code>, fix the shared reader so built-in triggers resolve, run the guide's audit on every candidate and reject any keep that adds high or critical findings. Wire the guide's question set through a multi-question jev-gateway route. Then preview-mode QA per kept round and jev-site-scan for configured vs observed. Jev stays shadow-only.</p></div>
+      <div class="ph"><div class="n">Phase 4 · G4<small>judgment, shadow first</small></div><p><b>Climb the ladder one rung at a time.</b> Stage 1: fix the shared reader so built-in triggers resolve, and test the evidence builder. Stage 2: map the container hard stops into <code>shadowPolicy()</code> as a versioned shadow change, and record the audit delta in each receipt. Then preview-mode QA per kept round and jev-site-scan. The six-question quiz is a separate contract to freeze and evaluate. Enforcement waits for stage 3: reviewed real labels, Preview evidence and the untouched holdout.</p></div>
       <div class="ph"><div class="n">Phase 5<small>deploy + distribute</small></div><p><b>One link per client.</b> Deploy the Worker, point CI at it, and publish the guide under <code>guide.organizedai.vip/gtm-autoresearch/box</code>. Package <code>box/</code> so a new client folder gets the same gates.</p></div>
     </div>
   </div>
@@ -380,9 +398,9 @@ node box/cli/arb.mjs replay \
 
 Work in /Users/supabowl/gtm-autoresearch (clone github.com/Organized-AI/gtm-autoresearch if missing). Check out branch feat/autoresearch-in-a-box.
 
-First step: apply the Organized Codebase agent templates to .claude/ before writing code. Then read CLAUDE.md and AGENT-HANDOFF/CURRENT-STATE.md.
+First step: apply the Organized Codebase agent templates to .claude/ before writing code. Then read CLAUDE.md, AGENT-HANDOFF/CURRENT-STATE.md, and the field guide chapters at guide.organizedai.vip/gtm-autoresearch (01-08). Where the guide and code disagree, fix the code unless the guide's number is the error.
 
-Context: box/ is "Autoresearch in a Box", an FDE package that maps the Karpathy loop + AutoLoop onto this repo. The inner loop (scripts/run-gtm-loop.ts) is unchanged. box/ adds `arb check` (27 checks, gates G0-G4, G4 runs the Jev container guide's reader and audit from box/jev/), `arb autoloop` (reads loop-results ledgers, finds recurring habits, proposes a rewrite of the "Edit Strategy" section of program.md only), a Worker with D1 + SSE run view, and .github/workflows/box.yml. The recorded proof is box/proof/2026-10-03-gtm-autoresearch.jsonl: 11 pass, 10 fail, 2 manual, 4 not built.
+Context: box/ is "Autoresearch in a Box", an FDE package that maps the Karpathy loop + AutoLoop onto this repo. The inner loop (scripts/run-gtm-loop.ts) is unchanged. box/ adds `arb check` (32 checks, gates G0-G4, each tied to a field guide chapter; G4 runs the Jev container guide's reader and audit from box/jev/), `arb autoloop` (reads loop-results ledgers, finds recurring habits, proposes a rewrite of the "Edit Strategy" section of program.md only), a Worker with D1 + SSE run view, and .github/workflows/box.yml. The recorded proof is box/proof/2026-10-03-gtm-autoresearch.jsonl: 13 pass, 11 fail, 3 manual, 5 not built.
 
 Deploy first:
 1. cd box &amp;&amp; npx wrangler d1 create autoresearch-in-a-box, put the id in wrangler.jsonc, npx wrangler d1 migrations apply autoresearch-in-a-box --remote
@@ -391,10 +409,10 @@ Deploy first:
 4. cp box/templates/box.yml .github/workflows/box.yml (the GitHub App here could not push workflows), then gh variable set ARB_URL and gh secret set ARB_INGEST_TOKEN on the repo so box.yml streams.
 
 Then work gate by gate. A gate is done only when `node box/cli/arb.mjs check &lt;gate&gt;` passes. Never edit box/checks to make a check pass.
-G1  Copy box/templates/claude-settings.json to .claude/settings.json (deny Edit/Write on evals/** and box/checks/**). Rewrite parseProgram() so Constraints, Mutation Budget, Stop Conditions and Edit Strategy come from program.md, and make pickStrategy() honor Edit Strategy. Keep the existing tests green and add one test proving an Edit Strategy change alters the chosen target. Fix HRE: either its program.md table lists the 11 dimensions it is actually scored on, or refresh the snapshot with Google Ads data.
-G2  Every RoundResult records strategy, operations, candidateScore, candidateDimensions and failingDimensions, for reverted rounds too. Add a stall stop: 3 consecutive reverts on an unchanged container. Update content/gtm-templates/*/manifest.json "best" automatically when a run beats it (BLADE is stale: 76.8 vs 77.3).
+G1  Copy box/templates/claude-settings.json to .claude/settings.json (deny edits to evals/**, box/checks/**, box/jev/**, the Jev rubrics). Rewrite parseProgram() so Constraints, Mutation Budget, Stop Conditions and Edit Strategy come from program.md, and make pickStrategy() honor Edit Strategy (guide ch01). Add per-dimension floors to program.md and reject candidates that cross one (guide ch02). Keep tests green and add one test proving an Edit Strategy change alters the chosen target. Refresh both ads snapshots (both are partial and months old; the loop exits). Fix HRE: its table lists the 11 dimensions it is scored on, or the snapshot gains Google Ads data.
+G2  Every RoundResult carries the guide's receipt (ch04): strategy, operations, baseline/candidate hashes, validator result, candidateScore, candidateDimensions, failingDimensions, QA status, shadow route; reverted rounds too. Make a revert increment regressionCount so MAX_REGRESSIONS = 3 consecutive reverts works as the guide says. Update manifest.json "best" automatically (BLADE is stale: 76.8 vs 77.3). Correct guide ch04's first-run row to the ledger: 3 kept, 0 reverted, 2 provider failures.
 G3  Add `arb autoloop --pr`: writes the proposal to a branch and opens a PR that changes only the Edit Strategy section, with the evidence rounds in the body. Only the owner merges. Then rerun BLADE with the merged habits and report the score against 77.3%.
-G4  The Jev lane (guide.organizedai.vip/jev-container-json). Add the guide's hard stops to shadowPolicy() in scripts/jev-shadow.ts ahead of the judge: consent touched, opaque code touched, unresolved refs, partial export. Fix the shared reader so GTM built-in triggers (2147479553, 2147479572, 2147479573) resolve, then copy it into box/jev/. Run the guide's audit on every candidate and revert any keep that adds high or critical findings (today BLADE goes 43→157 high). Wire jev-gtm-questions.json (shared + web set) through a jev-gateway route that answers several questions on one state. Then per kept round, run a Playwright check in GTM preview mode and pass it as qa, and call jev-site-scan to compare configured vs observed tags. Jev stays shadow-only.
+G4  Judgment, shadow first (guide ch05-08 + guide.organizedai.vip/jev-container-json). Stage 1: fix the shared reader so GTM built-in triggers (2147479553, 2147479572, 2147479573) resolve, then copy it into box/jev/. Stage 2: map the container hard stops (consent touched, opaque code touched, unresolved refs, partial export) into shadowPolicy() as a versioned shadow change with reason codes; record the audit delta (today BLADE high 43→157) in each receipt. Do not enforce either. Per kept round, run a Playwright check in GTM preview mode and pass it as qa; call jev-site-scan for configured vs observed. Keep the frozen two-question contract; treat the six-question set as a separate contract to freeze and evaluate. Never open the holdout. Enforcement waits for stage 3 (reviewed real labels, Preview evidence, written thresholds) and a separate acceptance workflow.
 
 Rules: no time estimates anywhere. Never publish a GTM container. Commit after each gate passes and update AGENT-HANDOFF/CURRENT-STATE.md. Push to github.com/Organized-AI/gtm-autoresearch and open a PR against main.
 
@@ -424,10 +442,10 @@ MAX_ROUNDS=30</pre></div>
   var proof = window.ARB_PROOF || [];
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var GATES = {g0:['The loop contract','One mutable container per client, a program.md split into fixed rules and how-to-work, a deterministic scorer, invariants in code, and no publish call.'],
-               g1:['The scorer is locked','Agents can\'t edit evals/, recorded winners re-score to their ledger numbers, program.md actually drives the loop, and its weights are the scorer\'s.'],
+               g1:['The scorer is locked and honest','Agents can\'t edit evals/, winners re-score to their ledger numbers, program.md drives the loop, weights match, floors exist, and the snapshot is fresh and complete.'],
                g2:['A ledger that teaches','Every round records what it tried and what still failed. Runs stop when they stall or the provider fails. The manifest names the real best.'],
                g3:['AutoLoop','Reads every ledger, names repeating habits with evidence, rewrites only Edit Strategy, and the owner merges.'],
-               g4:['Beyond the score','The Jev container pipeline on every winner: reader, hard stops and audit in code, typed questions to Jev, policy decides. Plus preview QA, observed-vs-configured tags, and a person who publishes.']};
+               g4:['Beyond the score','The judgment layer as the field guide defines it: shadow judge with a frozen two-question contract, container hard stops and audit as evidence, an untouched holdout, a five-stage ladder, preview QA, and a person who publishes.']};
   var MAP = [
     ['train.py, the one file the agent edits','<code>content/gtm-templates/&lt;CLIENT&gt;/seed/*.json</code>, the client container','one-mutable-file'],
     ['The scoring file the agent may not edit','<code>evals/eval_gtm_signal_quality.ts</code>, 12 weighted dimensions','evaluator-locked'],
@@ -449,6 +467,17 @@ MAX_ROUNDS=30</pre></div>
     ['Human approval gate','Staging workspace; the owner publishes','human-publish']
   ];
 
+  var CH = [
+    ['01 · The loop, transplanted','One file, one metric, program.md read each round; a revert increments the regression counter.',['one-mutable-file','program-split','fixed-rules-enforced','stall-stop']],
+    ['02 · The scorer','Deterministic, weights sum to 1.0, missing data 0.5, stale snapshot refuses; one number is gameable, so write floors.',['evaluator-deterministic','evaluator-reproduces','weights-agree','dimension-floors','snapshot-fresh']],
+    ['03 · The mutation boundary','Operations in, IDs by code, unknown fields preserved; build the evidence envelope before Jev.',['invariants-in-code','evidence-reader-sound']],
+    ['04 · The run','Four stop conditions, four deliverables, and a receipt linking every candidate to request, diff, checks and judge.',['failure-stop','stall-stop','attempt-recorded','manifest-current','never-publishes']],
+    ['05 · Shadow mode','A judge with a log and no keys; container hard stops arrive as a versioned shadow change.',['shadow-judge','container-hard-stops','winner-hard-stops']],
+    ['06 · Two atomic questions','Frozen two-question contract; a broader quiz is a different contract, not an alias.',['judge-contract-frozen','broader-quiz']],
+    ['07 · The synthetic lab','Group-disjoint splits, untouched holdout, read-only replay.',['holdout-untouched']],
+    ['08 · What the pilot does not prove','Five-stage ladder; the audit is a separate workflow; a human publishes.',['promotion-stage','audit-not-worse','human-publish']],
+    ['Meta layer (ch01)','An auto loop may rewrite "how to work", never the scorer or the Jev gates.',['autoloop-finds-habits','autoloop-scope','autoloop-takes-effect','owner-approves']]
+  ];
   document.querySelectorAll('[data-copy]').forEach(function(btn){
     btn.addEventListener('click', function(){
       var el = document.querySelector(btn.getAttribute('data-copy'));
@@ -473,6 +502,10 @@ MAX_ROUNDS=30</pre></div>
   document.getElementById('mapRows').innerHTML = MAP.map(function(m){
     var c = byId[m[2]]; var r = c ? c.result : 'not_built';
     return '<tr><td class="from">' + m[0] + '</td><td class="to">' + m[1] + '</td><td><span class="chip ' + r + '" title="' + esc(c ? c.reason : '') + '">' + esc(m[2]) + '</span></td></tr>';
+  }).join('');
+
+  document.getElementById('guideRows').innerHTML = CH.map(function(c){
+    return '<tr><td class="id">' + esc(c[0]) + '</td><td>' + esc(c[1]) + '</td><td><div class="chips">' + c[2].map(function(id){ var e = byId[id]; var r = e ? e.result : 'not_built'; return '<span class="chip ' + r + '" title="' + esc(e ? e.reason : '') + '">' + esc(id) + '</span>'; }).join('') + '</div></td></tr>';
   }).join('');
 
   document.getElementById('gateList').innerHTML = Object.keys(GATES).map(function(g){
