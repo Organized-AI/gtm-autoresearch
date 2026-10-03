@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guide.organizedai.vip/jev-container-json/assets/schema/jev-gtm-container.schema.json",
+  "title": "Jev state for a GTM container change (web or server)",
+  "description": "The object your code builds and passes as `state` to Jev. Every field is code output. Written for this guide; not a Google or TypeSafe specification.",
+  "type": "object",
+  "required": ["schema_version", "container", "request", "change", "flags", "consent"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1" },
+    "container": {
+      "type": "object",
+      "required": ["usage_context", "container_id", "version_id", "digest"],
+      "additionalProperties": false,
+      "properties": {
+        "usage_context": { "enum": ["web", "server"], "description": "Normalized to lowercase by code. Exports can carry upper case (WEB)." },
+        "container_id": { "type": "string" },
+        "public_id": { "type": "string", "description": "GTM-XXXX. Optional; redact if the questions do not need it." },
+        "version_id": { "type": "string" },
+        "digest": { "type": "string", "description": "Your canonical digest, not Google's fingerprint." },
+        "google_fingerprint": { "type": "string", "description": "Staleness check at apply time only." },
+        "tagging_server_urls": { "type": "array", "items": { "type": "string" }, "description": "Web containers only: the server-side container URLs the web container sends to." }
+      }
+    },
+    "request": { "type": "string", "maxLength": 600, "description": "One or two sentences of intent, in the requester's words." },
+    "change": { "type": "array", "items": { "$ref": "#/$defs/entityChange" } },
+    "blast_radius": { "type": "array", "items": { "$ref": "#/$defs/entityRef" } },
+    "probes": { "type": "object", "description": "Code-computed facts. Keys depend on usage_context; see web and server blocks." },
+    "consent": { "$ref": "#/$defs/consent" },
+    "flags": { "$ref": "#/$defs/flags" },
+    "web": { "$ref": "#/$defs/webBlock" },
+    "server": { "$ref": "#/$defs/serverBlock" }
+  },
+  "allOf": [
+    { "if": { "properties": { "container": { "properties": { "usage_context": { "const": "web" } } } } },
+      "then": { "required": ["web"], "not": { "required": ["server"] } } },
+    { "if": { "properties": { "container": { "properties": { "usage_context": { "const": "server" } } } } },
+      "then": { "required": ["server"], "not": { "required": ["web"] } } }
+  ],
+  "$defs": {
+    "entityKind": { "enum": ["tag", "trigger", "variable", "folder", "builtInVariable", "customTemplate", "client", "transformation", "zone"] },
+    "entityRef": {
+      "type": "object", "required": ["kind", "id", "name"], "additionalProperties": false,
+      "properties": { "kind": { "$ref": "#/$defs/entityKind" }, "id": { "type": "string" }, "name": { "type": "string" } }
+    },
+    "entityChange": {
+      "type": "object", "required": ["kind", "id", "name", "op"], "additionalProperties": false,
+      "properties": {
+        "kind": { "$ref": "#/$defs/entityKind" },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "op": { "enum": ["added", "removed", "modified"] },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["path"], "additionalProperties": false,
+            "properties": { "path": { "type": "string" }, "before": {}, "after": {} }
+          }
+        }
+      }
+    },
+    "consent": {
+      "type": "object", "required": ["touched"], "additionalProperties": false,
+      "properties": {
+        "touched": { "type": "boolean" },
+        "tags_needing_consent": { "type": "array", "items": { "type": "object", "required": ["tag", "types"], "additionalProperties": false,
+          "properties": { "tag": { "type": "string" }, "types": { "type": "array", "items": { "type": "string" } } } } },
+        "tags_status_changed": { "type": "array", "items": { "type": "object", "required": ["tag", "before", "after"], "additionalProperties": false,
+          "properties": { "tag": { "type": "string" }, "before": { "enum": ["notSet", "notNeeded", "needed"] }, "after": { "enum": ["notSet", "notNeeded", "needed"] } } } },
+        "tags_without_consent_setting_that_send_user_data": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "flags": {
+      "type": "object", "required": ["unresolved_refs", "partial_export", "opaque_code_touched"], "additionalProperties": false,
+      "properties": {
+        "unresolved_refs": { "type": "array", "items": { "type": "string" } },
+        "partial_export": { "type": "boolean" },
+        "opaque_code_touched": { "type": "boolean", "description": "Custom HTML tag, custom JavaScript variable or sandboxed template changed." },
+        "live_only_touched": { "type": "boolean" },
+        "consent_touched": { "type": "boolean" }
+      }
+    },
+    "webBlock": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "consent_init": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "default_consent_tag_present": { "type": "boolean" },
+            "update_tag_present": { "type": "boolean" },
+            "cmp_template": { "type": "string" },
+            "defaults": { "type": "object", "additionalProperties": { "enum": ["granted", "denied", "unset"] } },
+            "regions_configured": { "type": "boolean" }
+          }
+        },
+        "transport": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "tags_sending_to_server": { "type": "array", "items": { "type": "string" } },
+            "server_url_changed": { "type": "boolean" }
+          }
+        },
+        "trigger_probes": {
+          "type": "array",
+          "items": { "type": "object", "required": ["trigger", "before_matches", "after_matches"], "additionalProperties": false,
+            "properties": { "trigger": { "type": "string" }, "before_matches": { "type": "array", "items": { "type": "string" } }, "after_matches": { "type": "array", "items": { "type": "string" } } } }
+        },
+        "data_layer_reads": { "type": "array", "items": { "type": "string" }, "description": "Data layer keys read by changed variables, classed not valued." }
+      }
+    },
+    "serverBlock": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "clients": {
+          "type": "array",
+          "items": { "type": "object", "required": ["id", "name", "type", "priority"], "additionalProperties": false,
+            "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "type": { "type": "string" }, "priority": { "type": "integer" } } }
+        },
+        "claim_probes": {
+          "type": "array", "description": "Sample requests and which client claims each, before and after. Code computes these by replaying clients in priority order.",
+          "items": { "type": "object", "required": ["request", "before_claimed_by", "after_claimed_by"], "additionalProperties": false,
+            "properties": { "request": { "type": "string" }, "before_claimed_by": { "type": ["string", "null"] }, "after_claimed_by": { "type": ["string", "null"] } } }
+        },
+        "transformations": {
+          "type": "array",
+          "items": { "type": "object", "required": ["id", "name", "kind", "affected_tags"], "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "type": { "type": "string", "description": "Raw type string from the export." },
+              "kind": { "enum": ["allow", "augment", "exclude", "other"], "description": "Derived by code from the type string." },
+              "affected_tags": { "type": "array", "items": { "type": "string" }, "description": "Tag names, or ['*'] when it applies to all tags." },
+              "parameters": { "type": "array", "items": { "type": "string" }, "description": "Event parameter names only, not values." },
+              "has_conditions": { "type": "boolean" },
+              "uses_consent_condition": { "type": "boolean", "description": "A matching condition reads gcs or another consent signal." }
+            } }
+        },
+        "event_data_probes": {
+          "type": "array", "description": "For each changed or affected tag, which event parameters survive the transformations.",
+          "items": { "type": "object", "required": ["tag", "before_params", "after_params"], "additionalProperties": false,
+            "properties": {
+              "tag": { "type": "string" },
+              "before_params": { "type": "array", "items": { "type": "string" } },
+              "after_params": { "type": "array", "items": { "type": "string" } },
+              "required_params_missing": { "type": "array", "items": { "type": "string" } },
+              "user_data_classes_after": { "type": "array", "items": { "enum": ["none", "email", "phone", "address", "ip", "client_id", "user_id", "click_id"] } }
+            } }
+        },
+        "destinations": {
+          "type": "array",
+          "items": { "type": "object", "required": ["tag", "vendor"], "additionalProperties": false,
+            "properties": { "tag": { "type": "string" }, "vendor": { "type": "string" }, "live_only": { "type": "boolean" }, "has_dedup_key": { "type": "boolean" }, "hashes_user_data": { "type": "boolean" } } }
+        },
+        "consent_signal": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "ga4_client_present": { "type": "boolean", "description": "Google's consent-mode guide lists a GA4 client as the way consent data reaches the server." },
+            "consent_variables_read": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  }
+}

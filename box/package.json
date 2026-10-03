@@ -1,0 +1,17 @@
+{
+  "name": "@organized-ai/autoresearch-in-a-box",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "bin": { "arb": "cli/arb.mjs" },
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "check": "node cli/arb.mjs check all --why",
+    "autoloop": "node cli/arb.mjs autoloop",
+    "build": "node site/build.mjs",
+    "dev": "node site/build.mjs && wrangler dev",
+    "deploy": "node site/build.mjs && wrangler deploy"
+  },
+  "devDependencies": { "wrangler": "^4.146.0" }
+}
