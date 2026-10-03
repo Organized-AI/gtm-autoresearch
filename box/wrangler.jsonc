@@ -1,0 +1,12 @@
+{
+  "name": "autoresearch-in-a-box",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "autoresearch-in-a-box", "database_id": "REPLACE_AFTER_d1_create", "migrations_dir": "migrations" }],
+  "triggers": { "crons": ["23 8 * * *"] },
+  "vars": { "LOOP_REPO": "Organized-AI/gtm-autoresearch" },
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+  // secrets: ARB_INGEST_TOKEN, GITHUB_TOKEN (wrangler secret put)
+}

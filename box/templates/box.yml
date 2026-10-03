@@ -1,0 +1,25 @@
+# Autoresearch in a Box: run the done-when checks and AutoLoop, stream to the Worker.
+# Dispatched nightly by the Worker cron; also runs when box/ or a loop ledger changes.
+name: box
+on:
+  workflow_dispatch:
+  push:
+    paths: ["box/**", "content/gtm-templates/**", "scripts/run-gtm-loop.ts", "evals/**"]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: node box/cli/arb.mjs check all --why --json
+        env:
+          ARB_URL: ${{ vars.ARB_URL }}
+          ARB_INGEST_TOKEN: ${{ secrets.ARB_INGEST_TOKEN }}
+      - run: node box/cli/arb.mjs autoloop --write
+        env:
+          ARB_URL: ${{ vars.ARB_URL }}
+          ARB_INGEST_TOKEN: ${{ secrets.ARB_INGEST_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with: { name: arb, path: "arb-results.json\nbox/proof/program.*.proposed.md" }

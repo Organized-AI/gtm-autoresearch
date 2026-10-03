@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(evals/**)",
+      "Write(evals/**)",
+      "Edit(box/checks/**)",
+      "Write(box/checks/**)"
+    ]
+  }
+}

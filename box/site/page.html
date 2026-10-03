@@ -1,0 +1,556 @@
+<title>Autoresearch in a Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: one 920px column, the DevOps / Skills in a Box family. Dark-only on purpose, matching guide.organizedai.vip. */
+  :root{
+    --bg:#0a0908; --surface:#141210; --surface-2:#1c1815; --line:#2b2620;
+    --text:#f5efe6; --dim:#8c8478; --faint:#5d564c; --gold:#d9a441; --gold-dim:#a67d33;
+    --red:#e05252; --green:#4ade80; --cyan:#22d3ee; --nav:rgba(10,9,8,.88);
+    --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+    --sans:'IBM Plex Sans',-apple-system,Helvetica,Arial,sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;background:var(--bg)}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--gold)}
+  code{font-family:var(--mono);font-size:.9em;color:var(--gold);overflow-wrap:anywhere}
+  .wrap{max-width:920px;margin:0 auto;padding-inline:20px}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+  nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--nav);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px}
+  .brand{font-family:var(--mono);font-size:14px;color:var(--text);text-decoration:none;white-space:nowrap}
+  .brand b{color:var(--gold);font-weight:500}
+  nav .links{display:flex;gap:18px;font-family:var(--mono);font-size:12px;overflow-x:auto;min-width:0}
+  nav .links a{color:var(--dim);text-decoration:none;white-space:nowrap}
+  nav .links a:hover{color:var(--gold)}
+
+  header.hero{padding-block:72px 56px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:12px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  h1{font-family:var(--mono);font-size:clamp(30px,5vw,50px);line-height:1.08;margin:0 0 20px;letter-spacing:-.01em;max-width:18ch;font-weight:600;text-wrap:balance}
+  h1 .accent{color:var(--gold)}
+  .sub{font-size:17px;color:var(--dim);max-width:60ch;margin:0 0 30px}
+  .cmd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:13px;max-width:100%;margin-bottom:10px}
+  .cmd span{min-width:0;overflow-wrap:anywhere}
+  .cmd .p{color:var(--gold-dim)}
+  .copy{background:none;border:1px solid var(--line);color:var(--dim);font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer}
+  .copy:hover{color:var(--gold);border-color:var(--gold-dim)}
+  .manifest{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:22px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .manifest b{color:var(--text);font-weight:500}
+
+  .console{margin-top:44px;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .console-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .console-head > span{min-width:0;overflow-wrap:anywhere}
+  .src{display:inline-flex;align-items:center;gap:7px;padding:3px 8px;border:1px solid var(--gold-dim);border-radius:3px;color:var(--gold)}
+  .src::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .src.live{color:var(--green);border-color:var(--green)}
+  .console-body{height:340px;overflow-y:auto;padding:12px 16px;font-family:var(--mono);font-size:12.5px}
+  .ln{display:grid;grid-template-columns:62px 96px minmax(0,1fr);gap:10px;padding:3px 0;align-items:baseline}
+  .ln .t{color:var(--faint);font-variant-numeric:tabular-nums}
+  .ln .k{font-weight:500}
+  .ln .m{color:var(--text);overflow-wrap:anywhere}
+  .ln .m i{font-style:normal;color:var(--dim)}
+  .k.pass,.k.improved{color:var(--green)} .k.fail,.k.reverted,.k.json_fail{color:var(--red)} .k.manual{color:var(--gold)} .k.not_built{color:var(--faint)} .k.run{color:var(--cyan)} .k.loop{color:var(--gold)}
+  .console-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .tally{display:flex;gap:14px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+  .tally b{font-weight:500}
+  .replay{border:1px solid var(--gold-dim);background:var(--surface-2);color:var(--gold);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-radius:3px;cursor:pointer}
+
+  section{padding-block:64px;border-bottom:1px solid var(--line)}
+  .kicker{font-family:var(--mono);font-size:12px;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+  h2{font-family:var(--mono);font-size:clamp(22px,3vw,29px);margin:0 0 16px;max-width:28ch;font-weight:600;text-wrap:balance;line-height:1.2}
+  p.lead{color:var(--dim);font-size:16px;max-width:64ch;margin:0 0 12px}
+
+  .findings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:32px}
+  .f{background:var(--surface);padding:18px;min-width:0}
+  .f b{display:block;font-family:var(--mono);font-size:26px;font-weight:500;font-variant-numeric:tabular-nums}
+  .f b.bad{color:var(--red)} .f b.ok{color:var(--green)} .f b.mid{color:var(--gold)}
+  .f span{display:block;font-size:13px;color:var(--dim);margin-top:4px}
+
+  .chart{margin-top:28px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 18px 10px}
+  .chart-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:8px}
+  .chart-head b{color:var(--text);font-weight:500}
+  .chart-scroll{overflow-x:auto}
+  .chart svg{display:block;width:100%;min-width:560px;height:auto}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:6px}
+  .legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+
+  .table-wrap{overflow-x:auto;margin-top:28px;border:1px solid var(--line);border-radius:8px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.5px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;background:var(--surface)}
+  td.id{font-family:var(--mono);font-size:12px;white-space:nowrap}
+  td .ev{display:block;margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--dim);overflow-wrap:anywhere}
+  td.from{font-family:var(--mono);font-size:12px;color:var(--dim)}
+  td.to code{white-space:normal}
+  tr:last-child td{border-bottom:0}
+
+  .callout{margin-top:28px;padding:20px;border-left:2px solid var(--cyan);background:var(--surface)}
+  .callout strong{font-family:var(--mono);font-size:13px;color:var(--cyan)}
+  .callout p{margin:7px 0 0;color:var(--dim);font-size:14px;max-width:66ch}
+
+  .exhibit{margin-top:28px;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow-x:auto}
+  pre.ascii{margin:0;padding:22px;font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--dim);white-space:pre}
+  pre.ascii .a{color:var(--gold)} pre.ascii .g{color:var(--green)} pre.ascii .c{color:var(--cyan)} pre.ascii .r{color:var(--red)}
+
+  .gates{display:grid;gap:1px;margin-top:28px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .gate{display:grid;grid-template-columns:84px minmax(0,1fr) minmax(0,1.35fr);gap:18px;padding:18px 20px;background:var(--surface);align-items:start}
+  .gate .gid b{display:block;font-family:var(--mono);font-size:22px;color:var(--gold);font-weight:500}
+  .gate h3{margin:0 0 4px;font-size:15px}
+  .gate p{margin:0;color:var(--dim);font-size:13.5px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-family:var(--mono);font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--dim)}
+  .chip.pass{color:var(--green);border-color:var(--green)}
+  .chip.fail{color:var(--red);border-color:var(--red)}
+  .chip.manual{color:var(--gold);border-color:var(--gold-dim);border-style:dashed}
+  .chip.not_built{border-style:dashed}
+
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;margin-top:24px}
+  .flow span{padding:7px 10px;border:1px solid var(--line);border-radius:5px;background:var(--surface)}
+  .flow .ev{border-color:var(--gold-dim);color:var(--gold)}
+  .flow .human{border-color:var(--green);color:var(--green)}
+  .flow i{font-style:normal;color:var(--gold-dim)}
+
+  .habits{display:grid;gap:16px;margin-top:28px}
+  .habit{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px;min-width:0}
+  .habit .hh{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:8px}
+  .habit .hh b{color:var(--gold);font-weight:500}
+  .habit p{margin:0;color:var(--dim);font-size:14px;max-width:72ch}
+  .diff{margin:12px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:5px;background:var(--bg);font:12px/1.65 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dim)}
+  .diff .add{color:var(--green)}
+
+  .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:28px}
+  .tcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:22px;min-width:0}
+  .tcard h3{margin:0 0 8px;font-family:var(--mono);font-size:14px;color:var(--gold)}
+  .tcard p,.tcard li{color:var(--dim);font-size:14px}
+  .tcard ul{margin:8px 0 0;padding-left:18px}
+  .code{margin:12px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:5px;background:var(--bg);font:12px/1.65 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
+
+  .phases{margin-top:28px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .ph{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;padding:16px 20px;border-top:1px solid var(--line);background:var(--surface)}
+  .ph:first-child{border-top:0}
+  .ph .n{font-family:var(--mono);font-size:12px;color:var(--gold)}
+  .ph .n small{display:block;color:var(--dim);font-size:11px;margin-top:2px}
+  .ph p{margin:0;font-size:14px;color:var(--dim)}
+  .ph p b{color:var(--text);font-weight:500}
+
+  .prompt-box{position:relative;margin-top:24px}
+  .prompt-box pre{margin:0;padding:18px;padding-top:42px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font:12px/1.6 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text);max-height:480px;overflow-y:auto}
+  .prompt-box .copy{position:absolute;top:10px;right:10px;background:var(--bg)}
+
+  footer{padding-block:24px;font:12px var(--mono);color:var(--dim)}
+  footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  footer a{color:var(--dim)}
+
+  @media(max-width:760px){
+    .findings{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .gate{grid-template-columns:1fr;gap:10px}
+    .two{grid-template-columns:1fr}
+    .ph{grid-template-columns:1fr;gap:6px}
+    nav .links .hide-sm{display:none}
+    .ln{grid-template-columns:52px 78px minmax(0,1fr);gap:8px}
+  }
+</style>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top">OrganizedAI · <b>Autoresearch in a Box</b></a>
+    <div class="links"><a href="#proof">Proof</a><a href="#map">Map</a><a href="#gates">Gates</a><a href="#autoloop">AutoLoop</a><a class="hide-sm" href="#plan">Plan</a><a class="hide-sm" href="#prompt">Prompt</a></div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span>FDE tool · GTM Autoresearch + AutoLoop · MIT</div>
+    <h1>A GTM loop that <span class="accent">learns from its own reverts.</span></h1>
+    <p class="sub">GTM Autoresearch already scores a client's container on 12 dimensions, mutates it, and keeps or reverts each change overnight. This box adds the second loop from the Karpathy-loop playbook: it reads every run's ledger, names the habits that keep failing, and proposes a rewrite of how the loop works. The scorer and the rules stay locked, and the owner still publishes.</p>
+    <div class="cmd"><span><span class="p">$ </span><span id="c1">node box/cli/arb.mjs check all --why &amp;&amp; node box/cli/arb.mjs autoloop</span></span><button class="copy" data-copy="#c1" type="button">copy</button></div>
+    <div class="manifest">
+      <span>REPO <b>Organized-AI/gtm-autoresearch</b></span>
+      <span>BRANCH <b>feat/autoresearch-in-a-box</b></span>
+      <span>SCORER <b>evals/eval_gtm_signal_quality.ts</b></span>
+      <span>RUNTIME <b>Node 22 · Worker + D1 · SSE</b></span>
+      <span>GATES <b>G0 → G4</b></span>
+    </div>
+
+    <div class="console" aria-label="Run stream">
+      <div class="console-head">
+        <span>arb run stream · <span id="streamTarget">Organized-AI/gtm-autoresearch@62dfaa3</span></span>
+        <span class="src" id="srcBadge">recorded run · Oct 3</span>
+      </div>
+      <div class="console-body" id="stream" role="log" aria-live="polite"></div>
+      <div class="console-foot">
+        <div class="tally"><span><b style="color:var(--green)" id="tPass">0</b> pass</span><span><b style="color:var(--red)" id="tFail">0</b> fail</span><span><b style="color:var(--gold)" id="tMan">0</b> manual</span><span><b id="tNb">0</b> not built</span><span><b style="color:var(--gold)" id="tHab">0</b> habits</span><span><b id="tRnd">0</b> ledger rounds</span></div>
+        <button class="replay" id="replayBtn" type="button">Replay</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="proof">
+  <div class="wrap">
+    <div class="kicker">Proof · first run on the real repo</div>
+    <h2>Pointed at gtm-autoresearch, the box found why BLADE stalled at 77.3%.</h2>
+    <p class="lead">Everything here comes from the run in the stream above: <code>arb check all</code> and <code>arb autoloop</code> on <code>main</code> at <code>62dfaa3</code>, reading the 7 recorded run ledgers. Every score was produced by the repo's own scorer. The box doesn't reimplement scoring, and it called no ad platform or GTM API.</p>
+    <div class="findings">
+      <div class="f"><b class="bad">24/30</b><span>BLADE rounds reverted in a row, and no stop condition fired</span></div>
+      <div class="f"><b class="bad">6 &gt; 3</b><span>entity changes the stuck fix needs, against a mutation budget of 3</span></div>
+      <div class="f"><b class="bad">36/36</b><span>reverted rounds that don't record what was tried</span></div>
+      <div class="f"><b class="ok">77.3%</b><span>BLADE's winner re-scored today, matching its ledger exactly</span></div>
+      <div class="f"><b class="bad">0</b><span>program.md sections the loop reads besides file paths; strategy and constraints are hardcoded</span></div>
+      <div class="f"><b class="mid">11 vs 12</b><span>dimensions HRE is scored on vs what its program.md lists (no Google Ads data)</span></div>
+      <div class="f"><b class="mid">7</b><span>HRE rounds lost to a mutation provider that didn't answer</span></div>
+      <div class="f"><b class="mid">76.8 vs 77.3</b><span>BLADE manifest's "best" vs the actual best winner</span></div>
+    </div>
+
+    <div class="chart" aria-label="BLADE run score by round">
+      <div class="chart-head"><span><b>BLADE · 2026-04-29 run</b> · score after each round</span><span id="chartNote">53.6% → 77.3% · 6 kept · 24 reverted</span></div>
+      <div class="chart-scroll"><svg id="ledgerChart" viewBox="0 0 860 260" role="img" aria-label="Score climbs from 53.6% to 77.3% by round 5, then 24 reverted rounds stay flat"></svg></div>
+      <div class="legend"><span><i style="background:var(--green)"></i>kept</span><span><i style="background:var(--red)"></i>reverted (candidate scored lower)</span><span><i style="background:var(--surface-2);border:1px solid var(--gold-dim)"></i>stall: same target every round</span></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Check</th><th>Result</th><th>What it found</th></tr></thead>
+        <tbody id="proofRows"></tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>The stuck target was a scorer rule the loop couldn't satisfy.</strong>
+      <p>After round 5 the only error left in BLADE's container was <code>CE - GA4 Ecom Events</code>: a regex trigger matching <code>view_item_list|select_item|view_cart|add_payment_info</code>, flagged for lacking an EQUALS filter. <code>pickStrategy()</code> always picks the lowest-scoring dimension with an error, and the scores never changed, so it picked trigger quality 24 times. A real fix splits the trigger into 4 EQUALS triggers and re-points 2 tags: 6 entity changes against a budget of 3. Every attempt broke something and was reverted. Meanwhile folder organization (5.2pp of weighted gap), CAPI coverage (4.0pp) and naming (3.9pp) were never touched. Trigger quality was gap #7 of 12.</p>
+    </div>
+  </div>
+</section>
+
+<section id="map">
+  <div class="wrap">
+    <div class="kicker">Exhibit A · The mapping</div>
+    <h2>The Karpathy loop and AutoLoop, part by part, in this repo</h2>
+    <p class="lead">Source: the AutoLoop walkthrough ingested with TwelveLabs (YouTube <code>qLfSDQ5NGh0</code>). Left is what the video names; right is where it lives in gtm-autoresearch, with the box's check result.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>In the video</th><th>In gtm-autoresearch</th><th>Check</th></tr></thead>
+        <tbody id="mapRows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="box">
+  <div class="wrap">
+    <div class="kicker">Exhibit B · System</div>
+    <h2>What's in the box</h2>
+    <p class="lead">One CLI, one Worker, one D1 table, all inside the repo under <code>box/</code>. The GTM loop keeps running where it runs today, on the Mac with the Claude CLI and the MCP-fed ads snapshot. The box reads what it leaves behind.</p>
+    <div class="exhibit"><pre class="ascii">
+  MAC  (inner loop, unchanged)                         OWNER
+  <span class="a">/refresh-ads-snapshot blade</span>  Meta · Google Ads · GTM via MCP
+  <span class="a">npx tsx scripts/run-gtm-loop.ts</span> content/gtm-templates/BLADE/program.md
+      score ─▶ pickStrategy ─▶ Claude mutates ≤3 entities ─▶ validate ─▶ keep / <span class="r">revert</span>
+      │   evals/eval_gtm_signal_quality.ts  <span class="r">(lock: .claude deny evals/**)</span>
+      ▼
+  winning/*.json · loop-results/*.json (the ledger) · data audit · staging workspace ──▶ <span class="c">publishes</span>
+      │
+      ▼  git push  /  Worker cron ─▶ workflow_dispatch box.yml
+  GitHub Actions   <span class="a">arb check all</span>   G0 contract · G1 locked scorer · G2 ledger · G3 AutoLoop · G4 beyond the score
+                   <span class="a">arb autoloop</span>    read ledgers ▸ find habits ▸ rewrite "Edit Strategy" only ▸ stage for review
+                         │ POST /api/events  (Bearer ARB_INGEST_TOKEN)
+                         ▼
+  ┌──────────────────────── CLOUDFLARE ─────────────────────────────────┐
+  │  autoresearch-in-a-box Worker                                       │
+  │   Assets  /  guide  ·  /run/  run view                              │
+  │   /api/events ──▶ D1 events (run_id, seq, kind, body)               │
+  │   /api/stream ◀── SSE, resumes from Last-Event-ID ──▶ <span class="g">any browser</span>    │
+  │   cron 08:23 UTC ──▶ dispatch box.yml                               │
+  │  jev-gateway (shadow judge) · jev-site-scan (observed vs configured)│
+  └─────────────────────────────────────────────────────────────────────┘
+                         │ habit found
+                         ▼
+  PR: program.md "Edit Strategy" + evidence rounds ──▶ <span class="c">owner approves</span> ──▶ next run starts with it
+</pre></div>
+    <div class="flow" aria-label="Two loops">
+      <span>score</span><i>→</i><span class="ev">mutate ≤3</span><i>→</i><span>validate</span><i>→</i><span class="ev">keep / revert</span><i>→</i><span>ledger</span><i>→</i><span class="ev">AutoLoop</span><i>→</i><span class="human">owner merges</span>
+    </div>
+  </div>
+</section>
+
+<section id="gates">
+  <div class="wrap">
+    <div class="kicker">Exhibit C · Gates</div>
+    <h2>Each gate ends when its checks pass</h2>
+    <p class="lead">Check IDs are code in <code>box/checks/index.mjs</code>. Unbuilt work reports "not built" instead of passing. Chip colors are the result from the recorded run; hover a chip for its reason.</p>
+    <div class="gates" id="gateList"></div>
+  </div>
+</section>
+
+<section id="autoloop">
+  <div class="wrap">
+    <div class="kicker">Exhibit D · AutoLoop's first read</div>
+    <h2>Three habits, and the rewrite it proposes</h2>
+    <p class="lead">AutoLoop may change one section of each program.md: "Edit Strategy", the how-to-work part. Constraints, the mutation budget, stop conditions, the weights and <code>evals/</code> are fixed rules a human owns. The <code>autoloop-scope</code> check applies each proposal to a copy and confirms every other section is byte-identical. Nothing has been written to program.md.</p>
+    <div class="habits" id="habitList"></div>
+    <div class="callout">
+      <strong>The rewrite won't do anything yet.</strong>
+      <p><code>parseProgram()</code> in <code>run-gtm-loop.ts</code> reads only the template and snapshot paths. The strategy order and constraints are hardcoded arrays, and <code>pickStrategy()</code> ignores the strategy order anyway. Until the loop reads "Edit Strategy" from program.md, an AutoLoop rewrite, or a human one, changes nothing. That is the first fix in the plan. The second is recording what each reverted round tried, because AutoLoop can only see 2 of its 3 habits without it.</p>
+    </div>
+  </div>
+</section>
+
+<section id="fde">
+  <div class="wrap">
+    <div class="kicker">Exhibit E · Using it on an engagement</div>
+    <h2>What the business owner gets, and what you run</h2>
+    <div class="two">
+      <div class="tcard">
+        <h3>The owner gets</h3>
+        <ul>
+          <li>A staging workspace with the night's best container, a versioned JSON, and a before/after data audit. They publish; the loop never does.</li>
+          <li>A run view link that streams every check and every round, so "did last night's run do anything?" has an answer with a timestamp.</li>
+          <li>Changes to how the loop works arrive as pull requests with the rounds that justify them, never as silent edits.</li>
+        </ul>
+      </div>
+      <div class="tcard">
+        <h3>You run</h3>
+        <div class="code">/refresh-ads-snapshot blade
+npx tsx scripts/run-gtm-loop.ts \
+  content/gtm-templates/BLADE/program.md
+node box/cli/arb.mjs check all --why
+node box/cli/arb.mjs autoloop --write
+node box/cli/arb.mjs replay \
+  content/gtm-templates/BLADE/loop-results/2026-04-29T143650.json</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="plan">
+  <div class="wrap">
+    <div class="kicker">Exhibit F · Phased plan</div>
+    <h2>Build order, gate by gate</h2>
+    <div class="phases">
+      <div class="ph"><div class="n">Phase 0<small>this session</small></div><p><b>Box exists and runs.</b> <code>arb</code> CLI with 22 checks, AutoLoop analyzer, Worker with SSE stream, D1 schema, <code>box.yml</code> CI, and a recorded proof run on the real repo. Branch <code>feat/autoresearch-in-a-box</code>.</p></div>
+      <div class="ph"><div class="n">Phase 1 · G1<small>lock the scorer</small></div><p><b>Make the contract real.</b> Add <code>.claude/settings.json</code> denying edits to <code>evals/**</code>. Rewrite <code>parseProgram()</code> to read Constraints, Mutation Budget and Edit Strategy from program.md, and make <code>pickStrategy()</code> follow them. Fix HRE's weights table or add Google Ads to its snapshot so 12 means 12.</p></div>
+      <div class="ph"><div class="n">Phase 2 · G2<small>a ledger that teaches</small></div><p><b>Record every attempt.</b> Each round writes strategy, operations, candidate dimensions and the dimensions still failing, reverted or not. Add a stall stop (3 reverts in a row on an unchanged container). Keep <code>manifest.json</code> pointed at the best winner automatically.</p></div>
+      <div class="ph"><div class="n">Phase 3 · G3<small>AutoLoop live</small></div><p><b>Proposals as pull requests.</b> <code>arb autoloop --pr</code> opens a PR touching only Edit Strategy, with the evidence rounds in the body. Only the owner merges. Rerun BLADE with the merged habits and compare against 77.3%.</p></div>
+      <div class="ph"><div class="n">Phase 4 · G4<small>beyond the score</small></div><p><b>Passing the scorer isn't done.</b> Run a Playwright preview check on each kept round, call jev-site-scan to compare configured tags with what fires, and keep Jev in shadow mode journaling every keep/revert.</p></div>
+      <div class="ph"><div class="n">Phase 5<small>deploy + distribute</small></div><p><b>One link per client.</b> Deploy the Worker, point CI at it, and publish the guide under <code>guide.organizedai.vip/gtm-autoresearch/box</code>. Package <code>box/</code> so a new client folder gets the same gates.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="prompt">
+  <div class="wrap">
+    <div class="kicker">Exhibit G · Claude Code</div>
+    <h2>Prompt to take it from here</h2>
+    <p class="lead">Paste into Claude Code on the Mac. The env vars for Claude Code Web are at the end of the block.</p>
+    <div class="prompt-box"><button class="copy" data-copy="#promptText" type="button">copy</button><pre id="promptText">cd /Users/supabowl &amp;&amp; claude --dangerously-skip-permissions
+
+Work in /Users/supabowl/gtm-autoresearch (clone github.com/Organized-AI/gtm-autoresearch if missing). Check out branch feat/autoresearch-in-a-box.
+
+First step: apply the Organized Codebase agent templates to .claude/ before writing code. Then read CLAUDE.md and AGENT-HANDOFF/CURRENT-STATE.md.
+
+Context: box/ is "Autoresearch in a Box", an FDE package that maps the Karpathy loop + AutoLoop onto this repo. The inner loop (scripts/run-gtm-loop.ts) is unchanged. box/ adds `arb check` (22 checks, gates G0-G4), `arb autoloop` (reads loop-results ledgers, finds recurring habits, proposes a rewrite of the "Edit Strategy" section of program.md only), a Worker with D1 + SSE run view, and .github/workflows/box.yml. The recorded proof is box/proof/2026-10-03-gtm-autoresearch.jsonl: 11 pass, 7 fail, 1 manual, 3 not built.
+
+Deploy first:
+1. cd box &amp;&amp; npx wrangler d1 create autoresearch-in-a-box, put the id in wrangler.jsonc, npx wrangler d1 migrations apply autoresearch-in-a-box --remote
+2. npx wrangler secret put ARB_INGEST_TOKEN (openssl rand -hex 24), node site/build.mjs &amp;&amp; npx wrangler deploy
+3. From the repo root: ARB_URL=&lt;worker url&gt; ARB_INGEST_TOKEN=... node box/cli/arb.mjs check all, then arb autoloop. Confirm /run/ streams both live.
+4. cp box/templates/box.yml .github/workflows/box.yml (the GitHub App here could not push workflows), then gh variable set ARB_URL and gh secret set ARB_INGEST_TOKEN on the repo so box.yml streams.
+
+Then work gate by gate. A gate is done only when `node box/cli/arb.mjs check &lt;gate&gt;` passes. Never edit box/checks to make a check pass.
+G1  Copy box/templates/claude-settings.json to .claude/settings.json (deny Edit/Write on evals/** and box/checks/**). Rewrite parseProgram() so Constraints, Mutation Budget, Stop Conditions and Edit Strategy come from program.md, and make pickStrategy() honor Edit Strategy. Keep the existing tests green and add one test proving an Edit Strategy change alters the chosen target. Fix HRE: either its program.md table lists the 11 dimensions it is actually scored on, or refresh the snapshot with Google Ads data.
+G2  Every RoundResult records strategy, operations, candidateScore, candidateDimensions and failingDimensions, for reverted rounds too. Add a stall stop: 3 consecutive reverts on an unchanged container. Update content/gtm-templates/*/manifest.json "best" automatically when a run beats it (BLADE is stale: 76.8 vs 77.3).
+G3  Add `arb autoloop --pr`: writes the proposal to a branch and opens a PR that changes only the Edit Strategy section, with the evidence rounds in the body. Only the owner merges. Then rerun BLADE with the merged habits and report the score against 77.3%.
+G4  Per kept round, run a Playwright check in GTM preview mode and pass its result as qa to the Jev shadow judge (today it is qa: { status: "absent" }). Call jev-site-scan to compare configured vs observed tags. Jev stays shadow-only.
+
+Rules: no time estimates anywhere. Never publish a GTM container. Commit after each gate passes and update AGENT-HANDOFF/CURRENT-STATE.md. Push to github.com/Organized-AI/gtm-autoresearch and open a PR against main.
+
+# Claude Code Web env vars
+CLOUDFLARE_ACCOUNT_ID=&lt;your account id&gt;
+CLOUDFLARE_API_TOKEN=&lt;Workers Scripts:Edit, D1:Edit, Account Settings:Read&gt;
+ARB_INGEST_TOKEN=&lt;same value as the Worker secret&gt;
+ARB_URL=https://autoresearch-in-a-box.&lt;subdomain&gt;.workers.dev
+ARB_REPO=.
+GITHUB_TOKEN=&lt;repo + workflow scope on Organized-AI&gt;
+MUTATION_PROVIDER=claude
+MAX_ROUNDS=30</pre></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>autoresearch-in-a-box · MIT · Organized AI</span>
+    <span><a href="https://guide.organizedai.vip/gtm-autoresearch">GTM AutoResearch guide</a> · <a href="https://guide.organizedai.vip/jev-container-json/beginners/">Jev container guide</a> · <a href="https://github.com/Organized-AI/gtm-autoresearch">Repo</a> · <a href="https://skills-in-a-box.jordan-691.workers.dev/">Skills in a Box</a> · <a href="https://devops-in-a-box.jordan-691.workers.dev/">DevOps in a Box</a></span>
+  </div>
+</footer>
+
+<script>window.ARB_PROOF = __PROOF__;</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(function(){
+  var proof = window.ARB_PROOF || [];
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var GATES = {g0:['The loop contract','One mutable container per client, a program.md split into fixed rules and how-to-work, a deterministic scorer, invariants in code, and no publish call.'],
+               g1:['The scorer is locked','Agents can\'t edit evals/, recorded winners re-score to their ledger numbers, program.md actually drives the loop, and its weights are the scorer\'s.'],
+               g2:['A ledger that teaches','Every round records what it tried and what still failed. Runs stop when they stall or the provider fails. The manifest names the real best.'],
+               g3:['AutoLoop','Reads every ledger, names repeating habits with evidence, rewrites only Edit Strategy, and the owner merges.'],
+               g4:['Beyond the score','A shadow judge, preview-mode QA on kept rounds, configured-vs-observed tags, and a person who publishes.']};
+  var MAP = [
+    ['train.py, the one file the agent edits','<code>content/gtm-templates/&lt;CLIENT&gt;/seed/*.json</code>, the client container','one-mutable-file'],
+    ['The scoring file the agent may not edit','<code>evals/eval_gtm_signal_quality.ts</code>, 12 weighted dimensions','evaluator-locked'],
+    ['Score is reproducible','Re-scoring BLADE\'s winner gives the ledger\'s 77.3%','evaluator-reproduces'],
+    ['program.md: fixed rules','Constraints, Mutation Budget, Stop Conditions, weights table','fixed-rules-enforced'],
+    ['program.md: how to work','"Edit Strategy (priority order)"','program-split'],
+    ['write-checks + human approves them','The 12 dimensions and weights a human signs off in program.md','weights-agree'],
+    ['Checks locked in checks/ with a deny rule','<code>.claude/settings.json</code> deny <code>evals/**</code> (template in <code>box/templates/</code>)','evaluator-locked'],
+    ['Fresh feature-builder per feature','A fresh Claude CLI mutation call per round, typed operations via <code>gtm-container-mutations.ts</code>','invariants-in-code'],
+    ['Keep if better, undo if not','<code>mutatedScores &gt; scores</code> → keep, else revert','ledger-exists'],
+    ['results.tsv: kept/undone, what was tried, what failed','<code>loop-results/*.json</code>: kept/reverted yes; what was tried no','attempt-recorded'],
+    ['Token budget runs out on failed rounds','No stop for a run that keeps reverting','stall-stop'],
+    ['AutoLoop rewrites "How to work"','<code>box/autoloop/analyze.mjs</code> → Edit Strategy only','autoloop-scope'],
+    ['AutoLoop can\'t touch the checks','Scope check: fixed sections byte-identical after a proposal','autoloop-scope'],
+    ['Next feature starts with the new habits','Next run reads Edit Strategy from program.md','autoloop-takes-effect'],
+    ['11/11 passed, the order form was missing','Preview-mode QA per kept round, jev-site-scan, Jev shadow judge','staging-qa'],
+    ['Human approval gate','Staging workspace; the owner publishes','human-publish']
+  ];
+
+  document.querySelectorAll('[data-copy]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var el = document.querySelector(btn.getAttribute('data-copy'));
+      var text = el ? el.textContent : '';
+      var done = function(){ var t = btn.textContent; btn.textContent = 'copied'; setTimeout(function(){ btn.textContent = t; }, 1400); };
+      var fallback = function(){ var r = document.createRange(); r.selectNodeContents(el); var s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'selected'; };
+      try { navigator.clipboard.writeText(text).then(done, fallback); } catch(e){ fallback(); }
+    });
+  });
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function evText(e){ var ev = e.evidence; if (!ev) return ''; return Array.isArray(ev) ? ev.join(' · ') : ''; }
+
+  var checks = proof.filter(function(e){ return e.kind === 'check'; });
+  var byId = {}; checks.forEach(function(e){ byId[e.check_id] = e; });
+
+  document.getElementById('proofRows').innerHTML = checks.filter(function(e){ return e.result === 'pass' || e.result === 'fail'; }).map(function(e){
+    var ev = evText(e);
+    return '<tr><td class="id">' + esc(e.gate.toUpperCase()) + ' · ' + esc(e.check_id) + '</td><td><span class="chip ' + e.result + '">' + e.result + '</span></td><td>' + esc(e.reason) + (ev ? '<span class="ev">' + esc(ev) + '</span>' : '') + '</td></tr>';
+  }).join('');
+
+  document.getElementById('mapRows').innerHTML = MAP.map(function(m){
+    var c = byId[m[2]]; var r = c ? c.result : 'not_built';
+    return '<tr><td class="from">' + m[0] + '</td><td class="to">' + m[1] + '</td><td><span class="chip ' + r + '" title="' + esc(c ? c.reason : '') + '">' + esc(m[2]) + '</span></td></tr>';
+  }).join('');
+
+  document.getElementById('gateList').innerHTML = Object.keys(GATES).map(function(g){
+    var cs = checks.filter(function(e){ return e.gate === g; });
+    return '<div class="gate"><div class="gid"><b>' + g.toUpperCase() + '</b></div><div><h3>' + GATES[g][0] + '</h3><p>' + GATES[g][1] + '</p></div><div class="chips">' +
+      cs.map(function(e){ return '<span class="chip ' + e.result + '" title="' + esc(e.reason) + '">' + esc(e.check_id) + '</span>'; }).join('') + '</div></div>';
+  }).join('');
+
+  // AutoLoop habits + proposals
+  var habits = proof.filter(function(e){ return e.kind === 'autoloop.habit'; });
+  var props = proof.filter(function(e){ return e.kind === 'autoloop.proposal'; });
+  document.getElementById('habitList').innerHTML = habits.map(function(h){
+    return '<div class="habit"><div class="hh"><span><b>' + esc(h.habit) + '</b> · ' + esc(h.client) + '</span><span>' + h.count + ' rounds' + (h.need ? ' · needs ' + h.need + ', budget ' + h.budget : '') + '</span></div><p>' + esc(h.claim) + '</p></div>';
+  }).join('') + props.map(function(p){
+    return '<div class="habit"><div class="hh"><span><b>proposal</b> · ' + esc(p.file) + '</span><span>section: ' + esc(p.section) + '</span></div><div class="diff">  ## ' + esc(p.section) + '\n  …\n<span class="add">+ ### Learned habits (AutoLoop, review before merging)\n' + p.lines.map(function(l){ return '+ - ' + esc(l); }).join('\n') + '</span></div></div>';
+  }).join('');
+
+  // Ledger chart: BLADE round scores from the replayed ledger
+  (function chart(){
+    var rounds = proof.filter(function(e){ return e.kind === 'loop.round'; });
+    var startEv = proof.filter(function(e){ return e.kind === 'run.start' && e.start_score; })[0];
+    if (!rounds.length || !startEv) return;
+    var svg = document.getElementById('ledgerChart');
+    var W = 860, H = 260, L = 46, R = 14, T = 14, B = 34;
+    var y0 = 0.50, y1 = 0.80, n = rounds.length;
+    var x = function(i){ return L + (i + 1) * (W - L - R) / n; };
+    var y = function(v){ return T + (y1 - v) * (H - T - B) / (y1 - y0); };
+    var s = '';
+    [0.5,0.6,0.7,0.8].forEach(function(v){ s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)" stroke-width="1"/><text x="' + (L - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-family="var(--mono)" font-size="11" fill="var(--dim)">' + Math.round(v * 100) + '%</text>'; });
+    var stallStart = rounds.findIndex(function(r){ return r.action === 'reverted'; });
+    if (stallStart > -1){ var xs = x(stallStart) - (W - L - R) / n / 2; s += '<rect x="' + xs + '" y="' + T + '" width="' + (W - R - xs) + '" height="' + (H - T - B) + '" fill="var(--surface-2)" stroke="var(--gold-dim)" stroke-dasharray="3 4" stroke-width="1"/><text x="' + (xs + 10) + '" y="' + (T + 18) + '" font-family="var(--mono)" font-size="11" fill="var(--gold)">rounds ' + rounds[stallStart].round + '–' + rounds[n-1].round + ': pickStrategy() → triggerQuality every time</text>'; }
+    var pts = [[L, y(startEv.start_score)]].concat(rounds.map(function(r, i){ return [x(i), y(r.score)]; }));
+    s += '<polyline fill="none" stroke="var(--gold)" stroke-width="2" points="' + pts.map(function(p){ return p.join(','); }).join(' ') + '"/>';
+    s += '<circle cx="' + L + '" cy="' + y(startEv.start_score) + '" r="4" fill="var(--dim)"/><text x="' + (L + 8) + '" y="' + (y(startEv.start_score) + 4) + '" font-family="var(--mono)" font-size="11" fill="var(--dim)">seed ' + (startEv.start_score * 100).toFixed(1) + '%</text>';
+    rounds.forEach(function(r, i){
+      var m = /^([\d.]+)% <=/.exec(r.summary || '');
+      if (m){ s += '<line x1="' + x(i) + '" x2="' + x(i) + '" y1="' + y(r.score) + '" y2="' + y(+m[1] / 100) + '" stroke="var(--red)" stroke-width="1"/><circle cx="' + x(i) + '" cy="' + y(+m[1] / 100) + '" r="2.5" fill="var(--red)"/>'; }
+      s += '<circle cx="' + x(i) + '" cy="' + y(r.score) + '" r="' + (r.action === 'improved' ? 4 : 2.5) + '" fill="' + (r.action === 'improved' ? 'var(--green)' : 'var(--gold)') + '"/>';
+      if (i % 5 === 0 || i === n - 1) s += '<text x="' + x(i) + '" y="' + (H - 12) + '" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--dim)">' + r.round + '</text>';
+    });
+    var last = rounds[n - 1];
+    s += '<text x="' + (W - R) + '" y="' + (y(last.score) - 10) + '" text-anchor="end" font-family="var(--mono)" font-size="12" fill="var(--text)">best ' + (last.score * 100).toFixed(1) + '%</text>';
+    s += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 2) + '" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--faint)">round</text>';
+    svg.innerHTML = s;
+  })();
+
+  // stream console
+  var box = document.getElementById('stream');
+  var tally;
+  var t0 = null;
+  function reset(){ box.innerHTML = ''; tally = {pass:0, fail:0, manual:0, not_built:0, hab:0, rnd:0}; t0 = null; paint(); }
+  function paint(){
+    document.getElementById('tPass').textContent = tally.pass;
+    document.getElementById('tFail').textContent = tally.fail;
+    document.getElementById('tMan').textContent = tally.manual;
+    document.getElementById('tNb').textContent = tally.not_built;
+    document.getElementById('tHab').textContent = tally.hab;
+    document.getElementById('tRnd').textContent = tally.rnd;
+  }
+  function line(e){
+    var at = Date.parse(e.at); if (t0 === null) t0 = at;
+    var dt = '+' + Math.max(0, (at - t0)/1000).toFixed(2) + 's';
+    var k, cls, msg;
+    if (e.kind === 'check'){ k = e.result === 'not_built' ? 'not built' : e.result; cls = e.result; tally[e.result]++; msg = '<b>' + esc(e.gate) + ' ' + esc(e.check_id) + '</b> <i>' + esc(e.reason) + '</i>'; }
+    else if (e.kind === 'loop.round'){ k = e.action === 'json_fail' ? 'no reply' : e.action; cls = e.action; tally.rnd++; msg = 'round ' + e.round + ' · ' + (e.score * 100).toFixed(1) + '% <i>' + esc(e.summary) + '</i>'; }
+    else if (e.kind === 'autoloop.habit'){ k = 'habit'; cls = 'loop'; tally.hab++; msg = '<b>' + esc(e.client) + ' ' + esc(e.habit) + '</b> <i>' + esc(e.claim) + '</i>'; }
+    else if (e.kind === 'autoloop.proposal'){ k = 'propose'; cls = 'loop'; msg = '<b>' + esc(e.file) + '</b> <i>' + esc(e.section) + ' only · ' + e.lines.length + ' new lines</i>'; }
+    else if (e.kind === 'loop.stage'){ k = e.stage; cls = 'loop'; msg = '<i>' + esc(e.note) + '</i>'; }
+    else if (e.kind === 'run.start'){ k = 'run'; cls = 'run'; t0 = at; dt = '+0.00s'; msg = 'start · ' + esc(e.target || '') + ' · ' + esc((e.gates||[]).join(' ')) + ' <i>' + esc(String(e.run_id).slice(0,8)) + '</i>'; }
+    else if (e.kind === 'run.end'){ k = 'run'; cls = 'run'; msg = e.best ? 'end · ' + e.pass + ' kept · ' + e.fail + ' reverted · best ' + (e.best * 100).toFixed(1) + '%' : 'end · ' + e.pass + ' pass · ' + e.fail + ' fail · ' + e.manual + ' manual · ' + e.not_built + ' not built'; }
+    else { k = e.kind; cls = 'run'; msg = esc(JSON.stringify(e)); }
+    var row = document.createElement('div');
+    row.className = 'ln';
+    row.innerHTML = '<span class="t">' + dt + '</span><span class="k ' + cls + '">' + esc(k) + '</span><span class="m">' + msg + '</span>';
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+    paint();
+    if (window.gsap && !reduce) gsap.from(row, {opacity:0, x:-8, duration:.3, ease:'power2.out'});
+  }
+
+  var timer = null;
+  function replay(){
+    clearTimeout(timer); reset();
+    if (reduce){ proof.forEach(line); return; }
+    var i = 0;
+    (function next(){
+      if (i >= proof.length) return;
+      var e = proof[i++]; line(e);
+      var gap = e.kind === 'run.end' ? 900 : e.kind === 'run.start' ? 450 : e.kind === 'loop.round' ? 120 : e.kind === 'autoloop.habit' ? 700 : 220;
+      timer = setTimeout(next, gap);
+    })();
+  }
+  document.getElementById('replayBtn').addEventListener('click', replay);
+
+  function goLive(){
+    var badge = document.getElementById('srcBadge');
+    badge.textContent = 'live · /api/stream'; badge.classList.add('live');
+    document.getElementById('streamTarget').textContent = location.host;
+    reset();
+    var es = new EventSource('/api/stream');
+    ['run.start','check','run.end','loop.stage','loop.round','autoloop.habit','autoloop.proposal','approval'].forEach(function(k){
+      es.addEventListener(k, function(m){ line(JSON.parse(m.data)); });
+    });
+  }
+  var canProbe = /^https?:$/.test(location.protocol) && !/claude\.ai|claudeusercontent|anthropic/.test(location.host);
+  if (canProbe && typeof fetch === 'function'){
+    fetch('/api/health').then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ if (j && j.ok) goLive(); else replay(); }).catch(replay);
+  } else replay();
+})();
+</script>
