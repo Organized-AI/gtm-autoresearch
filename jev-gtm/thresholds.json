@@ -1,0 +1,10 @@
+{
+  "confidence": "(k * p_max - 1) / (k - 1), k = number of options (3). Same formula as jev-style.",
+  "auto": 0.75,
+  "ask": 0.40,
+  "policy": {
+    "confidence >= auto": "Shown as confident. The reviewer can accept it in one click; nothing is applied automatically.",
+    "ask <= confidence < auto": "Shown as leaning.",
+    "confidence < ask": "Shown as unsure; the reviewer decides."
+  }
+}

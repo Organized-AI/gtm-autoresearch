@@ -1,0 +1,59 @@
+<main id="intake" class="intake" aria-labelledby="intakeTitle">
+ <header class="in-head">
+  <p class="in-eyebrow">GTM Container Atlas</p>
+  <h1 id="intakeTitle">Audit a GTM container</h1>
+  <p class="in-lede">Import a container export, confirm the website it runs on, and add the server-side container if there is one. The audit runs in this page; nothing is uploaded, and the container is never changed.</p>
+ </header>
+
+ <ol class="steps">
+  <li class="step" id="step1" data-state="active">
+   <div class="step-head"><span class="step-n">1</span><h2>Import the GTM container</h2><p class="step-done" id="s1done"></p></div>
+   <div class="step-body">
+    <label class="drop" id="drop1" for="file1">
+     <input id="file1" type="file" accept=".json,application/json">
+     <span class="drop-title">Drop the container export here, or choose a file</span>
+     <span class="drop-sub">In GTM: Admin → Export Container → pick the live version → Export. You get one JSON file.</span>
+    </label>
+    <p class="in-error" id="err1" role="alert" hidden></p>
+    <div class="in-row" id="serverFirst" hidden>
+     <p class="note-line">This export is a <b>server (sGTM)</b> container. Import the web container that sends to it as well, or audit the server container on its own.</p>
+     <label class="btn" for="file1b">Import the web container<input id="file1b" type="file" accept=".json,application/json" hidden></label>
+     <button class="btn ghost" id="serverOnly" type="button">Audit the server container only</button>
+    </div>
+    <button class="linkish" id="sample" type="button">No export handy? Use the Skyline Charters sample</button>
+   </div>
+  </li>
+
+  <li class="step" id="step2" data-state="todo">
+   <div class="step-head"><span class="step-n">2</span><h2>Confirm the website</h2><p class="step-done" id="s2done"></p></div>
+   <div class="step-body">
+    <p class="note-line" id="siteHint">The audit uses the website to check that server endpoints are first-party and that trigger conditions point at the live site.</p>
+    <div class="site-chips" id="siteChips"></div>
+    <form class="in-row" id="siteForm">
+     <label class="sr" for="site">Website</label>
+     <input id="site" type="text" inputmode="url" autocomplete="off" placeholder="example.com" spellcheck="false">
+     <button class="btn" type="submit">Confirm website</button>
+    </form>
+    <p class="in-error" id="err2" role="alert" hidden></p>
+   </div>
+  </li>
+
+  <li class="step" id="step3" data-state="todo">
+   <div class="step-head"><span class="step-n">3</span><h2>Server-side container</h2><p class="step-done" id="s3done"></p></div>
+   <div class="step-body">
+    <p class="note-line" id="s3q">Does this site also run a server-side GTM (sGTM) container? Adding it traces every event from the web tag to the platform it reaches, and finds the ones that go nowhere.</p>
+    <label class="drop small" id="drop3" for="file3">
+     <input id="file3" type="file" accept=".json,application/json">
+     <span class="drop-title">Drop the sGTM export here</span>
+     <span class="drop-sub">Same steps, in the server container: Admin → Export Container.</span>
+    </label>
+    <p class="in-error" id="err3" role="alert" hidden></p>
+    <div class="in-row">
+     <button class="btn ghost" id="skip3" type="button">No sGTM, audit the web container only</button>
+     <button class="linkish" id="sample3" type="button" hidden>Use the sample server container</button>
+    </div>
+   </div>
+  </li>
+ </ol>
+ <p class="in-foot">Static, read-only audit. The score is a heuristic for configuration health, not a measure of tracking accuracy. <a href="https://atlas.organizedai.vip/build" target="_blank" rel="noopener">Build your own atlas</a></p>
+</main>

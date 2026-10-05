@@ -1,0 +1,26 @@
+ <aside id="review" class="rv-panel" hidden aria-labelledby="rvTitle">
+  <div class="rv-head">
+   <div><p class="rv-eyebrow" id="rvEyebrow">Guided review</p><h2 id="rvTitle">Checkpoint</h2></div>
+   <button id="rvClose" type="button" aria-label="Close the review">Close</button>
+  </div>
+  <p class="rv-why" id="rvWhy"></p>
+  <div class="rv-progress" aria-hidden="true"><b id="rvBar"></b></div>
+  <p class="rv-count" id="rvCount" aria-live="polite"></p>
+  <nav class="rv-cps" id="rvCps" aria-label="Checkpoints"></nav>
+  <div class="rv-jevbar" id="rvJev" hidden>
+   <div class="rv-jevrow">
+    <span class="rv-jevlabel">Jev</span>
+    <span class="rv-jevstatus" id="jevStatus">Finding a model…</span>
+    <button id="jevRun" type="button">Suggest decisions</button>
+   </div>
+   <div class="rv-jevrow" id="jevSetup" hidden>
+    <label class="sr" for="jevProvider">Jev model</label>
+    <select id="jevProvider"><option value="cloudflare">Cloudflare Workers AI</option><option value="claude">Claude (this page)</option><option value="openrouter">OpenRouter</option><option value="local">Local jev-style</option></select>
+    <button id="jevConnect" type="button" hidden>Connect OpenRouter</button>
+    <input id="jevLocal" type="text" aria-label="Local jev-style server" hidden>
+   </div>
+   <p class="rv-jevmsg"><span id="jevMsg" aria-live="polite">Jev gives each finding a probability for fix, intended or ask the owner. At 75% or more it is confident; under 40% it leaves the call to you.</span> <button class="linkish" id="jevChange" type="button">Change model</button></p>
+  </div>
+  <div class="rv-list" id="rvList"></div>
+  <div class="rv-nav"><button id="rvPrev" type="button">← Previous</button><button id="rvNext" type="button" class="primary">Next checkpoint →</button></div>
+ </aside>

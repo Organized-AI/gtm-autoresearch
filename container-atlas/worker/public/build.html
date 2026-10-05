@@ -1,0 +1,121 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html,body{margin:0}[hidden]{display:none!important}</style></head><body><title>Build Your Own Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* Build kit: one reading column; three levels, a tool table, then the copy-paste prompt. */
+:root{color-scheme:dark;--bg:#0c0b09;--panel:#15130f;--ink:#f7f2df;--muted:#a69f8b;--dim:#5d574a;--line:#353025;--gold:#ffe94a;--pass:#5ce1a4;--mono:'Space Mono',ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono)}
+main{max-width:860px;margin:0 auto;padding-inline:16px;padding-block:52px 80px}
+.eyebrow{margin:0;color:var(--gold);font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+h1{font-size:clamp(26px,5vw,38px);line-height:1.1;margin:10px 0 12px;text-wrap:balance}
+h2{font-size:17px;margin:44px 0 10px;text-wrap:balance}
+p,li{font-size:13px;line-height:1.7;color:var(--muted);max-width:68ch}
+p b,li b{color:var(--ink)}
+a{color:var(--gold)}
+code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--panel);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+.levels{display:grid;gap:10px;margin-top:18px}
+.lv{display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;border:1px solid var(--line);border-radius:8px;padding:14px 16px;background:var(--panel)}
+.lv .tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.lv h3{margin:0 0 4px;font-size:14px}.lv p{margin:0}
+.scroll{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:12px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line);line-height:1.55}
+th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:var(--panel)}
+td:first-child{font-weight:700;white-space:nowrap}
+td .lvl{display:inline-block;font-size:10px;padding:1px 6px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.prompt{position:relative;margin-top:12px}
+pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:48px 16px 16px;font-size:12px;line-height:1.6;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;max-height:520px;overflow:auto}
+.copy{position:absolute;top:10px;right:10px;font:inherit;font-size:11px;background:var(--gold);color:#111;border:0;border-radius:5px;padding:6px 10px;cursor:pointer;font-weight:700}
+.copy:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.env{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:12px}
+.env div{padding:9px 12px;border-bottom:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.env div:nth-child(odd){color:var(--ink);font-weight:700}
+.env div:nth-last-child(-n+2){border-bottom:0}
+.note{border-left:2px solid var(--gold);padding-left:12px}
+@media(max-width:560px){.lv{grid-template-columns:1fr;gap:4px}.env{grid-template-columns:1fr}.env div:nth-child(odd){border-bottom:0;padding-bottom:0}}
+</style>
+<main>
+ <p class="eyebrow">GTM Container Atlas · build kit</p>
+ <h1>Build your own atlas</h1>
+ <p>Everything in the session runs on tools you can set up yourself: a Cloudflare Worker for the audit page and the daily drift check, a few MCP servers so your agent can reach GTM, sGTM and GA4, and one prompt that has Claude Code or Codex install it all.</p>
+
+ <h2>Three levels</h2>
+ <div class="levels">
+  <div class="lv"><span class="tag">Level 1</span><div><h3>Audit</h3><p>Import a container export, confirm the website, add the sGTM export or skip, review the findings, shape the report and download PDF and Markdown. Needs nothing but a browser: <a href="/">open the atlas</a>.</p></div></div>
+  <div class="lv"><span class="tag">Level 2</span><div><h3>Watch for drift</h3><p>Save the audited export as a baseline. A daily cron fetches the published container and lists what changed. Your own copy runs on your free Cloudflare account.</p></div></div>
+  <div class="lv"><span class="tag">Level 3</span><div><h3>Workspace and publish</h3><p>Your agent turns the accepted fixes into a new GTM workspace, creates a version, and publishes only after you say so. Uses the GTM MCP with your own Google sign-in.</p></div></div>
+ </div>
+
+ <h2>Tools</h2>
+ <p>Only the first two are needed to rebuild what you saw. Add the others when you want the audit to check live behavior.</p>
+ <div class="scroll"><table>
+  <thead><tr><th>Tool</th><th>What it does here</th><th>Level</th><th>Connect</th></tr></thead>
+  <tbody>
+   <tr><td>Cloudflare + Wrangler</td><td>Hosts the atlas, the drift database (D1), the daily cron, and Workers AI for Jev. Free plan is enough.</td><td><span class="lvl">1–2</span></td><td><code>npx wrangler login</code></td></tr>
+   <tr><td>GTM MCP (Stape)</td><td>Lists accounts and containers, reads a workspace instead of exporting, creates workspaces and versions, publishes.</td><td><span class="lvl">1–3</span></td><td><code>https://gtm-mcp.stape.ai/mcp</code> · Google sign-in</td></tr>
+   <tr><td>Stape MCP</td><td>sGTM container status, request logs and monitoring for the delivery check. Stape-hosted containers only.</td><td><span class="lvl">optional</span></td><td><code>https://mcp.stape.ai/mcp</code> · header <code>Authorization: &lt;Stape API key&gt;</code></td></tr>
+   <tr><td>Chrome DevTools MCP</td><td>Loads pages in Chrome and records which tags fire, before and after consent.</td><td><span class="lvl">optional</span></td><td><code>npx -y chrome-devtools-mcp@latest</code></td></tr>
+   <tr><td>Google Analytics MCP</td><td>Read-only GA4 reports, to compare conversions with what the container sends.</td><td><span class="lvl">optional</span></td><td><code>pipx run analytics-mcp</code> · Google Cloud credentials</td></tr>
+   <tr><td>Cloudflare docs MCP</td><td>Lets the agent look up Workers, D1 and Workers AI details while it builds.</td><td><span class="lvl">optional</span></td><td><code>https://docs.mcp.cloudflare.com/mcp</code></td></tr>
+  </tbody>
+ </table></div>
+
+ <h2>Jev: calibrated suggestions</h2>
+ <p>Jev gives each finding a probability for <b>fix</b>, <b>intended</b> or <b>ask the owner</b>. At 75% or more it is confident; under 40% it leaves the call to a person. Pick one backend:</p>
+ <ul>
+  <li><b>Cloudflare Workers AI.</b> Built into the Worker, no key. The default.</li>
+  <li><b>OpenRouter.</b> Paste your own key in the atlas; any model OpenRouter serves. Good when you already pay for one model.</li>
+  <li><b>Local jev-style.</b> A small calibrated model on your laptop, no API at all: <code>uv tool install "jev-style[all] @ git+https://github.com/lawrence3699/jev-style"</code> then <code>jev-style serve</code>, and choose "Local jev-style" in the atlas. Only works when the atlas runs on the same machine.</li>
+ </ul>
+
+ <h2>The prompt</h2>
+ <p>Paste this into Claude Code or Codex in an empty folder. It asks before anything that signs in, spends money or publishes.</p>
+ <div class="prompt"><button class="copy" id="copy" type="button">Copy prompt</button><pre id="prompt">You are setting up my own copy of the GTM Container Atlas: a GTM audit page, a daily drift check, and the MCP servers that let you audit and fix GTM for me. Work step by step and tell me what you did after each step. Ask me before any step that signs in, creates a paid resource, or changes a GTM container.
+
+1. Check my tools. Confirm Node 20+ is installed. Tell me which agent you are (Claude Code or Codex); use that client's own command or config file for every MCP server below.
+
+2. Get the code. Clone https://github.com/Organized-AI/gtm-container-atlas into ./gtm-container-atlas and read its README.
+
+3. Cloudflare. Run `npx wrangler login` and wait for me to finish the browser sign-in. Then:
+   - create the database: `npx wrangler d1 create gtm-container-atlas`
+   - put the returned database_id into wrangler.jsonc, remove any "routes" and "account_id" entries, and keep the AI binding and the cron trigger
+   - load the schema: `npx wrangler d1 execute gtm-container-atlas --remote --file=schema.sql`
+   - deploy: `npx wrangler deploy`
+   - open <my workers.dev URL>/api/health and confirm it returns ok, drift and jev as true
+   Give me the URL.
+
+4. GTM MCP (Stape). Add the remote MCP server https://gtm-mcp.stape.ai/mcp under the name "gtm". It signs in with Google; tell me when to complete the sign-in. Then list my GTM accounts and containers so I can pick one to audit.
+
+5. Optional servers. Ask me which of these I want, then add only those:
+   - Stape MCP at https://mcp.stape.ai/mcp with header "Authorization: <my Stape API key>" (read the key from the STAPE_API_KEY environment variable; never write it into a file in the repo)
+   - Chrome DevTools MCP: `npx -y chrome-devtools-mcp@latest`
+   - Google Analytics MCP: `pipx run analytics-mcp` (needs Google Cloud credentials; walk me through `gcloud auth application-default login` with the analytics.readonly scope)
+
+6. First audit. For the container I picked, read its live workspace through the gtm server and save it as an export-format JSON file (exportFormatVersion 2, with containerVersion holding tag, trigger, variable, folder and builtInVariable). If the site has a server container, save that too. Open my atlas URL and tell me to drop the files in.
+
+7. Drift. After I finish the review in the atlas, remind me to click "Watch" so the daily check starts.
+
+8. Level 3, only when I ask. Take the operations I accepted in the atlas (the GTM auto tab exports them), and with the gtm server: create a new workspace named "Atlas fixes <date>", apply the changes, create a version, and show me the diff. Publish only after I type "publish".
+
+When you finish, summarize: my atlas URL, which MCP servers are connected, and what is left for me to do.</pre></div>
+
+ <h2>Environment variables</h2>
+ <p>For Claude Code on the web or any agent without a browser for sign-in. Set them in the environment settings, never in the repo.</p>
+ <div class="env">
+  <div>CLOUDFLARE_API_TOKEN</div><div>A token with Workers Scripts edit, D1 edit and Workers AI read. Replaces <code>wrangler login</code>.</div>
+  <div>CLOUDFLARE_ACCOUNT_ID</div><div>From the Cloudflare dashboard sidebar.</div>
+  <div>STAPE_API_KEY</div><div>Optional. Stape account → API.</div>
+  <div>OPENROUTER_API_KEY</div><div>Optional. Only if you use OpenRouter for Jev from the agent.</div>
+  <div>GOOGLE_PROJECT_ID</div><div>Optional. For the Google Analytics MCP.</div>
+ </div>
+ <p class="note">The GTM MCP signs in through a browser, so on the web connect it from claude.ai Settings → Connectors as a custom connector instead of an environment variable.</p>
+</main>
+<script>
+document.getElementById('copy').onclick = e => {
+  const b = e.currentTarget, t = document.getElementById('prompt').textContent;
+  const done = ok => { b.textContent = ok ? 'Copied' : 'Select the text to copy'; setTimeout(() => (b.textContent = 'Copy prompt'), 2000); };
+  try { navigator.clipboard.writeText(t).then(() => done(true), () => { getSelection().selectAllChildren(document.getElementById('prompt')); done(false); }); } catch (err) { done(false); }
+};
+</script>
+</body></html>

@@ -1,0 +1,928 @@
+{
+ "exportFormatVersion": 2,
+ "exportTime": "2026-10-01 09:12:00",
+ "containerVersion": {
+  "accountId": "6100000001",
+  "containerId": "170000001",
+  "containerVersionId": "42",
+  "name": "v42 - checkout events",
+  "container": {
+   "accountId": "6100000001",
+   "containerId": "170000001",
+   "name": "skylinecharters.com",
+   "publicId": "GTM-SKY7Q2L",
+   "usageContext": [
+    "WEB"
+   ]
+  },
+  "folder": [
+   {
+    "folderId": "90",
+    "name": "GA4"
+   },
+   {
+    "folderId": "91",
+    "name": "Meta"
+   },
+   {
+    "folderId": "92",
+    "name": "Google Ads"
+   }
+  ],
+  "tag": [
+   {
+    "tagId": "1",
+    "name": "GA4 - Config",
+    "type": "googtag",
+    "parentFolderId": "90",
+    "firingTriggerId": [
+     "2147479573"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "tagId",
+      "value": "G-SKY4H7Q2LP"
+     },
+     {
+      "type": "LIST",
+      "key": "configSettingsTable",
+      "list": [
+       {
+        "type": "MAP",
+        "map": [
+         {
+          "type": "TEMPLATE",
+          "key": "parameter",
+          "value": "server_container_url"
+         },
+         {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "https://sst.skylinecharters.com"
+         }
+        ]
+       },
+       {
+        "type": "MAP",
+        "map": [
+         {
+          "type": "TEMPLATE",
+          "key": "parameter",
+          "value": "send_page_view"
+         },
+         {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "true"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tagId": "2",
+    "name": "GA4 - purchase",
+    "type": "gaawe",
+    "parentFolderId": "90",
+    "firingTriggerId": [
+     "20"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "eventName",
+      "value": "purchase"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "measurementIdOverride",
+      "value": "{{CONST - GA4 ID}}"
+     },
+     {
+      "type": "LIST",
+      "key": "eventSettingsTable",
+      "list": [
+       {
+        "type": "MAP",
+        "map": [
+         {
+          "type": "TEMPLATE",
+          "key": "parameter",
+          "value": "value"
+         },
+         {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "{{DLV - value}}"
+         }
+        ]
+       },
+       {
+        "type": "MAP",
+        "map": [
+         {
+          "type": "TEMPLATE",
+          "key": "parameter",
+          "value": "transaction_id"
+         },
+         {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "{{DLV - transaction_id}}"
+         }
+        ]
+       },
+       {
+        "type": "MAP",
+        "map": [
+         {
+          "type": "TEMPLATE",
+          "key": "parameter",
+          "value": "coupon"
+         },
+         {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "{{DLV - coupon}}"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tagId": "3",
+    "name": "GA4 - generate_lead",
+    "type": "gaawe",
+    "parentFolderId": "90",
+    "firingTriggerId": [
+     "21"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "eventName",
+      "value": "generate_lead"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "measurementIdOverride",
+      "value": "{{CONST - GA4 ID}}"
+     }
+    ]
+   },
+   {
+    "tagId": "4",
+    "name": "GA4 - add_to_cart",
+    "type": "gaawe",
+    "parentFolderId": "90",
+    "firingTriggerId": [
+     "22"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "eventName",
+      "value": ""
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "measurementIdOverride",
+      "value": "{{CONST - GA4 ID}}"
+     }
+    ]
+   },
+   {
+    "tagId": "5",
+    "name": "GA4 - Quote Requested",
+    "type": "gaawe",
+    "firingTriggerId": [
+     "23"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "eventName",
+      "value": "Quote Requested"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "measurementIdOverride",
+      "value": "{{CONST - GA4 ID}}"
+     }
+    ]
+   },
+   {
+    "tagId": "6",
+    "name": "Data Tag - page_view",
+    "type": "cvt_MBTSV",
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "event_type",
+      "value": "standard"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "event_name_standard",
+      "value": "page_view"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "gtm_server_domain",
+      "value": "https://skyln.us.stape.io"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "request_path",
+      "value": "/data"
+     }
+    ]
+   },
+   {
+    "tagId": "7",
+    "name": "Data Tag - purchase",
+    "type": "cvt_MBTSV",
+    "firingTriggerId": [
+     "20"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "event_type",
+      "value": "standard"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "event_name_standard",
+      "value": "purchase"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "gtm_server_domain",
+      "value": "https://skyln.us.stape.io"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "request_path",
+      "value": "/data"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "user_data",
+      "value": "{{DLV - email}}"
+     }
+    ]
+   },
+   {
+    "tagId": "8",
+    "name": "Data Tag - add_to_cart",
+    "type": "cvt_MBTSV",
+    "firingTriggerId": [
+     "22"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "event_type",
+      "value": "standard"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "event_name_standard",
+      "value": "add_to_cart"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "gtm_server_domain",
+      "value": "https://skyln.us.stape.io"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "request_path",
+      "value": "/data"
+     }
+    ]
+   },
+   {
+    "tagId": "9",
+    "name": "Data Tag - quote_requested",
+    "type": "cvt_MBTSV",
+    "firingTriggerId": [
+     "23"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "event_type",
+      "value": "custom"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "event_name_custom",
+      "value": "quote_requested"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "gtm_server_domain",
+      "value": "https://skyln.us.stape.io"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "request_path",
+      "value": "/data"
+     }
+    ]
+   },
+   {
+    "tagId": "10",
+    "name": "Meta Pixel - PageView",
+    "type": "cvt_8840_12",
+    "parentFolderId": "91",
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "pixelId",
+      "value": "481920375512334"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "eventName",
+      "value": "PageView"
+     }
+    ]
+   },
+   {
+    "tagId": "11",
+    "name": "Meta Pixel - Purchase",
+    "type": "cvt_8840_12",
+    "parentFolderId": "91",
+    "firingTriggerId": [
+     "20"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "pixelId",
+      "value": "481920375512334"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "eventName",
+      "value": "Purchase"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "value",
+      "value": "{{DLV - value}}"
+     }
+    ]
+   },
+   {
+    "tagId": "12",
+    "name": "Meta Pixel - Lead",
+    "type": "cvt_8840_12",
+    "parentFolderId": "91",
+    "firingTriggerId": [
+     "21"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "pixelId",
+      "value": "481920375512334"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "eventName",
+      "value": "Lead"
+     }
+    ]
+   },
+   {
+    "tagId": "13",
+    "name": "Google Ads - Purchase",
+    "type": "awct",
+    "parentFolderId": "92",
+    "firingTriggerId": [
+     "20"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "conversionId",
+      "value": "907112233"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "conversionLabel",
+      "value": "Xk2fCLu8pZ0YEL"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "conversionValue",
+      "value": "{{DLV - value}}"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "orderId",
+      "value": "{{DLV - transaction_id}}"
+     }
+    ]
+   },
+   {
+    "tagId": "14",
+    "name": "Google Ads - Lead",
+    "type": "awct",
+    "parentFolderId": "92",
+    "firingTriggerId": [
+     "21"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "conversionId",
+      "value": "907112233"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "conversionLabel",
+      "value": ""
+     }
+    ]
+   },
+   {
+    "tagId": "15",
+    "name": "Google Ads - Remarketing",
+    "type": "sp",
+    "parentFolderId": "92",
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "conversionId",
+      "value": "907112233"
+     }
+    ]
+   },
+   {
+    "tagId": "16",
+    "name": "Conversion Linker",
+    "type": "gclidw",
+    "parentFolderId": "92",
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": []
+   },
+   {
+    "tagId": "17",
+    "name": "LinkedIn Insight",
+    "type": "html",
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "html",
+      "value": "<script>_linkedin_partner_id=\"5512093\";</script><script src=\"https://snap.licdn.com/li.lms-analytics/insight.min.js\"></script>"
+     }
+    ]
+   },
+   {
+    "tagId": "18",
+    "name": "TikTok Pixel - Base",
+    "type": "html",
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "html",
+      "value": "<script>!function(w,d,t){/* analytics.tiktok.com */}(window,document,\"ttq\");ttq.load(\"C9SKY2LQ1\");ttq.page();</script>"
+     }
+    ]
+   },
+   {
+    "tagId": "19",
+    "name": "TikTok Pixel - Base (copy)",
+    "type": "html",
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "html",
+      "value": "<script>!function(w,d,t){/* analytics.tiktok.com */}(window,document,\"ttq\");ttq.load(\"C9SKY2LQ1\");ttq.page();</script>"
+     }
+    ]
+   },
+   {
+    "tagId": "24",
+    "name": "UA - Pageview (old)",
+    "type": "ua",
+    "paused": true,
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "trackingId",
+      "value": "UA-4401123-1"
+     }
+    ]
+   },
+   {
+    "tagId": "25",
+    "name": "Hotjar",
+    "type": "hjtc",
+    "firingTriggerId": [
+     "2147479553"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "hotjar_site_id",
+      "value": "3301298"
+     }
+    ]
+   },
+   {
+    "tagId": "26",
+    "name": "Meta Pixel - ViewContent",
+    "type": "cvt_8840_12",
+    "parentFolderId": "91",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "pixelId",
+      "value": "{{CONST - Meta Pixel ID}}"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "eventName",
+      "value": "ViewContent"
+     }
+    ]
+   },
+   {
+    "tagId": "27",
+    "name": "Floodlight - Booking",
+    "type": "fls",
+    "firingTriggerId": [
+     "24"
+    ],
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "advertiserId",
+      "value": "10221344"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "groupTag",
+      "value": "skyln0"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "activityTag",
+      "value": "bookcf0"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "ordinal",
+      "value": "{{DLV - transaction_id}}"
+     }
+    ]
+   }
+  ],
+  "trigger": [
+   {
+    "triggerId": "20",
+    "name": "CE - purchase",
+    "type": "CUSTOM_EVENT",
+    "customEventFilter": [
+     {
+      "type": "EQUALS",
+      "parameter": [
+       {
+        "type": "TEMPLATE",
+        "key": "arg0",
+        "value": "{{_event}}"
+       },
+       {
+        "type": "TEMPLATE",
+        "key": "arg1",
+        "value": "purchase"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "triggerId": "21",
+    "name": "CE - generate_lead",
+    "type": "CUSTOM_EVENT",
+    "customEventFilter": [
+     {
+      "type": "EQUALS",
+      "parameter": [
+       {
+        "type": "TEMPLATE",
+        "key": "arg0",
+        "value": "{{_event}}"
+       },
+       {
+        "type": "TEMPLATE",
+        "key": "arg1",
+        "value": "generate_lead"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "triggerId": "22",
+    "name": "CE - add_to_cart",
+    "type": "CUSTOM_EVENT",
+    "customEventFilter": [
+     {
+      "type": "EQUALS",
+      "parameter": [
+       {
+        "type": "TEMPLATE",
+        "key": "arg0",
+        "value": "{{_event}}"
+       },
+       {
+        "type": "TEMPLATE",
+        "key": "arg1",
+        "value": "add_to_cart"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "triggerId": "23",
+    "name": "CE - quote_requested",
+    "type": "CUSTOM_EVENT",
+    "customEventFilter": [
+     {
+      "type": "EQUALS",
+      "parameter": [
+       {
+        "type": "TEMPLATE",
+        "key": "arg0",
+        "value": "{{_event}}"
+       },
+       {
+        "type": "TEMPLATE",
+        "key": "arg1",
+        "value": "quote_requested"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "triggerId": "24",
+    "name": "PV - Booking Confirmed",
+    "type": "PAGEVIEW",
+    "filter": [
+     {
+      "type": "EQUALS",
+      "parameter": [
+       {
+        "type": "TEMPLATE",
+        "key": "arg0",
+        "value": "{{Page Hostname}}"
+       },
+       {
+        "type": "TEMPLATE",
+        "key": "arg1",
+        "value": "staging.skylinecharters-dev.com"
+       }
+      ]
+     },
+     {
+      "type": "CONTAINS",
+      "parameter": [
+       {
+        "type": "TEMPLATE",
+        "key": "arg0",
+        "value": "{{Page URL}}"
+       },
+       {
+        "type": "TEMPLATE",
+        "key": "arg1",
+        "value": "/booking/confirmed"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "triggerId": "25",
+    "name": "Click - Call Button",
+    "type": "LINK_CLICK",
+    "filter": [
+     {
+      "type": "CONTAINS",
+      "parameter": [
+       {
+        "type": "TEMPLATE",
+        "key": "arg0",
+        "value": "{{Click Classes}}"
+       },
+       {
+        "type": "TEMPLATE",
+        "key": "arg1",
+        "value": "btn-call"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "triggerId": "26",
+    "name": "CE - purchase (copy)",
+    "type": "CUSTOM_EVENT",
+    "customEventFilter": [
+     {
+      "type": "EQUALS",
+      "parameter": [
+       {
+        "type": "TEMPLATE",
+        "key": "arg0",
+        "value": "{{_event}}"
+       },
+       {
+        "type": "TEMPLATE",
+        "key": "arg1",
+        "value": "purchase"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "variable": [
+   {
+    "variableId": "30",
+    "name": "DLV - value",
+    "type": "v",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "name",
+      "value": "ecommerce.value"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "dataLayerVersion",
+      "value": "2"
+     }
+    ]
+   },
+   {
+    "variableId": "31",
+    "name": "DLV - transaction_id",
+    "type": "v",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "name",
+      "value": "ecommerce.transaction_id"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "dataLayerVersion",
+      "value": "2"
+     }
+    ]
+   },
+   {
+    "variableId": "32",
+    "name": "DLV - email",
+    "type": "v",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "name",
+      "value": "user_data.email"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "dataLayerVersion",
+      "value": "2"
+     }
+    ]
+   },
+   {
+    "variableId": "33",
+    "name": "CONST - GA4 ID",
+    "type": "c",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "value",
+      "value": "G-SKY4H7Q2LP"
+     }
+    ]
+   },
+   {
+    "variableId": "34",
+    "name": "CONST - Meta Pixel ID",
+    "type": "c",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "value",
+      "value": "481920375512334"
+     }
+    ]
+   },
+   {
+    "variableId": "35",
+    "name": "DLV - route_id",
+    "type": "v",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "name",
+      "value": ""
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "dataLayerVersion",
+      "value": "2"
+     }
+    ]
+   },
+   {
+    "variableId": "36",
+    "name": "DLV - order_value",
+    "type": "v",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "name",
+      "value": "ecommerce.value"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "dataLayerVersion",
+      "value": "2"
+     }
+    ]
+   },
+   {
+    "variableId": "37",
+    "name": "JS - Old Cart Total",
+    "type": "jsm",
+    "parameter": [
+     {
+      "type": "TEMPLATE",
+      "key": "javascript",
+      "value": "function(){return window.cartTotal;}"
+     }
+    ]
+   }
+  ],
+  "builtInVariable": [
+   {
+    "type": "PAGE_URL",
+    "name": "Page URL"
+   },
+   {
+    "type": "PAGE_HOSTNAME",
+    "name": "Page Hostname"
+   },
+   {
+    "type": "EVENT",
+    "name": "Event"
+   },
+   {
+    "type": "CLICK_CLASSES",
+    "name": "Click Classes"
+   }
+  ]
+ }
+}

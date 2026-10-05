@@ -1,0 +1,13 @@
+{
+  "id": "finding-decision",
+  "version": "1",
+  "type": "choice",
+  "applies_to": "Every Fix first and Confirm finding from the GTM Container Atlas audit",
+  "question": "What should happen with this finding?",
+  "options": {
+    "fix": "Fix it: the finding is a real problem in this container.",
+    "intended": "Intended: the setup is deliberate, keep it as it is.",
+    "ask_owner": "Ask the owner: the export alone cannot settle it."
+  },
+  "maps_to_atlas_decision": { "fix": "fix", "intended": "keep", "ask_owner": "ask" }
+}

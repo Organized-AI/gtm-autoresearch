@@ -1,0 +1,10 @@
+{
+  "provider": "cloudflare",
+  "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+  "thresholds": { "auto": 0.75, "ask": 0.4 },
+  "results": [
+    { "key": "a", "probabilities": { "fix": 0.2, "intended": 0.1, "ask_owner": 0.7 }, "choice": "ask_owner", "confidence": 0.55 },
+    { "key": "b", "probabilities": { "fix": 1, "intended": 0, "ask_owner": 0 }, "choice": "fix", "confidence": 1 }
+  ],
+  "_note": "Recorded from the live atlas Worker on 2026-10-05. Values are model-reported, not calibrated on labelled data."
+}

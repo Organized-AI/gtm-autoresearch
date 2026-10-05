@@ -1,0 +1,6 @@
+{
+  "findings": [
+    { "key": "a", "name": "TikTok Pixel - Base (copy)", "kind": "tag", "check": "Duplicates", "severity": "review", "container": "GTM-X", "message": "Same settings as tag TikTok Pixel - Base. Merge them or confirm both are needed." },
+    { "key": "b", "name": "GA4 - add_to_cart", "kind": "tag", "check": "Parameters", "severity": "critical", "container": "GTM-X", "message": "Required setting event name is blank, so this tag cannot send a valid hit." }
+  ]
+}

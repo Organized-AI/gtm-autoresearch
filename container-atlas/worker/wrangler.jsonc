@@ -1,0 +1,16 @@
+{
+  // GTM Container Atlas: the audit page as Worker Assets, plus drift watch (D1 + daily cron) and Jev suggestions (Workers AI).
+  // 1) npx wrangler d1 create gtm-container-atlas   2) paste the database_id below   3) npm run db:init   4) npm run deploy
+  // To serve on your own domain, add: "routes": [{ "pattern": "atlas.example.com", "custom_domain": true }]
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gtm-container-atlas",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-04",
+  "workers_dev": true,
+  "assets": { "directory": "./public", "binding": "ASSETS", "html_handling": "auto-trailing-slash", "not_found_handling": "404-page", "run_worker_first": ["/api/*"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "gtm-container-atlas", "database_id": "REPLACE_WITH_YOUR_D1_ID" }],
+  "ai": { "binding": "AI" },
+  "triggers": { "crons": ["17 11 * * *"] },
+  "vars": { "JEV_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "AUTO_THRESHOLD": "0.75", "ASK_THRESHOLD": "0.40" },
+  "observability": { "enabled": true }
+}

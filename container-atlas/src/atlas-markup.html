@@ -1,0 +1,27 @@
+<div id="app">
+<header class="top"><div class="who"><div class="tabs" id="tabs" role="tablist" aria-label="Container"></div><h1 id="title"></h1><p id="meta"></p></div>
+<div class="score"><strong id="score">—</strong><span id="scoreLabel">configuration score</span></div></header>
+<div class="toolbar">
+ <div class="mode" id="mode" role="group" aria-label="View"></div>
+ <label for="q">Find <input id="q" type="search" placeholder="Name, ID, type  ( / )" autocomplete="off"></label>
+ <label for="kind">Family <select id="kind"><option value="all">All</option></select></label>
+ <label for="risk">Finding <select id="risk"><option value="all">Any</option><option value="critical">Fix first</option><option value="review">Confirm</option><option value="info">Note</option><option value="none">No finding</option></select></label>
+ <label for="trace">Trace <select id="trace"><option value="near">Neighbors</option><option value="path">Full path</option></select></label>
+ <span class="spacer"></span><button id="reset" class="primary">Reset</button>
+</div>
+<div class="workspace">
+ <main class="diagram" id="diagram" tabindex="0" aria-label="Diagram. Arrow keys pan, plus and minus zoom, 0 fits.">
+  <div class="caption" id="caption"></div>
+  <div class="zoombar" id="zoombar"><button id="zoomOut" aria-label="Zoom out">−</button><output id="zoomLevel">100%</output><button id="zoomIn" aria-label="Zoom in">+</button><button id="fit">Fit</button></div>
+  <svg id="svg" role="img" aria-label="GTM dependency diagram"><g id="vp"><g id="deco"></g><g id="edges"></g><g id="nodes"></g><g id="fx"></g></g></svg>
+  <div class="schedule" id="schedule" hidden><table><thead><tr id="schedHead"></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="three" id="three" hidden><div class="labels" id="labels"></div></div>
+  <div class="mini" id="mini" aria-label="Minimap"><canvas id="miniCanvas"></canvas></div>
+  <div class="legend" id="legend"></div>
+ </main>
+ <aside class="side">
+  <div class="stats" id="stats"></div>
+  <div class="scroll"><section class="block"><h2>Selected</h2><div id="selected"></div></section><div id="panels"></div></div>
+ </aside>
+</div></div>
+<div class="sr" id="live" aria-live="polite"></div>

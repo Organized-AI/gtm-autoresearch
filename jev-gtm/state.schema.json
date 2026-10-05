@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Jev-GTM finding state",
+  "description": "One audit finding as Jev sees it. Built from the atlas report model (GTM_ENGINE.build().report.items).",
+  "type": "object",
+  "required": ["key", "element", "kind", "check", "severity", "container", "finding"],
+  "properties": {
+    "key": { "type": "string", "description": "Stable id: container|nodeId|check|message prefix" },
+    "element": { "type": "string", "description": "Tag, trigger, variable, client or route name" },
+    "kind": { "enum": ["tag", "trigger", "variable", "client", "builtin", "wtag", "wtrigger", "endpoint", "event", "strigger", "stag", "dest"] },
+    "check": { "enum": ["References", "Parameters", "Signal flow", "Duplicates", "Unused", "Legacy", "Naming", "Folders"] },
+    "severity": { "enum": ["critical", "review"] },
+    "container": { "type": "string", "description": "GTM public ID, or 'Signal flow'" },
+    "finding": { "type": "string", "description": "The finding text shown in the report" }
+  }
+}
