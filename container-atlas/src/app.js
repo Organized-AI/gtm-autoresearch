@@ -224,11 +224,13 @@ function watchPanel() {
   const h = document.createElement('h3'); h.textContent = 'Watch for drift'; box.append(h);
   const p = document.createElement('p'); p.className = 'note-line'; box.append(p);
   const web = window.__exports && Object.values(window.__exports).find(d => !/SERVER/i.test(((d.containerVersion || d).container || {}).usageContext || ''));
-  if (!API.ok) { p.textContent = 'Drift watch runs on the hosted atlas at atlas.organizedai.vip. Open the audit there to save this container as a baseline and get a daily check of the published version.'; return box; }
+  if (!API.ok) { p.textContent = 'Drift watch runs on the hosted atlas at atlas.organizedai.vip. Open the audit there to save this container as a baseline and get a daily check of the published version. Drift feeds '; const a0 = document.createElement('a'); a0.href = GTM_AR; a0.target = '_blank'; a0.rel = 'noopener'; a0.textContent = 'GTM Autoresearch'; p.append(a0, document.createTextNode(', which proposes the cleanup.')); return box; }
   if (!web) { p.textContent = 'Drift watch compares a web container with its published version. This audit has no web container.'; return box; }
   const cv = web.containerVersion || web, publicId = (cv.container || {}).publicId;
   const saved = (() => { try { return JSON.parse(localStorage.getItem('atlas-watch:' + publicId) || 'null'); } catch (e) { return null; } })();
-  p.textContent = 'Save this export as the baseline. Every day the atlas fetches the published ' + publicId + ' and records what changed: new versions, tags added, removed or paused, firing changes, new server endpoints and measurement IDs.';
+  p.textContent = 'Save this export as the baseline. Every day the atlas fetches the published ' + publicId + ' and records what changed: new versions, tags added, removed or paused, firing changes, new server endpoints and measurement IDs. When it drifts, run ';
+  const arl = document.createElement('a'); arl.href = GTM_AR; arl.target = '_blank'; arl.rel = 'noopener'; arl.textContent = 'GTM Autoresearch';
+  p.append(arl, document.createTextNode(' on the new version: it re-scores the container and proposes the cleanup, one guarded round at a time. The GTM auto tab here runs the same loop, and every round is saved.'));
   const out = document.createElement('div'); out.className = 'rv-wresult';
   const show = (link, res) => {
     out.textContent = '';
@@ -251,6 +253,38 @@ function watchPanel() {
   box.append(go, out);
   return box;
 }
+
+/* GTM auto runs: every round, accepted or rejected, is stored in Cloudflare (D1) when the hosted atlas is in use */
+const RUNS = new WeakMap(), GTM_AR = 'https://github.com/Organized-AI/gtm-autoresearch';
+function runFor(data, st) {
+  let r = RUNS.get(st); if (r) return r;
+  r = { queue: Promise.resolve(), saved: 0, failed: 0, id: null, token: null, link: null };
+  RUNS.set(st, r);
+  if (!API.ok) return r;
+  const watch = (() => { try { return JSON.parse(localStorage.getItem('atlas-watch:' + data.publicId) || 'null'); } catch (e) { return null; } })();
+  const wid = watch && /[?&]w=([^&]+)/.exec(watch.link || ''); 
+  r.queue = fetch('/api/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ publicId: data.publicId, label: data.publicId, website: window.__report && window.__report.website, baselineScore: st.baseline.score, watchId: wid ? wid[1] : null }) })
+    .then(res => res.json().then(j => { if (!res.ok) throw new Error(j.message); r.id = j.id; r.token = j.token; r.link = j.link; try { const k = 'atlas-runs:' + data.publicId, l = JSON.parse(localStorage.getItem(k) || '[]'); l.unshift({ link: j.link, at: Date.now() }); localStorage.setItem(k, JSON.stringify(l.slice(0, 20))); } catch (e) { /* storage blocked */ } }))
+    .catch(e => { r.error = e.message || 'Could not start the run.'; });
+  return r;
+}
+window.atlasRound = (data, entry, st) => {
+  const r = runFor(data, st), body = JSON.stringify({ round: entry.round, accepted: !!entry.accepted, score: entry.score, criticalCount: entry.criticalCount, source: entry.source, idea: entry.idea, why: entry.why, reason: entry.reason, error: entry.error, operations: entry.operations, dimensions: entry.dimensions });
+  r.queue = r.queue.then(() => {
+    if (!r.id) return;
+    return fetch('/api/runs/' + r.id + '/rounds?t=' + encodeURIComponent(r.token), { method: 'POST', headers: { 'content-type': 'application/json' }, body })
+      .then(res => { if (res.ok) r.saved++; else r.failed++; }, () => { r.failed++; });
+  }).then(() => { const el = document.getElementById('auStore'); if (el) window.atlasRunStatus(st, el); });
+};
+window.atlasRunStatus = (st, el) => {
+  el.textContent = '';
+  const r = RUNS.get(st);
+  if (!API.ok) { el.append(document.createTextNode('Rounds are saved to Cloudflare on the hosted atlas (atlas.organizedai.vip). Here they stay in this page.')); return; }
+  if (!r) { el.append(document.createTextNode('Every round you run, accepted or rejected, is saved to Cloudflare with its operations and scores.')); return; }
+  if (r.error) { el.append(document.createTextNode('Rounds are not being saved: ' + r.error)); return; }
+  el.append(document.createTextNode(r.saved + ' round' + (r.saved === 1 ? '' : 's') + ' saved to Cloudflare' + (r.failed ? ', ' + r.failed + ' failed' : '') + '. '));
+  if (r.link) { const a = document.createElement('a'); a.href = r.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open the run history'; el.append(a); }
+};
 
 /* Jev: calibrated suggestions for each decision; the person still decides */
 const JEV_OPTIONS = { fix: 'Fix it: the finding is a real problem in this container.', intended: 'Intended: the setup is deliberate, keep it as it is.', ask_owner: 'Ask the owner: the export alone cannot settle it.' };

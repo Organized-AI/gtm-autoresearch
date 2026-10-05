@@ -714,6 +714,7 @@ function autoSide(block, box) {
   stp.onclick = () => stepOnce(); rst.onclick = () => { stopLoop(); autoInit(AU.ci); load(); };
   const ask = h('button', 'askbtn', 'Ask Claude for the next round', b); ask.id = 'auAsk'; ask.hidden = !AU.sample; ask.onclick = askClaude;
   const msg = h('p', 'note', '', b); msg.id = 'auMsg'; msg.setAttribute('aria-live', 'polite');
+  const store = h('p', 'note auStore', '', b); store.id = 'auStore'; window.atlasRunStatus && window.atlasRunStatus(AU.st, store);
   if (D.auto.length > 1) {
     const lab = h('label', 'pick', 'Container ', b), sel = h('select', '', '', lab);
     D.auto.forEach((a, i) => { const o = h('option', '', a.publicId || 'Container ' + (i + 1), sel); o.value = i; }); sel.value = AU.ci;
@@ -745,7 +746,8 @@ function autoSide(block, box) {
   }
   const n = block('How the loop works');
   h('p', 'note', 'Audit the container → a proposer suggests one round of metadata-only operations (add folder, assign folder, rename) → apply them to a copy → audit again. A round is kept only if the score rises, no critical finding is added and no check goes down. The loop stops after two rounds without improvement, two rejected proposals, or eight rounds. Scores here are computed in the page from names, links and settings hashes, and match the plugin\'s audit exactly. Publishing is never part of the loop.', n);
-  h('p', 'foot', `gtm-audit-pro · GTM Autoresearch · ${(D.generatedAt || '').slice(0, 10)}`, box);
+  const gl = h('p', 'note', 'This is the in-page version of ', n), ga = h('a', '', 'GTM Autoresearch', gl); ga.href = 'https://github.com/Organized-AI/gtm-autoresearch'; ga.target = '_blank'; ga.rel = 'noopener'; gl.append(document.createTextNode(', which runs the same loop from Claude Code or Codex with ad-platform signals and a live GTM workspace.'));
+  h('p', 'foot', `GTM Container Atlas · GTM Autoresearch · ${(D.generatedAt || '').slice(0, 10)}`, box);
 }
 function roundCard(box) {
   const r = AU.st.rounds[AU.pick], c = h('div', 'card', '', box), cur = AU.st.best;
@@ -769,6 +771,7 @@ function relayout() {
   fit('all', true); rows();
 }
 function afterRound(entry) {
+  window.atlasRound && window.atlasRound(AU.data, entry, AU.st);
   if (entry.accepted) relayout();
   header(); side(); legend();
   const m = $('auMsg'); if (m) m.textContent = `Round ${entry.round} ${entry.accepted ? 'accepted' : 'rejected'}. ${entry.reason}`;

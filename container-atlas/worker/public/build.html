@@ -43,7 +43,7 @@ pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:
  <h2>Three levels</h2>
  <div class="levels">
   <div class="lv"><span class="tag">Level 1</span><div><h3>Audit</h3><p>Import a container export, confirm the website, add the sGTM export or skip, review the findings, shape the report and download PDF and Markdown. Needs nothing but a browser: <a href="/">open the atlas</a>.</p></div></div>
-  <div class="lv"><span class="tag">Level 2</span><div><h3>Watch for drift</h3><p>Save the audited export as a baseline. A daily cron fetches the published container and lists what changed. Your own copy runs on your free Cloudflare account.</p></div></div>
+  <div class="lv"><span class="tag">Level 2</span><div><h3>Watch for drift</h3><p>Save the audited export as a baseline. A daily cron fetches the published container and lists what changed. When it drifts, <a href="https://github.com/Organized-AI/gtm-autoresearch" target="_blank" rel="noopener">GTM Autoresearch</a> re-scores the new version and proposes the cleanup, one guarded round at a time; every GTM auto round is stored in Cloudflare D1. Your own copy runs on your free Cloudflare account.</p></div></div>
   <div class="lv"><span class="tag">Level 3</span><div><h3>Workspace and publish</h3><p>Your agent turns the accepted fixes into a new GTM workspace, creates a version, and publishes only after you say so. Uses the GTM MCP with your own Google sign-in.</p></div></div>
  </div>
 
@@ -75,11 +75,11 @@ pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:
 
 1. Check my tools. Confirm Node 20+ is installed. Tell me which agent you are (Claude Code or Codex); use that client's own command or config file for every MCP server below.
 
-2. Get the code. Clone https://github.com/Organized-AI/gtm-container-atlas into ./gtm-container-atlas and read its README.
+2. Get the code. Run `git clone -b feat/container-atlas-jev-gtm https://github.com/Organized-AI/gtm-autoresearch.git` and read container-atlas/README.md and jev-gtm/README.md. Work in container-atlas/worker for the Cloudflare steps.
 
 3. Cloudflare. Run `npx wrangler login` and wait for me to finish the browser sign-in. Then:
    - create the database: `npx wrangler d1 create gtm-container-atlas`
-   - put the returned database_id into wrangler.jsonc, remove any "routes" and "account_id" entries, and keep the AI binding and the cron trigger
+   - put the returned database_id into wrangler.jsonc (replace REPLACE_WITH_YOUR_D1_ID), and keep the AI binding and the cron trigger
    - load the schema: `npx wrangler d1 execute gtm-container-atlas --remote --file=schema.sql`
    - deploy: `npx wrangler deploy`
    - open <my workers.dev URL>/api/health and confirm it returns ok, drift and jev as true

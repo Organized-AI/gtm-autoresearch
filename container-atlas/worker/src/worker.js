@@ -4,6 +4,9 @@
 //   /api/watch/:id/check  POST  check again now
 //   /api/watch/:id        DELETE stop watching
 //   /api/judge            POST  Jev-style suggestions for findings (Workers AI)
+//   /api/runs             POST  start a GTM auto (autoresearch) run for a container
+//   /api/runs/:id/rounds  POST  store one round, accepted or rejected (token required)
+//   /api/runs/:id         GET   the run and every round (token required)
 //   cron (daily)                re-check every watch against the published gtm.js
 // Everything else is the static atlas in ./public.
 import DRIFT from './drift.js';
@@ -92,7 +95,7 @@ export default {
     const url = new URL(req.url), path = url.pathname;
     if (!path.startsWith('/api/')) return env.ASSETS.fetch(req);
     try {
-      if (path === '/api/health') return json({ ok: true, drift: true, jev: !!env.AI });
+      if (path === '/api/health') return json({ ok: true, drift: true, runs: true, jev: !!env.AI });
       if (path === '/api/judge' && req.method === 'POST') return await judge(env, req);
       if (path === '/api/watch' && req.method === 'POST') {
         if (!(await limit(env, req, 'watch', 20, 86400))) return fail(429, 'rate_limited', 'This network has created the maximum number of watches today.');
@@ -106,6 +109,37 @@ export default {
         const w = await env.DB.prepare('SELECT * FROM watches WHERE id = ?1').bind(id).first();
         const first = await runCheck(env, w);
         return json({ id, token, link: url.origin + '/drift?w=' + id + '&t=' + token, first });
+      }
+      if (path === '/api/runs' && req.method === 'POST') {
+        if (!(await limit(env, req, 'runs', 60, 86400))) return fail(429, 'rate_limited', 'This network has started the maximum number of GTM auto runs today.');
+        const b = await req.json().catch(() => null);
+        if (!b || !/^GTM-[A-Z0-9]{4,12}$/.test(b.publicId || '')) return fail(400, 'bad_container', 'A container ID like GTM-ABC1234 is required.');
+        const id = rid(9), token = rid(18), now = Date.now();
+        await env.DB.prepare('INSERT INTO runs (id, public_id, label, website, token_hash, watch_id, baseline_score, best_score, created_at, updated_at, ip_hash) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8, ?8, ?9)')
+          .bind(id, b.publicId, String(b.label || '').slice(0, 120), String(b.website || '').slice(0, 120), await sha(token), b.watchId ? String(b.watchId).slice(0, 40) : null, Number.isFinite(b.baselineScore) ? Math.round(b.baselineScore) : null, now, await ipHash(req)).run();
+        return json({ id, token, link: url.origin + '/runs?r=' + id + '&t=' + token });
+      }
+      const rm = /^\/api\/runs\/([A-Za-z0-9_-]+)(\/rounds)?$/.exec(path);
+      if (rm) {
+        const run = await env.DB.prepare('SELECT * FROM runs WHERE id = ?1').bind(rm[1]).first();
+        const tok = url.searchParams.get('t') || req.headers.get('x-run-token');
+        if (!run || !tok || run.token_hash !== await sha(tok)) return fail(404, 'not_found', 'No GTM auto run matches that link.');
+        if (rm[2] && req.method === 'POST') {
+          const e = await req.json().catch(() => null);
+          if (!e || !Number.isInteger(e.round) || e.round < 1 || e.round > 500) return fail(400, 'bad_round', 'A round number is required.');
+          const ops = JSON.stringify(e.operations || []), dims = JSON.stringify(e.dimensions || {});
+          if (ops.length > 200000) return fail(400, 'too_large', 'This round has too many operations to store.');
+          const now = Date.now(), acc = e.accepted ? 1 : 0, score = Number.isFinite(e.score) ? Math.round(e.score) : null;
+          await env.DB.batch([
+            env.DB.prepare('INSERT OR REPLACE INTO rounds (run_id, round, accepted, score, critical, source, idea, why, reason, error, operations, dimensions, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)')
+              .bind(run.id, e.round, acc, score, Number.isFinite(e.criticalCount) ? e.criticalCount : null, String(e.source || '').slice(0, 40), String(e.idea || '').slice(0, 120), String(e.why || '').slice(0, 600), String(e.reason || '').slice(0, 600), e.error ? String(e.error).slice(0, 300) : null, ops, dims, now),
+            env.DB.prepare('UPDATE runs SET rounds = (SELECT COUNT(*) FROM rounds WHERE run_id = ?1), accepted = (SELECT COUNT(*) FROM rounds WHERE run_id = ?1 AND accepted = 1), best_score = MAX(COALESCE(best_score, 0), CASE WHEN ?2 = 1 THEN COALESCE(?3, 0) ELSE 0 END), updated_at = ?4 WHERE id = ?1').bind(run.id, acc, score, now),
+          ]);
+          return json({ stored: true, round: e.round });
+        }
+        const { results } = await env.DB.prepare('SELECT round, accepted, score, critical, source, idea, why, reason, error, operations, dimensions, created_at FROM rounds WHERE run_id = ?1 ORDER BY round').bind(run.id).all();
+        return json({ id: run.id, publicId: run.public_id, label: run.label, website: run.website, watchId: run.watch_id, baselineScore: run.baseline_score, bestScore: run.best_score, createdAt: run.created_at, updatedAt: run.updated_at,
+          rounds: results.map(r => ({ round: r.round, accepted: !!r.accepted, score: r.score, criticalCount: r.critical, source: r.source, idea: r.idea, why: r.why, reason: r.reason, error: r.error, operations: JSON.parse(r.operations || '[]'), dimensions: JSON.parse(r.dimensions || '{}'), createdAt: r.created_at })) });
       }
       const m = /^\/api\/watch\/([A-Za-z0-9_-]+)(\/check)?$/.exec(path);
       if (m) {

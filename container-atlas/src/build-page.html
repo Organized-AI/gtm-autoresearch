@@ -43,7 +43,7 @@ pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:
  <h2>Three levels</h2>
  <div class="levels">
   <div class="lv"><span class="tag">Level 1</span><div><h3>Audit</h3><p>Import a container export, confirm the website, add the sGTM export or skip, review the findings, shape the report and download PDF and Markdown. Needs nothing but a browser: <a href="/">open the atlas</a>.</p></div></div>
-  <div class="lv"><span class="tag">Level 2</span><div><h3>Watch for drift</h3><p>Save the audited export as a baseline. A daily cron fetches the published container and lists what changed. Your own copy runs on your free Cloudflare account.</p></div></div>
+  <div class="lv"><span class="tag">Level 2</span><div><h3>Watch for drift</h3><p>Save the audited export as a baseline. A daily cron fetches the published container and lists what changed. When it drifts, <a href="https://github.com/Organized-AI/gtm-autoresearch" target="_blank" rel="noopener">GTM Autoresearch</a> re-scores the new version and proposes the cleanup, one guarded round at a time; every GTM auto round is stored in Cloudflare D1. Your own copy runs on your free Cloudflare account.</p></div></div>
   <div class="lv"><span class="tag">Level 3</span><div><h3>Workspace and publish</h3><p>Your agent turns the accepted fixes into a new GTM workspace, creates a version, and publishes only after you say so. Uses the GTM MCP with your own Google sign-in.</p></div></div>
  </div>
 
