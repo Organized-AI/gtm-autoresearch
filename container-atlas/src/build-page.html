@@ -75,11 +75,11 @@ pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:
 
 1. Check my tools. Confirm Node 20+ is installed. Tell me which agent you are (Claude Code or Codex); use that client's own command or config file for every MCP server below.
 
-2. Get the code. Clone https://github.com/Organized-AI/gtm-container-atlas into ./gtm-container-atlas and read its README.
+2. Get the code. Run `git clone -b feat/container-atlas-jev-gtm https://github.com/Organized-AI/gtm-autoresearch.git` and read container-atlas/README.md and jev-gtm/README.md. Work in container-atlas/worker for the Cloudflare steps.
 
 3. Cloudflare. Run `npx wrangler login` and wait for me to finish the browser sign-in. Then:
    - create the database: `npx wrangler d1 create gtm-container-atlas`
-   - put the returned database_id into wrangler.jsonc, remove any "routes" and "account_id" entries, and keep the AI binding and the cron trigger
+   - put the returned database_id into wrangler.jsonc (replace REPLACE_WITH_YOUR_D1_ID), and keep the AI binding and the cron trigger
    - load the schema: `npx wrangler d1 execute gtm-container-atlas --remote --file=schema.sql`
    - deploy: `npx wrangler deploy`
    - open <my workers.dev URL>/api/health and confirm it returns ok, drift and jev as true
