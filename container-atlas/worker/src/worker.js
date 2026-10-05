@@ -80,7 +80,7 @@ function normalize(r) {
   return { key: r.key, probabilities: probs, choice: top, confidence: (3 * probs[top] - 1) / 2 };
 }
 async function judge(env, req) {
-  if (!(await limit(env, req, 'judge', 40, 3600))) return fail(429, 'rate_limited', 'Too many Jev requests from this network. Try again later, or switch to OpenRouter with your own key.');
+  if (!(await limit(env, req, 'judge', 600, 3600))) return fail(429, 'rate_limited', 'Too many Jev requests from this network. Try again in a few minutes.');
   const body = await req.json().catch(() => null), findings = body && Array.isArray(body.findings) ? body.findings.slice(0, 15) : [];
   if (!findings.length) return fail(400, 'no_findings', 'Send up to 15 findings.');
   const schema = { type: 'object', properties: { results: { type: 'array', items: { type: 'object', properties: { key: { type: 'string' }, fix: { type: 'number' }, intended: { type: 'number' }, ask_owner: { type: 'number' } }, required: ['key', 'fix', 'intended', 'ask_owner'] } } }, required: ['results'] };

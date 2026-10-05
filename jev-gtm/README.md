@@ -5,9 +5,8 @@ A small, typed decision layer for GTM audits, in the style of [jev-style](https:
 ```
 finding (state) ──▶ question pack ──▶ provider ──▶ probabilities ──▶ confidence band
                     finding-decision    Workers AI     fix / intended    confident ≥ 0.75
-                                        OpenRouter     / ask_owner       leaning
-                                        Claude                           unsure < 0.40
-                                        local jev-style
+                                        (your Worker)  / ask_owner       leaning
+                                                                         unsure < 0.40
 ```
 
 ## Files
@@ -20,18 +19,16 @@ finding (state) ──▶ question pack ──▶ provider ──▶ probabiliti
 | `client.mjs` | `judge(findings)`, `resolve()`, `prompt()`, `normalize()` for Node, Workers and agents |
 | `examples/` | A real request and the response from the hosted atlas |
 
-## Zero config
+## Where Jev runs
 
-`judge(findings)` with no options uses whatever the machine is already connected to:
+Jev runs on Workers AI inside the atlas Worker (`/api/judge`, the `AI` binding in `wrangler.jsonc`), billed to the Cloudflare account that deploys it. People using the atlas set up nothing: the page sends every finding to Jev as soon as the audit is built.
 
-1. `JEV_LOCAL_URL` → a local `jev-style serve`
-2. `JEV_URL` → your own atlas Worker's `/api/judge`
-3. `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` → Workers AI directly
-4. `OPENROUTER_API_KEY` → OpenRouter
-5. nothing set → the shared atlas at `atlas.organizedai.vip` (rate limited)
+`judge(findings)` with no options, for agents and scripts:
 
-In the atlas page the same order applies: the hosted Worker's Workers AI, then an OpenRouter account connected in this browser (one-click sign-in, no key to paste), then Claude when the page runs inside Claude.
+1. `JEV_URL` → your own atlas Worker's `/api/judge`
+2. `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` → Workers AI directly
+3. nothing set → the hosted atlas at `atlas.organizedai.vip` (rate limited)
 
 ## Honest limits
 
-Workers AI, OpenRouter and Claude report probabilities from a general model; they are not calibrated on labelled GTM findings. `jev-style` is a calibrated small model, but it has not been trained on GTM data either. Collecting reviewer decisions from the atlas is the path to a calibrated Jev-GTM.
+Workers AI reports probabilities from a general model; they are not calibrated on labelled GTM findings. Reviewer decisions collected in the atlas are the path to a calibrated Jev-GTM, and the question pack stays compatible with calibrated small models such as [jev-style](https://github.com/lawrence3699/jev-style).

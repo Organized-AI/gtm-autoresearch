@@ -8,7 +8,7 @@ Import a GTM export, confirm the website, add the sGTM export or skip, then revi
 | 2 · Drift | Saves the audited export as a baseline; a daily cron compares it with the published `gtm.js` | This Worker (D1 + cron) |
 | 3 · Fix | Turns accepted fixes into a GTM workspace and version; publishes only on request | GTM MCP (Stape) in Claude Code or Codex |
 
-Jev suggestions come from [`../jev-gtm`](../jev-gtm).
+Jev runs on Workers AI inside the Worker and reviews every finding as soon as the audit is built; the question pack is in [`../jev-gtm`](../jev-gtm).
 
 ## Layout
 

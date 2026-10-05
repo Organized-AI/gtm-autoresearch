@@ -10,16 +10,11 @@
   <div class="rv-jevbar" id="rvJev" hidden>
    <div class="rv-jevrow">
     <span class="rv-jevlabel">Jev</span>
-    <span class="rv-jevstatus" id="jevStatus">Finding a model…</span>
-    <button id="jevRun" type="button">Suggest decisions</button>
+    <span class="rv-jevstatus" id="jevStatus">Ready</span>
+    <button id="jevRun" type="button" hidden>Ask Jev</button>
+    <button id="jevAccept" type="button" class="primary" hidden>Accept confident suggestions</button>
    </div>
-   <div class="rv-jevrow" id="jevSetup" hidden>
-    <label class="sr" for="jevProvider">Jev model</label>
-    <select id="jevProvider"><option value="cloudflare">Cloudflare Workers AI</option><option value="claude">Claude (this page)</option><option value="openrouter">OpenRouter</option><option value="local">Local jev-style</option></select>
-    <button id="jevConnect" type="button" hidden>Connect OpenRouter</button>
-    <input id="jevLocal" type="text" aria-label="Local jev-style server" hidden>
-   </div>
-   <p class="rv-jevmsg"><span id="jevMsg" aria-live="polite">Jev gives each finding a probability for fix, intended or ask the owner. At 75% or more it is confident; under 40% it leaves the call to you.</span> <button class="linkish" id="jevChange" type="button">Change model</button></p>
+   <p class="rv-jevmsg" id="jevMsg" aria-live="polite">Jev is reviewing every finding on this atlas's Cloudflare Worker. Suggestions appear on each card.</p>
   </div>
   <div class="rv-list" id="rvList"></div>
   <div class="rv-nav"><button id="rvPrev" type="button">← Previous</button><button id="rvNext" type="button" class="primary">Next checkpoint →</button></div>

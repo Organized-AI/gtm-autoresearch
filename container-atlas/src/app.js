@@ -137,7 +137,8 @@ function go(i) {
   const box = $('rvList'); box.textContent = ''; box.scrollTop = 0;
   cp.items.forEach(it => box.append(card(it)));
   if (cp.final) finalCard(box, cp.notes);
-  if ($('rvJev')) $('rvJev').hidden = !!cp.final || !cp.items.length;
+  if ($('rvJev') && API.jev) $('rvJev').hidden = !!cp.final;
+  paintJev && Object.keys(RV.jev).length && paintJev();
   progress();
 }
 function progress() {
@@ -161,6 +162,7 @@ function card(it) {
   const decide = (d, toggle) => {
       const cur = RV.dec[it.key];
       if (toggle && cur && cur.d === d) delete RV.dec[it.key]; else RV.dec[it.key] = { d, note: (cur && cur.note) || note.value, jev: RV.jev[it.key] && RV.jev[it.key].decision === d ? RV.jev[it.key].confidence : undefined };
+      if (typeof jevSummary === 'function' && Object.keys(RV.jev).length) setTimeout(jevSummary);
       [...dec.children].forEach(x => x.setAttribute('aria-pressed', String((RV.dec[it.key] || {}).d === x.dataset.d)));
       el.classList.toggle('decided', !!RV.dec[it.key]); note.hidden = !RV.dec[it.key]; persist(); progress();
       if (RV.dec[it.key] && window.gsap && !matchMedia('(prefers-reduced-motion: reduce)').matches) gsap.fromTo(el, { scale: .985 }, { scale: 1, duration: .25, ease: 'power2.out' });
@@ -218,7 +220,7 @@ function formatted(R) { const out = withDecisions(R); out.format = { title: FMT.
 
 /* drift watch: needs the hosted atlas (same-origin API) */
 const API = { ok: false, jev: false };
-fetch('/api/health').then(r => r.ok ? r.json() : null).then(async j => { if (j && j.ok) { API.ok = true; API.jev = !!j.jev; const bar = $('rvJev'); if (bar && bar.dataset.wired) { const o = $('jevProvider').querySelector('option[value="cloudflare"]'); if (o) o.disabled = !API.jev; if (!store.get('atlas-jev-provider') && API.jev) { JEV.provider = 'cloudflare'; $('jevProvider').value = 'cloudflare'; $('jevConnect').hidden = true; $('jevSetup').hidden = true; jevStatus(); } } } }).catch(() => {});
+API.ready = fetch('/api/health').then(r => r.ok ? r.json() : null).then(j => { if (j && j.ok) { API.ok = true; API.jev = !!j.jev; } }).catch(() => {});
 function watchPanel() {
   const box = document.createElement('section'); box.className = 'rv-watch';
   const h = document.createElement('h3'); h.textContent = 'Watch for drift'; box.append(h);
@@ -286,83 +288,22 @@ window.atlasRunStatus = (st, el) => {
   if (r.link) { const a = document.createElement('a'); a.href = r.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open the run history'; el.append(a); }
 };
 
-/* Jev: calibrated suggestions for each decision; the person still decides */
-const JEV_OPTIONS = { fix: 'Fix it: the finding is a real problem in this container.', intended: 'Intended: the setup is deliberate, keep it as it is.', ask_owner: 'Ask the owner: the export alone cannot settle it.' };
+/* Jev: hosted on this atlas's own Worker (Workers AI). It reviews every finding as soon as the audit is built;
+   the person still decides, and can accept the confident suggestions in one click. */
 const TO_DEC = { fix: 'fix', intended: 'keep', ask_owner: 'ask' };
-const JEV = { provider: null, key: '', model: 'meta-llama/llama-3.3-70b-instruct', local: 'http://127.0.0.1:8765', sample: undefined };
-const JEV_LABEL = { cloudflare: 'Cloudflare Workers AI', claude: 'Claude', openrouter: 'OpenRouter', local: 'Local jev-style' };
-const store = { get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) { /* storage blocked */ } } };
-JEV.key = store.get('atlas-openrouter-key');
-async function jevSample() { if (JEV.sample === undefined) { try { JEV.sample = window.claude && window.claude.use ? await window.claude.use('sample') : null; } catch (e) { JEV.sample = null; } } return JEV.sample; }
-// Pick a model with no setup: the hosted Worker's Workers AI, then OpenRouter if this browser is already connected, then Claude where the page runs inside Claude.
-async function jevResolve() {
-  const avail = { cloudflare: API.jev, openrouter: true, local: true, claude: !!(await jevSample()) };
-  const saved = store.get('atlas-jev-provider');
-  if (saved && avail[saved] && (saved !== 'openrouter' || JEV.key)) return saved;
-  if (avail.cloudflare) return 'cloudflare';
-  if (JEV.key) return 'openrouter';
-  if (avail.claude) return 'claude';
-  return 'openrouter';
-}
-function jevReady() { return JEV.provider === 'openrouter' ? !!JEV.key : true; }
-// OpenRouter sign-in (PKCE): a popup returns a one-time code, exchanged here for a key that stays in this browser.
-async function connectOpenRouter() {
-  const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const verifier = b64(crypto.getRandomValues(new Uint8Array(32)));
-  const challenge = b64(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
-  const cb = location.origin + '/openrouter-callback';
-  const w = window.open('https://openrouter.ai/auth?' + new URLSearchParams({ callback_url: cb, code_challenge: challenge, code_challenge_method: 'S256' }), 'openrouter', 'width=520,height=720');
-  if (!w) throw new Error('The sign-in window was blocked. Allow pop-ups for this site and try again.');
-  const code = await new Promise((resolve, reject) => {
-    const ch = 'BroadcastChannel' in window ? new BroadcastChannel('atlas-openrouter') : null, stop = () => { ch && ch.close(); clearInterval(t); };
-    if (ch) ch.onmessage = e => { if (e.data && e.data.code) { stop(); resolve(e.data.code); } };
-    const t = setInterval(() => { if (w.closed) { const c = store.get('atlas-openrouter-code'); stop(); store.set('atlas-openrouter-code', ''); c ? resolve(c) : reject(new Error('Sign-in was closed before it finished.')); } }, 600);
-  });
-  const r = await fetch('https://openrouter.ai/api/v1/auth/keys', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code, code_verifier: verifier, code_challenge_method: 'S256' }) });
-  const j = await r.json(); if (!r.ok || !j.key) throw new Error((j.error && j.error.message) || 'OpenRouter did not return a key.');
-  JEV.key = j.key; store.set('atlas-openrouter-key', j.key);
-}
+const JEV = { done: false, running: false, results: 0 };
 function jevNormalize(key, p) {
   const k = ['fix', 'intended', 'ask_owner'], v = k.map(x => Math.max(0, Number(p[x]) || 0)), s = v.reduce((a, b) => a + b, 0) || 1, probs = {};
   k.forEach((x, i) => { probs[x] = v[i] / s; });
   const top = k.reduce((a, b) => (probs[a] >= probs[b] ? a : b));
   return { key, probabilities: probs, choice: top, decision: TO_DEC[top], confidence: (3 * probs[top] - 1) / 2 };
 }
-function jevPrompt(items) {
-  return ['You review findings from a static Google Tag Manager container audit for a measurement team.', 'For each finding, give a probability for each decision; they must sum to 1. Be calibrated: when the export alone cannot settle it, put weight on ask_owner.',
-    'Decisions: ' + Object.entries(JEV_OPTIONS).map(([k, v]) => k + ' = ' + v).join(' '),
-    'Findings (JSON): ' + JSON.stringify(items.map(f => ({ key: f.key, element: f.name, kind: f.kind, check: f.check, severity: f.severity, container: f.container, finding: f.message }))),
-    'Reply with JSON only: {"results":[{"key":"…","fix":0.0,"intended":0.0,"ask_owner":0.0}]}'].join('\n');
-}
 async function jevRun(items) {
-  if (JEV.provider === 'claude') {
-    const sample = await jevSample(); if (!sample) throw new Error('Claude is only available when this page is open inside Claude.');
-    const parsed = await sample.json(jevPrompt(items), { modelTier: 'quick' });
-    return (parsed.results || []).map(x => jevNormalize(x.key, x));
-  }
-  if (JEV.provider === 'cloudflare') {
-    const r = await fetch('/api/judge', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ findings: items }) });
-    const j = await r.json(); if (!r.ok) throw new Error(j.message || 'Jev could not answer.');
-    return j.results.map(x => jevNormalize(x.key, x.probabilities));
-  }
-  if (JEV.provider === 'openrouter') {
-    if (!JEV.key) throw new Error('Connect OpenRouter first.');
-    const r = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + JEV.key, 'x-title': 'GTM Container Atlas' },
-      body: JSON.stringify({ model: JEV.model, temperature: 0, response_format: { type: 'json_object' }, messages: [{ role: 'user', content: jevPrompt(items) }] }) });
-    const j = await r.json(); if (r.status === 401) { JEV.key = ''; store.set('atlas-openrouter-key', ''); throw new Error('OpenRouter no longer accepts the saved key. Connect again.'); }
-    if (!r.ok) throw new Error((j.error && j.error.message) || 'OpenRouter returned ' + r.status + '.');
-    const text = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || '';
-    const parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
-    return parsed.results.map(x => jevNormalize(x.key, x));
-  }
-  // local jev-style server: one calibrated forward pass per finding
-  const out = [];
-  for (const f of items) {
-    const r = await fetch(JEV.local.replace(/\/$/, '') + '/v1/systemone', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state: { element: f.name, kind: f.kind, check: f.check, severity: f.severity, finding: f.message }, questions: { decision: JEV_OPTIONS } }) });
-    const j = await r.json(), a = (j.answers && j.answers.decision) || j.decision || (j.results && j.results.decision) || {};
-    out.push(jevNormalize(f.key, a.probabilities || {}));
-  }
-  return out;
+  // Short ids keep the model from mangling long finding keys; results are mapped back by id.
+  const byId = {}, findings = items.map((f, i) => { const id = 'f' + (i + 1); byId[id] = f.key; return Object.assign({}, f, { key: id }); });
+  const r = await fetch('/api/judge', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ findings }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || 'Jev could not answer.');
+  return j.results.filter(x => byId[x.key]).map(x => jevNormalize(byId[x.key], x.probabilities));
 }
 function jevChip(el, r) {
   const slot = el.jevSlot; slot.textContent = ''; slot.hidden = false;
@@ -374,43 +315,49 @@ function jevChip(el, r) {
   const n = document.createElement('span'); n.textContent = strong ? 'confident' : weak ? 'unsure, ask a person' : 'leaning';
   slot.append(b, n);
 }
-async function jevBar() {
-  const bar = $('rvJev'); if (!bar || bar.dataset.wired) { if (bar) jevStatus(); return; }
-  bar.dataset.wired = '1'; bar.hidden = false;
-  const sel = $('jevProvider'), run = $('jevRun'), msg = $('jevMsg'), connect = $('jevConnect');
-  if (!JEV.provider) JEV.provider = await jevResolve();
-  [...sel.options].forEach(o => { o.disabled = (o.value === 'cloudflare' && !API.jev) || (o.value === 'claude' && !JEV.sample); });
-  const sync = () => { sel.value = JEV.provider; connect.hidden = JEV.provider !== 'openrouter' || !!JEV.key; connect.textContent = 'Connect OpenRouter'; $('jevLocal').hidden = JEV.provider !== 'local'; jevStatus(); };
-  sel.onchange = () => { JEV.provider = sel.value; store.set('atlas-jev-provider', sel.value); sync(); };
-  $('jevChange').onclick = () => { $('jevSetup').hidden = !$('jevSetup').hidden; };
-  $('jevLocal').value = JEV.local; $('jevLocal').oninput = e => { JEV.local = e.target.value.trim(); };
-  connect.onclick = async () => {
-    connect.disabled = true; msg.textContent = 'Finish signing in to OpenRouter in the new window.';
-    try { await connectOpenRouter(); store.set('atlas-jev-provider', 'openrouter'); msg.textContent = 'OpenRouter connected. The key stays in this browser.'; }
-    catch (e) { msg.textContent = e.message; }
-    connect.disabled = false; sync();
-  };
-  run.onclick = async () => {
-    if (!jevReady()) { $('jevSetup').hidden = false; msg.textContent = 'Connect OpenRouter, or pick another model.'; return; }
-    const cp = RV.list[RV.cp], items = (cp.items || []).filter(i => !RV.dec[i.key]).slice(0, 15);
-    if (!items.length) { msg.textContent = 'Every finding in this checkpoint already has a decision.'; return; }
-    run.disabled = true; msg.textContent = 'Asking Jev (' + JEV_LABEL[JEV.provider] + ') about ' + items.length + ' findings…';
-    try {
-      const res = await jevRun(items); res.forEach(r => { RV.jev[r.key] = r; });
-      document.querySelectorAll('.rv-item').forEach(el => { if (RV.jev[el.dataset.key]) jevChip(el, RV.jev[el.dataset.key]); });
-      const strong = res.filter(r => r.confidence >= 0.75).length;
-      msg.textContent = res.length + ' suggestions · ' + strong + ' confident. Click a suggestion to accept it.';
-    } catch (e) { msg.textContent = (e && (e.message || e.code)) || 'Jev could not answer.'; sync(); }
-    run.disabled = false;
-  };
-  sync();
-  if (!jevReady()) $('jevSetup').hidden = false;
+function paintJev() { document.querySelectorAll('.rv-item').forEach(el => { if (RV.jev[el.dataset.key]) jevChip(el, RV.jev[el.dataset.key]); }); }
+function jevSummary() {
+  const all = Object.values(RV.jev), confident = all.filter(r => r.confidence >= 0.75), open = confident.filter(r => !RV.dec[r.key]);
+  $('jevStatus').textContent = all.length ? `Reviewed ${all.length} of ${RV.total} findings · ${confident.length} confident` : 'Ready';
+  const acc = $('jevAccept'); acc.hidden = !open.length; acc.textContent = 'Accept ' + open.length + ' confident suggestion' + (open.length === 1 ? '' : 's');
 }
-function jevStatus() {
-  const st = $('jevStatus'); if (!st || !JEV.provider) return;
-  const ready = jevReady();
-  st.textContent = JEV_LABEL[JEV.provider] + (ready ? (JEV.provider === 'cloudflare' ? ' · hosted, no key needed' : JEV.provider === 'openrouter' ? ' · connected' : JEV.provider === 'claude' ? ' · inside Claude' : ' · ' + JEV.local) : ' · not connected');
-  st.classList.toggle('off', !ready); $('jevRun').disabled = false;
+async function jevAll() {
+  if (JEV.running) return; JEV.running = true;
+  const msg = $('jevMsg'), todo = RV.list.flatMap(c => c.items).filter(i => !RV.jev[i.key]);
+  const batches = []; for (let i = 0; i < todo.length; i += 8) batches.push(todo.slice(i, i + 8));
+  let failed = 0, next = 0;
+  $('jevRun').hidden = true;
+  const progress = () => { const n = Object.keys(RV.jev).length; $('jevStatus').textContent = 'Reviewing findings · ' + n + ' of ' + RV.total + ' done…'; };
+  progress();
+  // Three batches at a time; a failed batch is retried once.
+  const worker = async () => {
+    while (next < batches.length) {
+      const b = batches[next++];
+      let res = null;
+      for (let attempt = 0; attempt < 2 && !res; attempt++) { try { res = await jevRun(b); } catch (e) { if (attempt) failed += b.length; } }
+      if (res) { res.forEach(r => { RV.jev[r.key] = r; }); paintJev(); progress(); }
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  const missing = RV.list.flatMap(c => c.items).filter(i => !RV.jev[i.key]).length;
+  msg.textContent = missing ? missing + ' findings got no suggestion. Ask Jev again to retry them.' : 'Each finding has a suggestion: fix, intended or ask the owner, with Jev\'s confidence. Click one to accept it, or accept every confident one at once.';
+  if (missing) { $('jevRun').hidden = false; $('jevRun').textContent = 'Ask Jev again'; }
+  JEV.running = false; jevSummary();
+}
+async function jevBar() {
+  const bar = $('rvJev'); if (!bar) return;
+  if (!bar.dataset.wired) {
+    bar.dataset.wired = '1';
+    $('jevRun').onclick = jevAll;
+    $('jevAccept').onclick = () => {
+      Object.values(RV.jev).filter(r => r.confidence >= 0.75 && !RV.dec[r.key]).forEach(r => { RV.dec[r.key] = { d: r.decision, note: '', jev: r.confidence }; });
+      persist(); go(RV.cp); jevSummary();
+    };
+  }
+  await API.ready;
+  if (!API.jev) { bar.hidden = true; return; }
+  bar.hidden = false; jevSummary();
+  if (!JEV.done) { JEV.done = true; jevAll(); }
 }
 
 /* reports */
