@@ -9,7 +9,8 @@ markup = markup.replace('<div id="app">', '<div id="app" hidden>', 1)
 markup = markup.replace('<span class="spacer"></span><button id="reset" class="primary">Reset</button>',
   '<span class="spacer"></span>'
   '<div class="reportbar"><button id="reviewBtn" type="button" aria-pressed="true">Review</button>'
-  '<button id="pdfBtn" type="button" class="primary">PDF report</button>'
+  '<button id="previewBtn" type="button" class="primary">Preview PDF</button>'
+  '<button id="pdfBtn" type="button">Download PDF</button>'
   '<button id="mdBtn" type="button">Markdown</button>'
   '<button id="newBtn" type="button">New audit</button>'
   '<span class="rmsg" id="rmsg" aria-live="polite"></span></div>'
@@ -30,6 +31,7 @@ page = f'''<title>GTM Container Atlas</title>
 {src('intake.css')}</style>
 {src('intake.html')}
 {markup}
+{src('preview.html')}
 <script type="application/json" id="sample-data">{sample}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

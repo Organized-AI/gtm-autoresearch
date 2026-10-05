@@ -187,7 +187,7 @@ function finalCard(box, notes) {
   const all = RV.list.flatMap(c => c.items), n = decided(all);
   done.textContent = n === RV.total ? 'Every finding has a decision. Download the report; your decisions and notes are in it.' : (RV.total - n) + ' findings still have no decision. You can download the report now; undecided findings are listed as open.';
   const row = document.createElement('div'); row.className = 'in-row';
-  [['Download PDF report', 'pdfBtn'], ['Download Markdown', 'mdBtn']].forEach(([t, id], k) => { const b = document.createElement('button'); b.type = 'button'; b.className = k ? 'btn ghost' : 'btn'; b.textContent = t; b.onclick = () => $(id).click(); row.append(b); });
+  [['Preview PDF', 'previewBtn'], ['Download PDF', 'pdfBtn'], ['Download Markdown', 'mdBtn']].forEach(([t, id], k) => { const b = document.createElement('button'); b.type = 'button'; b.className = k ? 'btn ghost' : 'btn'; b.textContent = t; b.onclick = () => $(id).click(); row.append(b); });
   box.append(formatPanel(), done, row, watchPanel());
 }
 
@@ -430,11 +430,57 @@ function withDecisions(R) {
   out.items = R.items.map(i => { const d = RV.dec[i.key]; return d ? Object.assign({}, i, { decision: d.d, note: d.note || '' }) : i; });
   return out;
 }
+/* PDF preview: pages are drawn with pdf.js (loaded on first use) so the preview looks the same in a browser, on a phone and inside Claude. */
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+let pdfjsReady = null;
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + src)); document.head.append(s); }); }
+function pdfjs() {
+  // The worker script is loaded as a plain script so pdf.js runs it on the page; no cross-origin worker is needed.
+  if (!pdfjsReady) pdfjsReady = loadScript(PDFJS + 'pdf.min.js').then(() => loadScript(PDFJS + 'pdf.worker.min.js')).then(() => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; return window.pdfjsLib; });
+  return pdfjsReady;
+}
+function buildPdf(R) {
+  if (!window.jspdf) throw new Error('The PDF library did not load. Download the Markdown report instead.');
+  return GTM_REPORT.pdf(formatted(R), window.jspdf.jsPDF);
+}
+let pvFocus = null;
+async function preview(R) {
+  const pv = $('pv'), pages = $('pvPages'), msg = $('pvMsg'), base = GTM_REPORT.fileBase(R);
+  pvFocus = document.activeElement; pv.hidden = false; pages.textContent = ''; msg.textContent = 'Building the report…';
+  $('pvTitle').textContent = (FMT.title || 'GTM container audit') + (R.website ? ' · ' + R.website : '');
+  $('pvClose').focus();
+  let buf;
+  try { buf = buildPdf(R); } catch (e) { msg.textContent = e.message; return; }
+  const bytes = new Uint8Array(buf);
+  $('pvDownload').onclick = () => save(base + '.pdf', new Blob([bytes], { type: 'application/pdf' }), msg);
+  try {
+    const lib = await pdfjs(), doc = await lib.getDocument({ data: bytes.slice() }).promise;
+    $('pvMeta').textContent = doc.numPages + ' pages · letter · ' + base + '.pdf';
+    msg.textContent = '';
+    const width = Math.min(820, pages.clientWidth - 32), ratio = Math.min(2, window.devicePixelRatio || 1);
+    for (let i = 1; i <= doc.numPages; i++) {
+      if (pv.hidden) return;
+      const page = await doc.getPage(i), vp1 = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: (width / vp1.width) * ratio });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.setAttribute('aria-label', 'Page ' + i + ' of ' + doc.numPages);
+      pages.append(c); const n = document.createElement('p'); n.className = 'pv-num'; n.textContent = i + ' / ' + doc.numPages; pages.append(n);
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }
+  } catch (e) {
+    // pdf.js unavailable: fall back to the browser's own PDF viewer where it can show one.
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })), f = document.createElement('iframe');
+    f.src = url; f.title = 'Report preview'; pages.textContent = ''; pages.append(f);
+    msg.textContent = 'Showing the browser\'s PDF viewer. If it stays blank, use Download now.';
+  }
+}
+function closePreview() { $('pv').hidden = true; $('pvPages').textContent = ''; if (pvFocus && pvFocus.focus) pvFocus.focus(); }
 function reportBar(R) {
   const msg = $('rmsg'), base = GTM_REPORT.fileBase(R);
+  $('previewBtn').onclick = () => preview(R);
+  $('pvClose').onclick = closePreview;
+  $('pvFormat').onclick = () => { closePreview(); openReview(true); go(RV.list.length - 1); const f = document.querySelector('.rv-format'); if (f) f.scrollIntoView({ block: 'start' }); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('pv').hidden) { e.stopPropagation(); closePreview(); } }, true);
   $('pdfBtn').onclick = () => {
-    if (!window.jspdf) return (msg.textContent = 'The PDF library did not load. Download the Markdown report instead.');
-    try { save(base + '.pdf', new Blob([GTM_REPORT.pdf(formatted(R), window.jspdf.jsPDF)], { type: 'application/pdf' }), msg); }
+    try { save(base + '.pdf', new Blob([buildPdf(R)], { type: 'application/pdf' }), msg); }
     catch (e) { msg.textContent = 'The PDF could not be built: ' + e.message; }
   };
   $('mdBtn').onclick = () => save(base + '.md', GTM_REPORT.markdown(formatted(R)), msg);
