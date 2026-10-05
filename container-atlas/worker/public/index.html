@@ -643,6 +643,8 @@ var GTM_DRIFT = (function () {
   var LISTENER = { cl: 1, lcl: 1, fsl: 1, hl: 1, sdl: 1, tl: 1, ytl: 1, evl: 1, jel: 1 };
   function typeLabel(t) { return t ? (LABEL[t] || (/^cvt_/.test(t) ? 'Template tag' : t)) : 'Paused tag'; }
   function describe(id, t, names) { return (names && names[id] ? '"' + names[id] + '"' : typeLabel(t.type) + ' #' + id); }
+  var EV_LABEL = { 'gtm.js': 'All Pages', 'gtm.init': 'Initialization', 'gtm.init_consent': 'Consent Initialization', 'gtm.dom': 'DOM Ready', 'gtm.load': 'Window Loaded', 'gtm.click': 'clicks', 'gtm.linkClick': 'link clicks', 'gtm.formSubmit': 'form submits', 'gtm.historyChange': 'history changes', 'gtm.timer': 'a timer', 'gtm.scrollDepth': 'scroll depth', 'gtm.elementVisibility': 'element visibility', 'gtm.video': 'YouTube video' };
+  function evs(list) { return list.map(function (e) { return EV_LABEL[e] || e; }).join(', '); }
   function compare(base, live, names) {
     var changes = [];
     var add = function (severity, kind, message, id) { changes.push({ severity: severity, kind: kind, message: message, tagId: id || null }); };
@@ -650,13 +652,13 @@ var GTM_DRIFT = (function () {
     Object.keys(live.tags).forEach(function (id) {
       var l = live.tags[id], b = base.tags[id];
       if (LISTENER[l.type]) return;
-      if (!b) { if (!l.paused) add('review', 'added', 'Added: ' + typeLabel(l.type) + ' #' + id + ', fires on ' + (l.events.join(', ') || 'no event') + '.', id); return; }
+      if (!b) { if (!l.paused) add('review', 'added', 'Added: ' + typeLabel(l.type) + ' #' + id + ', fires on ' + (evs(l.events) || 'no event') + '.', id); return; }
       if (b.paused !== l.paused) add('review', l.paused ? 'paused' : 'unpaused', (l.paused ? 'Paused: ' : 'Unpaused: ') + describe(id, b, names) + '.', id);
       else if (!l.paused && b.type && l.type && b.type !== l.type) add('review', 'type', 'Type changed: ' + describe(id, b, names) + ' is now ' + typeLabel(l.type) + '.', id);
       else if (!l.paused) {
         var known = function (a) { return a.filter(function (e) { return e.charAt(0) !== '('; }); };
         var be = known(b.events), le = known(l.events);
-        if (be.length && le.length && be.join() !== le.join()) add('review', 'firing', 'Firing changed: ' + describe(id, b, names) + ' fired on ' + be.join(', ') + ', now ' + le.join(', ') + '.', id);
+        if (be.length && le.length && be.join() !== le.join()) add('review', 'firing', 'Firing changed: ' + describe(id, b, names) + ' fired on ' + evs(be) + ', now ' + evs(le) + '.', id);
       }
     });
     Object.keys(base.tags).forEach(function (id) { if (!live.tags[id] && !base.tags[id].paused) add('review', 'removed', 'Removed: ' + describe(id, base.tags[id], names) + ' is no longer in the published container.', id); });
@@ -667,7 +669,20 @@ var GTM_DRIFT = (function () {
     diff(base.ids, live.ids).forEach(function (x) { add('review', 'id', 'Measurement ID ' + x + ' no longer appears in the published container.'); });
     return changes;
   }
-  return { fromExport: fromExport, fromGtmJs: fromGtmJs, compare: compare };
+  // The Skyline Charters sample is fictional and never published, so its "live" version is simulated:
+  // a later version where a chat widget was added, the Lead pixel paused, the duplicate TikTok tag removed,
+  // lead events renamed, and the server endpoint moved to a first-party subdomain.
+  function simulateSample(base) {
+    var live = JSON.parse(JSON.stringify(base));
+    live.version = String((Number(base.version) || 42) + 1);
+    live.tags['28'] = { type: 'html', paused: false, events: ['gtm.js'] };
+    if (live.tags['12']) live.tags['12'].paused = true;
+    delete live.tags['19'];
+    if (live.tags['3']) live.tags['3'].events = ['form_submit'];
+    live.endpoints = base.endpoints.filter(function (h) { return !/stape\.io$/.test(h); }).concat(['sst.skylinecharters.com']).sort();
+    return live;
+  }
+  return { fromExport: fromExport, fromGtmJs: fromGtmJs, compare: compare, simulateSample: simulateSample };
 })();
 if (typeof module !== 'undefined') module.exports = GTM_DRIFT;
 
@@ -2421,16 +2436,21 @@ function watchPanel() {
     out.textContent = '';
     const a = document.createElement('a'); a.href = link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open the drift history'; out.append(a);
     const c = document.createElement('button'); c.type = 'button'; c.className = 'btn ghost'; c.textContent = 'Copy link'; c.onclick = () => { navigator.clipboard.writeText(link).then(() => (c.textContent = 'Copied'), () => (c.textContent = 'Select the link to copy it')); }; out.append(c);
-    if (res) { const s = document.createElement('p'); s.className = 'note-line'; s.textContent = res.error ? 'First check failed: ' + res.error : res.changes.length ? 'First check: the published version ' + res.version + ' already differs from this export in ' + res.changes.length + ' ways. They are listed in the history.' : 'First check: the published version ' + res.version + ' matches this export.'; out.append(s); }
+    if (res) { const s = document.createElement('p'); s.className = 'note-line'; s.textContent = res.error ? (/^not_published: /.test(res.error) ? res.error.replace(/^not_published: /, '') : 'First check could not finish: ' + res.error) : res.changes.length ? 'First check: the published version ' + res.version + ' already differs from this export in ' + res.changes.length + ' ways. They are listed in the history.' : 'First check: the published version ' + res.version + ' matches this export.'; out.append(s); }
   };
   if (saved) show(saved.link);
   const go = document.createElement('button'); go.type = 'button'; go.className = 'btn'; go.textContent = saved ? 'Save a new baseline' : 'Watch ' + publicId;
+  const sample = publicId === 'GTM-SKY7Q2L';
+  if (sample) p.append(document.createTextNode(' The Skyline Charters sample is not a real published container, so its drift is simulated: a later version 43 with a few realistic changes, clearly labelled as a demo.'));
   go.onclick = async () => {
-    go.disabled = true; go.textContent = 'Checking the published container…';
+    go.disabled = true; go.textContent = sample ? 'Starting the sample watch…' : 'Checking the published container…'; out.textContent = '';
     const names = {}; (cv.tag || []).forEach(t => { names[t.tagId] = t.name; });
+    const baseline = GTM_DRIFT.fromExport(cv);
     try {
-      const r = await fetch('/api/watch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ publicId, label: (cv.container || {}).name, website: window.__report && window.__report.website, baseline: GTM_DRIFT.fromExport(cv), names }) });
-      const j = await r.json(); if (!r.ok) throw new Error(j.message || 'The watch could not be saved.');
+      const r = await fetch('/api/watch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ publicId, label: (cv.container || {}).name, website: window.__report && window.__report.website, baseline, names}) });
+      const j = await r.json();
+      if (r.status === 409) { go.disabled = false; go.textContent = 'Watch ' + publicId; const n = document.createElement('p'); n.className = 'note-line'; n.textContent = j.message; out.append(n); return; }
+      if (!r.ok) throw new Error(j.message || 'The watch could not be saved.');
       try { localStorage.setItem('atlas-watch:' + publicId, JSON.stringify({ link: j.link })); } catch (e) { /* storage blocked */ }
       show(j.link, j.first); go.textContent = 'Watching ' + publicId;
     } catch (e) { go.disabled = false; go.textContent = 'Watch ' + publicId; out.textContent = e.message; }

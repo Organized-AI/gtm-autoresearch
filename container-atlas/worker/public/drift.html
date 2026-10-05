@@ -46,7 +46,7 @@ li.new::after{content:"new";margin-left:8px;font-size:9px;color:#111;background:
   let stopArmed = false;
   function render(h) {
     $('title').textContent = (h.label || h.publicId) + ' · ' + h.publicId;
-    $('sub').textContent = 'Baseline: exported version ' + (h.baselineVersion || '?') + (h.website ? ' for ' + h.website : '') + '. Checked daily against the published container. Watching since ' + fmt(h.createdAt) + '.';
+    $('sub').textContent = (h.demo ? 'Sample demo: Skyline Charters is fictional, so the published version here is simulated. ' : '') + 'Baseline: exported version ' + (h.baselineVersion || '?') + (h.website ? ' for ' + h.website : '') + '. ' + (h.demo ? 'A real container is compared with what Google serves for it.' : 'Checked daily against the published container.') + ' Watching since ' + fmt(h.createdAt) + '.';
     const last = h.checks[0] || {}, stats = $('stats'); stats.textContent = '';
     [['Published version', last.version || '—'], ['Differences from baseline', (last.changes || []).length], ['Checks run', h.checks.length]].forEach(([a, b]) => { const d = document.createElement('div'); d.className = 'stat'; const s = document.createElement('span'); s.textContent = a; const v = document.createElement('b'); v.textContent = b; d.append(s, v); stats.append(d); });
     const list = $('list'); list.textContent = '';
@@ -55,7 +55,9 @@ li.new::after{content:"new";margin-left:8px;font-size:9px;color:#111;background:
       const row = document.createElement('div'); row.className = 'check';
       const w = document.createElement('div'); w.className = 'when'; const b = document.createElement('b'); b.textContent = fmt(c.checkedAt); w.append(b, document.createTextNode(c.version ? 'version ' + c.version : '')); row.append(w);
       const body = document.createElement('div');
-      if (c.error) { const e = document.createElement('p'); e.className = 'err'; e.textContent = c.error; body.append(e); }
+      if (c.error && /^not_published: /.test(c.error)) { const e = document.createElement('p'); e.className = 'empty'; e.textContent = c.error.replace(/^not_published: /, ''); body.append(e); }
+      else if (c.error && /Google returned 404/.test(c.error)) { const e = document.createElement('p'); e.className = 'empty'; e.textContent = 'Not published on Google at the time of this check, so there was nothing live to compare.'; body.append(e); }
+      else if (c.error) { const e = document.createElement('p'); e.className = 'err'; e.textContent = c.error; body.append(e); }
       else if (!c.changes.length) { const o = document.createElement('p'); o.className = 'ok'; o.textContent = 'Matches the baseline.'; body.append(o); }
       else {
         const fresh = new Set((i === h.checks.length - 1 ? [] : c.newChanges).map(x => x.message));

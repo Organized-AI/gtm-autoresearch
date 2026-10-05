@@ -86,6 +86,8 @@ var GTM_DRIFT = (function () {
   var LISTENER = { cl: 1, lcl: 1, fsl: 1, hl: 1, sdl: 1, tl: 1, ytl: 1, evl: 1, jel: 1 };
   function typeLabel(t) { return t ? (LABEL[t] || (/^cvt_/.test(t) ? 'Template tag' : t)) : 'Paused tag'; }
   function describe(id, t, names) { return (names && names[id] ? '"' + names[id] + '"' : typeLabel(t.type) + ' #' + id); }
+  var EV_LABEL = { 'gtm.js': 'All Pages', 'gtm.init': 'Initialization', 'gtm.init_consent': 'Consent Initialization', 'gtm.dom': 'DOM Ready', 'gtm.load': 'Window Loaded', 'gtm.click': 'clicks', 'gtm.linkClick': 'link clicks', 'gtm.formSubmit': 'form submits', 'gtm.historyChange': 'history changes', 'gtm.timer': 'a timer', 'gtm.scrollDepth': 'scroll depth', 'gtm.elementVisibility': 'element visibility', 'gtm.video': 'YouTube video' };
+  function evs(list) { return list.map(function (e) { return EV_LABEL[e] || e; }).join(', '); }
   function compare(base, live, names) {
     var changes = [];
     var add = function (severity, kind, message, id) { changes.push({ severity: severity, kind: kind, message: message, tagId: id || null }); };
@@ -93,13 +95,13 @@ var GTM_DRIFT = (function () {
     Object.keys(live.tags).forEach(function (id) {
       var l = live.tags[id], b = base.tags[id];
       if (LISTENER[l.type]) return;
-      if (!b) { if (!l.paused) add('review', 'added', 'Added: ' + typeLabel(l.type) + ' #' + id + ', fires on ' + (l.events.join(', ') || 'no event') + '.', id); return; }
+      if (!b) { if (!l.paused) add('review', 'added', 'Added: ' + typeLabel(l.type) + ' #' + id + ', fires on ' + (evs(l.events) || 'no event') + '.', id); return; }
       if (b.paused !== l.paused) add('review', l.paused ? 'paused' : 'unpaused', (l.paused ? 'Paused: ' : 'Unpaused: ') + describe(id, b, names) + '.', id);
       else if (!l.paused && b.type && l.type && b.type !== l.type) add('review', 'type', 'Type changed: ' + describe(id, b, names) + ' is now ' + typeLabel(l.type) + '.', id);
       else if (!l.paused) {
         var known = function (a) { return a.filter(function (e) { return e.charAt(0) !== '('; }); };
         var be = known(b.events), le = known(l.events);
-        if (be.length && le.length && be.join() !== le.join()) add('review', 'firing', 'Firing changed: ' + describe(id, b, names) + ' fired on ' + be.join(', ') + ', now ' + le.join(', ') + '.', id);
+        if (be.length && le.length && be.join() !== le.join()) add('review', 'firing', 'Firing changed: ' + describe(id, b, names) + ' fired on ' + evs(be) + ', now ' + evs(le) + '.', id);
       }
     });
     Object.keys(base.tags).forEach(function (id) { if (!live.tags[id] && !base.tags[id].paused) add('review', 'removed', 'Removed: ' + describe(id, base.tags[id], names) + ' is no longer in the published container.', id); });
@@ -110,6 +112,19 @@ var GTM_DRIFT = (function () {
     diff(base.ids, live.ids).forEach(function (x) { add('review', 'id', 'Measurement ID ' + x + ' no longer appears in the published container.'); });
     return changes;
   }
-  return { fromExport: fromExport, fromGtmJs: fromGtmJs, compare: compare };
+  // The Skyline Charters sample is fictional and never published, so its "live" version is simulated:
+  // a later version where a chat widget was added, the Lead pixel paused, the duplicate TikTok tag removed,
+  // lead events renamed, and the server endpoint moved to a first-party subdomain.
+  function simulateSample(base) {
+    var live = JSON.parse(JSON.stringify(base));
+    live.version = String((Number(base.version) || 42) + 1);
+    live.tags['28'] = { type: 'html', paused: false, events: ['gtm.js'] };
+    if (live.tags['12']) live.tags['12'].paused = true;
+    delete live.tags['19'];
+    if (live.tags['3']) live.tags['3'].events = ['form_submit'];
+    live.endpoints = base.endpoints.filter(function (h) { return !/stape\.io$/.test(h); }).concat(['sst.skylinecharters.com']).sort();
+    return live;
+  }
+  return { fromExport: fromExport, fromGtmJs: fromGtmJs, compare: compare, simulateSample: simulateSample };
 })();
 export default GTM_DRIFT;

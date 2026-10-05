@@ -10,6 +10,7 @@
 //   cron (daily)                re-check every watch against the published gtm.js
 // Everything else is the static atlas in ./public.
 import DRIFT from './drift.js';
+import { DEMO } from './demo.js';
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const fail = (status, code, message) => json({ error: code, message }, status);
@@ -25,10 +26,22 @@ async function limit(env, req, bucket, max, windowSec) {
   return row.n <= max;
 }
 
+// The fictional Skyline Charters sample is not published anywhere; its drift is simulated (worker/src/demo.js) and labelled as such.
+class LiveError extends Error {}
 async function fetchLive(publicId) {
-  const res = await fetch('https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(publicId), { cf: { cacheTtl: 300 } });
-  if (!res.ok) throw new Error('Google returned ' + res.status + ' for ' + publicId + '. Check that the container is published.');
-  return DRIFT.fromGtmJs(await res.text());
+  // The fictional sample container has a simulated published version, so the demo never depends on Google.
+  if (DEMO[publicId]) return DEMO[publicId];
+  let res;
+  try { res = await fetch('https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(publicId), { cf: { cacheTtl: 300 } }); }
+  catch (e) { throw new LiveError('Google Tag Manager could not be reached just now. The next daily check will try again.'); }
+  if (res.status === 404) throw new LiveError(publicId + ' has no published version that Google serves. Publish the container once in GTM, or check that the ID matches the container on the site.');
+  if (!res.ok) throw new LiveError('Google Tag Manager answered ' + res.status + ' for ' + publicId + '. The next daily check will try again.');
+  let live;
+  try { live = DRIFT.fromGtmJs(await res.text()); }
+  catch (e) { throw new LiveError('The published ' + publicId + ' could not be read. It may use a format this check does not support yet.'); }
+  // For IDs it does not know, Google sometimes serves an empty placeholder (version 1, no tags) instead of a 404.
+  if (!Object.keys(live.tags).length) throw new LiveError('Google serves an empty container for ' + publicId + ', which means it has never been published or the ID is wrong. Publish the container once in GTM, or check that the ID matches the container on the site.');
+  return live;
 }
 
 async function runCheck(env, w, liveCache) {
@@ -57,7 +70,7 @@ async function authed(env, id, token) {
 async function history(env, w) {
   const { results } = await env.DB.prepare('SELECT checked_at, version, changes, new_changes, error FROM checks WHERE watch_id = ?1 ORDER BY checked_at DESC LIMIT 60').bind(w.id).all();
   return {
-    id: w.id, publicId: w.public_id, label: w.label, website: w.website, createdAt: w.created_at, lastChecked: w.last_checked,
+    id: w.id, publicId: w.public_id, demo: !!DEMO[w.public_id], label: w.label, website: w.website, createdAt: w.created_at, lastChecked: w.last_checked,
     baselineVersion: JSON.parse(w.baseline).version,
     checks: results.map(r => ({ checkedAt: r.checked_at, version: r.version, changes: JSON.parse(r.changes || '[]'), newChanges: JSON.parse(r.new_changes || '[]'), error: r.error })),
   };
@@ -95,6 +108,12 @@ export default {
     const url = new URL(req.url), path = url.pathname;
     if (!path.startsWith('/api/')) return env.ASSETS.fetch(req);
     try {
+      if (path === '/api/published' && req.method === 'GET') {
+        const id = url.searchParams.get('id') || '';
+        if (!/^GTM-[A-Z0-9]{4,12}$/.test(id)) return fail(400, 'bad_container', 'A container ID like GTM-ABC1234 is required.');
+        try { const live = await fetchLive(id); return json({ published: true, sample: !!DEMO[id], version: live.version }); }
+        catch (e) { return json({ published: false, message: e.message }); }
+      }
       if (path === '/api/health') return json({ ok: true, drift: true, runs: true, jev: !!env.AI });
       if (path === '/api/judge' && req.method === 'POST') return await judge(env, req);
       if (path === '/api/watch' && req.method === 'POST') {
@@ -103,6 +122,8 @@ export default {
         if (!b || !/^GTM-[A-Z0-9]{4,12}$/.test(b.publicId || '')) return fail(400, 'bad_container', 'A web container ID like GTM-ABC1234 is required.');
         const baseline = JSON.stringify(b.baseline || {}), names = JSON.stringify(b.names || {});
         if (baseline.length > 300000 || names.length > 200000 || !b.baseline || !b.baseline.tags) return fail(400, 'bad_baseline', 'The baseline is missing or too large.');
+        // Check the published container first, so a watch is only saved when it can work.
+        try { await fetchLive(b.publicId); } catch (e) { return fail(409, 'not_published', e.message); }
         const id = rid(9), token = rid(18);
         await env.DB.prepare('INSERT INTO watches (id, public_id, label, website, token_hash, baseline, names, created_at, ip_hash) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)')
           .bind(id, b.publicId, String(b.label || '').slice(0, 120), String(b.website || '').slice(0, 120), await sha(token), baseline, names, Date.now(), await ipHash(req)).run();

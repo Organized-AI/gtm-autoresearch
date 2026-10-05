@@ -238,16 +238,21 @@ function watchPanel() {
     out.textContent = '';
     const a = document.createElement('a'); a.href = link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open the drift history'; out.append(a);
     const c = document.createElement('button'); c.type = 'button'; c.className = 'btn ghost'; c.textContent = 'Copy link'; c.onclick = () => { navigator.clipboard.writeText(link).then(() => (c.textContent = 'Copied'), () => (c.textContent = 'Select the link to copy it')); }; out.append(c);
-    if (res) { const s = document.createElement('p'); s.className = 'note-line'; s.textContent = res.error ? 'First check failed: ' + res.error : res.changes.length ? 'First check: the published version ' + res.version + ' already differs from this export in ' + res.changes.length + ' ways. They are listed in the history.' : 'First check: the published version ' + res.version + ' matches this export.'; out.append(s); }
+    if (res) { const s = document.createElement('p'); s.className = 'note-line'; s.textContent = res.error ? (/^not_published: /.test(res.error) ? res.error.replace(/^not_published: /, '') : 'First check could not finish: ' + res.error) : res.changes.length ? 'First check: the published version ' + res.version + ' already differs from this export in ' + res.changes.length + ' ways. They are listed in the history.' : 'First check: the published version ' + res.version + ' matches this export.'; out.append(s); }
   };
   if (saved) show(saved.link);
   const go = document.createElement('button'); go.type = 'button'; go.className = 'btn'; go.textContent = saved ? 'Save a new baseline' : 'Watch ' + publicId;
+  const sample = publicId === 'GTM-SKY7Q2L';
+  if (sample) p.append(document.createTextNode(' The Skyline Charters sample is not a real published container, so its drift is simulated: a later version 43 with a few realistic changes, clearly labelled as a demo.'));
   go.onclick = async () => {
-    go.disabled = true; go.textContent = 'Checking the published container…';
+    go.disabled = true; go.textContent = sample ? 'Starting the sample watch…' : 'Checking the published container…'; out.textContent = '';
     const names = {}; (cv.tag || []).forEach(t => { names[t.tagId] = t.name; });
+    const baseline = GTM_DRIFT.fromExport(cv);
     try {
-      const r = await fetch('/api/watch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ publicId, label: (cv.container || {}).name, website: window.__report && window.__report.website, baseline: GTM_DRIFT.fromExport(cv), names }) });
-      const j = await r.json(); if (!r.ok) throw new Error(j.message || 'The watch could not be saved.');
+      const r = await fetch('/api/watch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ publicId, label: (cv.container || {}).name, website: window.__report && window.__report.website, baseline, names}) });
+      const j = await r.json();
+      if (r.status === 409) { go.disabled = false; go.textContent = 'Watch ' + publicId; const n = document.createElement('p'); n.className = 'note-line'; n.textContent = j.message; out.append(n); return; }
+      if (!r.ok) throw new Error(j.message || 'The watch could not be saved.');
       try { localStorage.setItem('atlas-watch:' + publicId, JSON.stringify({ link: j.link })); } catch (e) { /* storage blocked */ }
       show(j.link, j.first); go.textContent = 'Watching ' + publicId;
     } catch (e) { go.disabled = false; go.textContent = 'Watch ' + publicId; out.textContent = e.message; }
