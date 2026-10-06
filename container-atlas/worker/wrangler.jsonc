@@ -9,8 +9,11 @@
   "workers_dev": true,
   "assets": { "directory": "./public", "binding": "ASSETS", "html_handling": "auto-trailing-slash", "not_found_handling": "404-page", "run_worker_first": ["/api/*"] },
   "d1_databases": [{ "binding": "DB", "database_name": "gtm-container-atlas", "database_id": "REPLACE_WITH_YOUR_D1_ID" }],
+  // Jev runs on your Workers AI through this binding. To use the hosted Jev-gateway instead (free for 30 days):
+  // remove this line, add "JEV_URL": "https://atlas.organizedai.vip/api/judge" to vars, and run
+  // `npx wrangler secret put JEV_KEY` with the key from POST https://atlas.organizedai.vip/api/jev/trial.
   "ai": { "binding": "AI" },
   "triggers": { "crons": ["17 11 * * *"] },
-  "vars": { "JEV_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "AUTO_THRESHOLD": "0.75", "ASK_THRESHOLD": "0.40" },
+  "vars": { "JEV_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "AUTO_THRESHOLD": "0.75", "ASK_THRESHOLD": "0.40", "TRIAL_DAYS": "30" },
   "observability": { "enabled": true }
 }

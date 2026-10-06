@@ -21,3 +21,8 @@ CREATE TABLE IF NOT EXISTS rounds (
   source TEXT, idea TEXT, why TEXT, reason TEXT, error TEXT, operations TEXT, dimensions TEXT, created_at INTEGER NOT NULL,
   PRIMARY KEY (run_id, round)
 );
+CREATE TABLE IF NOT EXISTS jev_keys (
+  id TEXT PRIMARY KEY, key_hash TEXT NOT NULL UNIQUE, email TEXT NOT NULL, label TEXT, plan TEXT NOT NULL DEFAULT 'trial',
+  created_at INTEGER NOT NULL, expires_at INTEGER, calls INTEGER NOT NULL DEFAULT 0, last_used INTEGER, ip_hash TEXT
+);
+CREATE INDEX IF NOT EXISTS jev_keys_email ON jev_keys(email);

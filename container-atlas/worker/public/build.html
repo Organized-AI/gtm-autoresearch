@@ -62,6 +62,14 @@ pre.cmd{padding:12px 14px;max-height:none;margin:6px 0 8px}
           ▼
   audit report  →  drift watch  →  GTM Autoresearch  →  new GTM workspace</pre></div>
 
+ <h2>Fastest: let Claude Code build it</h2>
+ <p>Install the Atlas Builder mod, send one prompt, and Claude Code does every step below on your own Cloudflare account. You answer its questions and sign in where it asks; a checklist pane shows where you are, and a <b>Your turn</b> line appears above the prompt whenever you need to act.</p>
+ <pre class="cmd">/plugin marketplace add Organized-AI/gtm-autoresearch
+/plugin install atlas-builder@gtm-autoresearch</pre>
+ <p>Start a new Claude Code session, then send:</p>
+ <div class="prompt"><button class="copy" id="copyKick" type="button">Copy prompt</button><pre id="kick" style="max-height:none">Build my own GTM Container Atlas with the Atlas Builder. Start with step 1 and ask me only what you need.</pre></div>
+ <p>At step 5 you choose where Jev runs: on your own Cloudflare account (Workers AI, billed to you), or on the <b>hosted Jev-gateway</b> run by Organized AI, free for 30 days. You need a Cloudflare account (the free plan works) and Node 20 or newer.</p>
+
  <h2>Step by step</h2>
  <ol class="walk">
   <li><div><h3>Run an audit<span class="lvtag">Level 1</span></h3>
@@ -80,6 +88,7 @@ npm run db:init</pre>
    <pre class="cmd">"ai": { "binding": "AI" },
 "vars": { "JEV_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
           "AUTO_THRESHOLD": "0.75", "ASK_THRESHOLD": "0.40" }</pre>
+   <p>No Workers AI? Use the hosted Jev-gateway instead, free for 30 days: get a key with <code>POST https://atlas.organizedai.vip/api/jev/trial</code> (your email), store it with <code>npx wrangler secret put JEV_KEY</code>, remove the <code>ai</code> line and set <code>JEV_URL</code> to <code>https://atlas.organizedai.vip/api/judge</code>. The Atlas Builder does this for you if you pick it.</p>
    <p>When an audit is built, the page sends the findings to <code>/api/judge</code> in batches of eight, three at a time. Jev answers each one with a probability for <b>fix</b>, <b>intended</b> or <b>ask the owner</b>. At 75% or more it is confident and the reviewer can accept all of those in one click; under 40% it leaves the call to a person.</p></div></li>
   <li><div><h3>Deploy</h3>
    <pre class="cmd">npm run deploy</pre>
@@ -147,6 +156,10 @@ When you finish, summarize: my atlas URL, which MCP servers are connected, and w
  <p class="note">The GTM MCP signs in through a browser, so on the web connect it from claude.ai Settings → Connectors as a custom connector instead of an environment variable.</p>
 </main>
 <script>
+document.getElementById('copyKick').onclick = e => {
+  const b = e.currentTarget, t = document.getElementById('kick').textContent;
+  try { navigator.clipboard.writeText(t).then(() => { b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy prompt'), 2000); }, () => getSelection().selectAllChildren(document.getElementById('kick'))); } catch (err) { getSelection().selectAllChildren(document.getElementById('kick')); }
+};
 document.getElementById('copy').onclick = e => {
   const b = e.currentTarget, t = document.getElementById('prompt').textContent;
   const done = ok => { b.textContent = ok ? 'Copied' : 'Select the text to copy'; setTimeout(() => (b.textContent = 'Copy prompt'), 2000); };

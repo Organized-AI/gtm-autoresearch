@@ -1,0 +1,10 @@
+{
+  "name": "atlas-builder",
+  "version": "0.1.0",
+  "description": "Builds your own GTM Container Atlas step by step: you answer questions and connect tools, Claude does the rest.",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Organized AI",
+    "url": "https://atlas.organizedai.vip"
+  }
+}
