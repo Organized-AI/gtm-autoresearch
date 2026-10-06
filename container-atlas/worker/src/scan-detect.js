@@ -199,7 +199,8 @@ var GTM_SCAN = (function () {
     ok.forEach(function (p) {
       var r = p.result, url = p.final_url || p.url;
       var perId = {};
-      r.gtm.forEach(function (g) { var k = g.id || '(custom loader, ID not readable)'; perId[k] = (perId[k] || 0) + 1; if (!g.head && r.inHead) bump(S.notInHead, k, url); });
+      var bodyOnly = {}; r.gtm.forEach(function (g) { var k = g.id || '(custom loader, ID not readable)'; perId[k] = (perId[k] || 0) + 1; if (bodyOnly[k] !== false) bodyOnly[k] = !g.head && r.inHead; });
+      Object.keys(bodyOnly).forEach(function (k) { if (bodyOnly[k]) bump(S.notInHead, k, url); });
       Object.keys(perId).forEach(function (k) {
         var hosts = uniq(r.gtm.filter(function (g) { return (g.id || '(custom loader, ID not readable)') === k; }).map(function (g) { return g.host; }));
         bump(S.gtm, k, url); var e = S.gtm[k]; e.hosts = uniq((e.hosts || []).concat(hosts)); e.via = uniq((e.via || []).concat(r.gtm.filter(function (g) { return (g.id || '(custom loader, ID not readable)') === k; }).map(function (g) { return g.via; })));
