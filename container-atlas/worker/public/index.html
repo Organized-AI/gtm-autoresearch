@@ -1198,12 +1198,24 @@ var GTM_SCAN = (function () {
   }
   function sitemapLocs(xml) { return all(/<loc>\s*([^<\s]+)\s*<\/loc>/gi, String(xml || '')).map(function (s) { return s.replace(/&amp;/g, '&'); }); }
   // Pick pages that cover different templates: the home page, then round-robin across first path segments.
+  // The template a URL probably uses: its first path segment, skipping a locale prefix (/de/blog → blog).
+  // Localised copies of a template come last, so a budget is spent on different page types first.
+  var LOCALE = /^[a-z]{2}(?:[-_][a-z]{2,4})?$/i;
+  function template(u) {
+    var segs; try { segs = new URL(u).pathname.split('/').filter(Boolean); } catch (e) { return { key: '', localized: false }; }
+    var loc = segs.length && LOCALE.test(segs[0]) && !/^(go|my|us|uk|ai|io|tv|faq|app|api)$/i.test(segs[0]);
+    var rest = loc ? segs.slice(1) : segs;
+    return { key: (rest[0] || '') + (rest.length > 1 ? '/*' : ''), localized: !!loc };
+  }
   function sample(urls, max) {
-    var groups = {}, order = [];
-    urls.forEach(function (u) { var seg; try { seg = new URL(u).pathname.split('/')[1] || ''; } catch (e) { return; } if (!groups[seg]) { groups[seg] = []; order.push(seg); } if (groups[seg].indexOf(u) < 0) groups[seg].push(u); });
+    var groups = {}, order = [], later = [];
+    urls.forEach(function (u) {
+      var t = template(u); if (t.localized) { if (later.indexOf(u) < 0) later.push(u); return; }
+      if (!groups[t.key]) { groups[t.key] = []; order.push(t.key); } if (groups[t.key].indexOf(u) < 0) groups[t.key].push(u);
+    });
     var out = [], i = 0;
     while (out.length < max && order.some(function (s) { return groups[s].length > i; })) { order.forEach(function (s) { if (out.length < max && groups[s][i]) out.push(groups[s][i]); }); i++; }
-    return out;
+    return out.concat(later.slice(0, Math.max(0, max - out.length)));
   }
 
   /* ---------- one page ---------- */
@@ -1452,7 +1464,7 @@ var GTM_SCAN = (function () {
     };
   }
 
-  return { detect: detect, summarize: summarize, compare: compare, brief: brief, robots: robots, allowed: allowed, sitemapLocs: sitemapLocs, sample: sample, normalize: normalize, crawlable: crawlable, rootDomain: rootDomain, hostOf: hostOf };
+  return { detect: detect, summarize: summarize, compare: compare, brief: brief, robots: robots, allowed: allowed, sitemapLocs: sitemapLocs, sample: sample, template: template, normalize: normalize, crawlable: crawlable, rootDomain: rootDomain, hostOf: hostOf };
 })();
 if (typeof module !== 'undefined') module.exports = GTM_SCAN;
 

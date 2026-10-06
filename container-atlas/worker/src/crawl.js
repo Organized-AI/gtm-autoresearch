@@ -106,9 +106,10 @@ async function page(env, m) {
     const fresh = await env.DB.prepare('SELECT queued, max_pages FROM scans WHERE id = ?1').bind(m.scan).first();
     if (fresh && fresh.queued < fresh.max_pages) {
       const { results } = await env.DB.prepare('SELECT url FROM scan_pages WHERE scan_id = ?1').bind(m.scan).all();
-      const seen = new Set(results.map(x => x.url)), segs = new Set(results.map(x => { try { return new URL(x.url).pathname.split('/')[1] || ''; } catch (e) { return ''; } }));
-      const cand = links.filter(u => !seen.has(u) && SCAN.crawlable(u, scan.website));
-      cand.sort((a, b) => (segs.has(new URL(a).pathname.split('/')[1] || '') ? 1 : 0) - (segs.has(new URL(b).pathname.split('/')[1] || '') ? 1 : 0));
+      const seen = new Set(results.map(x => x.url)), keys = new Set(results.map(x => SCAN.template(x.url).key));
+      // unseen templates first, localised copies last
+      const rank = u => { const t = SCAN.template(u); return (t.localized ? 2 : 0) + (keys.has(t.key) ? 1 : 0); };
+      const cand = links.filter(u => !seen.has(u) && SCAN.crawlable(u, scan.website)).sort((a, b) => rank(a) - rank(b));
       const claimed = [];
       for (const u of cand.slice(0, Math.min(40, (fresh.max_pages - fresh.queued) * 3))) { const c = await claim(env, scan, u); if (c) claimed.push(c); }
       await send(env, m.scan, claimed);

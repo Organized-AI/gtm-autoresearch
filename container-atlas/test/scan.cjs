@@ -44,6 +44,7 @@ const rb = SCAN.robots('User-agent: *\nDisallow: /private\nAllow: /private/ok\n\
 assert.ok(!SCAN.allowed(rb.rules, '/private/a')); assert.ok(SCAN.allowed(rb.rules, '/private/ok')); assert.ok(SCAN.allowed(rb.rules, '/charters'));
 assert.deepStrictEqual(rb.sitemaps, ['https://x.com/sitemap.xml']);
 assert.deepStrictEqual(SCAN.sample(['https://a.com/', 'https://a.com/blog/1', 'https://a.com/blog/2', 'https://a.com/p/1', 'https://a.com/blog/3'], 3), ['https://a.com/', 'https://a.com/blog/1', 'https://a.com/p/1']);
+assert.deepStrictEqual(SCAN.sample(['https://a.com/', 'https://a.com/de', 'https://a.com/fr', 'https://a.com/pricing', 'https://a.com/de/pricing', 'https://a.com/blog/x'], 4), ['https://a.com/', 'https://a.com/pricing', 'https://a.com/blog/x', 'https://a.com/de']);
 
 // summarize + compare
 const rows = Object.keys(pages).map(p => ({ url: origin + p, final_url: origin + p, http_status: 200, result: (r => { delete r.links; return r; })(SCAN.detect(pages[p], origin + p)) }));
