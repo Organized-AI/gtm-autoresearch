@@ -1,0 +1,7 @@
+{
+  "name": "gtm-e2e-tag-check",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "e2e test" },
+  "devDependencies": { "ai": "^7.0.128", "e2e": "latest", "@e2e-dev/web": "latest" }
+}
