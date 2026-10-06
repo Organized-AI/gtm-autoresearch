@@ -16,8 +16,9 @@ var GTM_REPORT = (function () {
     var path = function (u) { try { var x = new URL(u); return x.pathname + x.search; } catch (e) { return u; } };
     var facts = [];
     facts.push(['Pages read', S.ok + ' of ' + S.pages + (S.blocked ? ' (' + S.blocked + ' refused the scanner)' : '') + (S.sitemapUrls ? ', sampled from ' + S.sitemapUrls + ' sitemap URLs and internal links' : ', found through internal links')]);
-    if (S.webId) facts.push([S.webId + ' installed', S.coverage + ' of ' + S.ok + ' pages' + (S.loaders.length ? ', served from ' + S.loaders.join(', ') : '')]);
-    var others = S.containers.filter(function (c) { return c.id !== S.webId; });
+    var hidden = S.containers.filter(function (c) { return c.id.charAt(0) === '('; })[0];
+    if (S.webId) facts.push([S.webId + ' installed', S.coverage + ' of ' + S.ok + ' pages by ID' + (S.loaders.length ? ', served from ' + S.loaders.join(', ') : '') + (hidden ? '; a custom loader (' + hidden.hosts.join(', ') + ') whose container ID cannot be read runs on ' + hidden.pages + ' pages' : '')]);
+    var others = S.containers.filter(function (c) { return c.id !== S.webId && c.id.charAt(0) !== '('; });
     if (others.length) facts.push(['Other GTM containers', others.map(function (c) { return c.id + ' (' + c.pages + ' pages)'; }).join(', ')]);
     facts.push(['Consent', (S.cmp.length ? S.cmp.join(', ') : 'No consent banner in the source') + '; Consent Mode default in the source on ' + S.consentDefaultPages + ' pages']);
     if (S.events.length) facts.push(['dataLayer events in the source', S.events.join(', ')]);
