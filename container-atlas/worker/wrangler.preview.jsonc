@@ -1,0 +1,20 @@
+{
+  // PREVIEW of the site-scan branch: workers.dev only, its own D1 and queue, no cron, no custom domain.
+  // npx wrangler d1 create gtm-container-atlas-preview  → paste the id below
+  // npx wrangler queues create atlas-site-scan-preview
+  // npx wrangler d1 execute gtm-container-atlas-preview --remote --file=schema.sql -c wrangler.preview.jsonc
+  // npx wrangler deploy -c wrangler.preview.jsonc
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gtm-container-atlas-scan-preview",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-04",
+  "workers_dev": true,
+  "assets": { "directory": "./public", "binding": "ASSETS", "html_handling": "auto-trailing-slash", "not_found_handling": "404-page", "run_worker_first": ["/api/*"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "gtm-container-atlas-preview", "database_id": "REPLACE_WITH_PREVIEW_D1_ID" }],
+  "queues": {
+    "producers": [{ "binding": "SCAN_QUEUE", "queue": "atlas-site-scan-preview" }],
+    "consumers": [{ "queue": "atlas-site-scan-preview", "max_batch_size": 4, "max_batch_timeout": 2, "max_retries": 1, "max_concurrency": 3 }]
+  },
+  "vars": { "TRIAL_DAYS": "30", "SCAN_MAX_PAGES": "50", "SCAN_DAILY": "30" },
+  "observability": { "enabled": true }
+}

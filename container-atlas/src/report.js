@@ -11,6 +11,21 @@ var GTM_REPORT = (function () {
   function ctxLabel(c) { return c.context === 'server' ? 'Server (sGTM)' : 'Web'; }
   function fileBase(R) { return (R.website || R.containers[0].publicId).replace(/[^a-z0-9.-]+/gi, '-') + '-gtm-audit-' + R.generatedAt.slice(0, 10); }
 
+  /* ---------- live-site scan (optional) ---------- */
+  function scanFacts(S) {
+    var path = function (u) { try { var x = new URL(u); return x.pathname + x.search; } catch (e) { return u; } };
+    var facts = [];
+    facts.push(['Pages read', S.ok + ' of ' + S.pages + (S.blocked ? ' (' + S.blocked + ' refused the scanner)' : '') + (S.sitemapUrls ? ', sampled from ' + S.sitemapUrls + ' sitemap URLs and internal links' : ', found through internal links')]);
+    if (S.webId) facts.push([S.webId + ' installed', S.coverage + ' of ' + S.ok + ' pages' + (S.loaders.length ? ', served from ' + S.loaders.join(', ') : '')]);
+    var others = S.containers.filter(function (c) { return c.id !== S.webId; });
+    if (others.length) facts.push(['Other GTM containers', others.map(function (c) { return c.id + ' (' + c.pages + ' pages)'; }).join(', ')]);
+    facts.push(['Consent', (S.cmp.length ? S.cmp.join(', ') : 'No consent banner in the source') + '; Consent Mode default in the source on ' + S.consentDefaultPages + ' pages']);
+    if (S.events.length) facts.push(['dataLayer events in the source', S.events.join(', ')]);
+    if (S.platform.length) facts.push(['Platform', S.platform.join(', ')]);
+    return { facts: facts, path: path };
+  }
+  var SCAN_INTRO = 'The scan read the HTML source of each page, the way a crawler does, following the sitemap and internal links and respecting robots.txt. Anything found in the source runs outside GTM. Tags that GTM fires at runtime are not in the source, so they are not listed here; the configuration audit covers them.';
+
   /* ---------- Markdown ---------- */
   function md(R) {
     var esc = function (s) { return String(s == null ? '' : s).replace(/\|/g, '\\|').replace(/\n/g, ' '); };
@@ -45,6 +60,19 @@ var GTM_REPORT = (function () {
       R.flow.routes.forEach(function (r) { L.push('| ' + STATUS[r.status] + ' | ' + esc(r.tag) + ' | ' + esc(r.event || '—') + ' | ' + esc(r.client || '—') + ' | ' + esc(r.tags.join(', ') || 'none') + ' | ' + esc(r.destinations.join(', ') || '—') + ' |'); });
       var why = R.flow.routes.filter(function (r) { return r.reason; });
       if (why.length) { L.push(''); why.forEach(function (r) { L.push('- **' + esc(r.tag) + ':** ' + esc(r.reason)); }); }
+    }
+    if (R.scan && on('scan')) {
+      L.push('', '## Live site scan: ' + R.scan.website, '');
+      if (R.scan.error) L.push('The live-site scan did not finish: ' + esc(R.scan.error) + ' The configuration audit above is unaffected.');
+      else {
+        var sf = scanFacts(R.scan);
+        L.push(SCAN_INTRO, '');
+        sf.facts.forEach(function (f) { L.push('- **' + f[0] + ':** ' + esc(f[1])); });
+        if (R.scan.hardcoded.length) { L.push('', '| Hard-coded outside GTM | ID | Pages |', '|---|---|---:|'); R.scan.hardcoded.forEach(function (h) { L.push('| ' + esc(h.vendor) + ' | ' + esc(h.id || '—') + ' | ' + h.pages + ' |'); }); }
+        else L.push('', 'No tracking tags are hard-coded in the page source; everything found runs through GTM.');
+        L.push('', '| Page | Result |', '|---|---|');
+        R.scan.pages.forEach(function (p) { L.push('| ' + esc(sf.path(p.url)) + ' | ' + esc(p.status === 'ok' ? 'Read' + (p.title ? ': ' + p.title : '') : (p.error || 'Not read')) + ' |'); });
+      }
     }
     if (R.notes.length && on('notes')) {
       L.push('', '## Housekeeping notes', '');
@@ -171,6 +199,16 @@ var GTM_REPORT = (function () {
       table(['Status', 'Web tag', 'Event', 'Server tags', 'Destination'], R.flow.routes.map(function (r) { return [STATUS[r.status], ascii(r.tag) + (r.reason ? '\n' + ascii(r.reason) : ''), ascii(r.event || '-'), ascii(r.tags.join(', ') || 'none'), ascii(r.destinations.join(', ') || '-')]; }),
         { columnStyles: { 0: { cellWidth: 62, fontStyle: 'bold' }, 1: { cellWidth: 170 }, 2: { cellWidth: 80 } },
           didParseCell: function (d) { if (d.section === 'body' && d.column.index === 0) { var st = R.flow.routes[d.row.index].status; d.cell.styles.textColor = st === 'delivered' ? C.pass : st === 'dead-end' ? C.crit : C.review; } } });
+    }
+    if (R.scan && on('scan')) {
+      if (R.scan.error) section('Live site scan: ' + ascii(R.scan.website), 'The live-site scan did not finish: ' + ascii(R.scan.error) + ' The configuration audit is unaffected.');
+      else {
+        var sf = scanFacts(R.scan);
+        section('Live site scan: ' + ascii(R.scan.website), SCAN_INTRO);
+        table(['What the source shows', ''], sf.facts.map(function (f) { return [ascii(f[0]), ascii(f[1])]; }), { columnStyles: { 0: { cellWidth: 150, fontStyle: 'bold' } } });
+        if (R.scan.hardcoded.length) table(['Hard-coded outside GTM', 'ID', 'Pages'], R.scan.hardcoded.map(function (h) { return [ascii(h.vendor), ascii(h.id || '-'), h.pages]; }), { columnStyles: { 2: { halign: 'right', cellWidth: 50 } } });
+        table(['Page', 'Result'], R.scan.pages.map(function (p) { return [ascii(sf.path(p.url)), ascii(p.status === 'ok' ? 'Read' + (p.title ? ': ' + p.title : '') : (p.error || 'Not read'))]; }), { columnStyles: { 0: { cellWidth: 220 } } });
+      }
     }
     if (R.notes.length && on('notes')) {
       section('Housekeeping notes', 'Low-risk items. Worth a tidy-up pass; none of them stop data from flowing.');

@@ -10,11 +10,15 @@
 //   /api/runs             POST  start a GTM auto (autoresearch) run for a container
 //   /api/runs/:id/rounds  POST  store one round, accepted or rejected (token required)
 //   /api/runs/:id         GET   the run and every round (token required)
+//   /api/scan             POST  crawl the live site's page source (Queues + D1); see crawl.js
+//   /api/scan/:id         GET   progress and the site summary (token required)
+//   queue atlas-site-scan       one message per page
 //   cron (daily)                re-check every watch against the published gtm.js
 // Everything else is the static atlas in ./public.
 import DRIFT from './drift.js';
 import { DEMO } from './demo.js';
 import { judgeFindings } from './jev.js';
+import * as CRAWL from './crawl.js';
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const fail = (status, code, message) => json({ error: code, message }, status);
@@ -130,7 +134,7 @@ async function trial(env, req) {
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url), path = url.pathname;
     if (!path.startsWith('/api/')) return env.ASSETS.fetch(req);
     try {
@@ -140,7 +144,17 @@ export default {
         try { const live = await fetchLive(id); return json({ published: true, sample: !!DEMO[id], version: live.version }); }
         catch (e) { return json({ published: false, message: e.message }); }
       }
-      if (path === '/api/health') return json({ ok: true, drift: true, runs: true, jev: !!(env.JEV_GATEWAY_TOKEN || env.JEV_KEY), jevMode: env.JEV_GATEWAY_TOKEN ? 'jev-gateway' : env.JEV_KEY ? 'hosted' : 'off' });
+      if (path === '/api/health') return json({ ok: true, drift: true, runs: true, scan: true, scanQueue: !!env.SCAN_QUEUE, scanMaxPages: Number(env.SCAN_MAX_PAGES || 50), jev: !!(env.JEV_GATEWAY_TOKEN || env.JEV_KEY), jevMode: env.JEV_GATEWAY_TOKEN ? 'jev-gateway' : env.JEV_KEY ? 'hosted' : 'off' });
+      if (path === '/api/scan' && req.method === 'POST') {
+        if (!(await limit(env, req, 'scan', Number(env.SCAN_DAILY || 30), 86400))) return fail(429, 'rate_limited', 'This network has started the maximum number of site scans today.');
+        const out = await CRAWL.start(env, ctx, await req.json().catch(() => ({})), await ipHash(req), sha, rid);
+        return out.error ? fail(400, out.error, out.message) : json(out);
+      }
+      const sm = /^\/api\/scan\/([A-Za-z0-9_-]+)$/.exec(path);
+      if (sm && req.method === 'GET') {
+        const out = await CRAWL.status(env, sm[1], url.searchParams.get('t') || req.headers.get('x-scan-token'), sha);
+        return out ? json(out) : fail(404, 'not_found', 'No scan matches that link.');
+      }
       if (path === '/api/judge' && req.method === 'POST') return await judge(env, req);
       if (path === '/api/jev/trial' && req.method === 'POST') return await trial(env, req);
       if (path === '/api/jev/key' && req.method === 'GET') { const k = await keyFor(env, req); if (!k || k.invalid) return fail(401, 'bad_key', 'Send a Jev key as Authorization: Bearer jev_...'); return json(keyStatus(env, k)); }
@@ -207,6 +221,7 @@ export default {
       return fail(500, 'server_error', 'Something went wrong on the server. Try again.');
     }
   },
+  async queue(batch, env) { await CRAWL.consume(batch, env); },
   async scheduled(event, env, ctx) {
     const cutoff = Date.now() - 20 * 3600 * 1000, cache = {};
     const { results } = await env.DB.prepare('SELECT * FROM watches WHERE last_checked IS NULL OR last_checked < ?1 ORDER BY last_checked LIMIT 200').bind(cutoff).all();

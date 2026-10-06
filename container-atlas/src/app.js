@@ -2,7 +2,7 @@
 (() => {
 'use strict';
 const $ = id => document.getElementById(id), E = GTM_ENGINE;
-const st = { web: null, server: null, site: null, sample: false };
+const st = { web: null, server: null, site: null, sample: false, scan: null, scanStatus: null, scanSkip: false };
 const SAMPLE = JSON.parse(document.getElementById('sample-data').textContent);
 window.__exports = {};
 
@@ -61,9 +61,76 @@ $('siteForm').addEventListener('submit', e => {
   const raw = $('site').value.trim(), host = E.hostOf(raw), d = host && E.rootDomain(host);
   if (!d || !/\.[a-z]{2,}$/i.test(d)) return err('err2', 'Enter a domain such as example.com.');
   st.site = d; state('step2', 'done', d);
+  if (!$('scanOpt').hidden && $('scanOn').checked && !st.sample) startScan(d);
   if (st.server) return finish();
   state('step3', 'active'); $('sample3').hidden = !st.sample;
 });
+
+/* live-site scan: the Worker crawls page source; the comparison with the export happens here */
+fetch('/api/health').then(r => r.ok ? r.json() : null).then(h => {
+  if (!h || !h.scan) return;
+  $('scanOpt').hidden = false;
+  [...$('scanMax').options].forEach(o => { if (Number(o.value) > (h.scanMaxPages || 50)) o.remove(); });
+}).catch(() => { /* static copy of the page: no scan */ });
+async function startScan(site) {
+  st.scan = null; st.scanStatus = { status: 'starting', website: site, queued: 0, done: 0, failed: 0, maxPages: Number($('scanMax').value) };
+  try {
+    const r = await fetch('/api/scan', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ website: site, maxPages: Number($('scanMax').value) }) });
+    const j = await r.json();
+    if (!r.ok) { st.scanStatus = { status: 'failed', website: site, error: j.message || 'The scan could not start.' }; return; }
+    st.scan = j; pollScan();
+  } catch (e) { st.scanStatus = { status: 'failed', website: site, error: 'The scan could not start: the Worker did not answer.' }; }
+}
+async function pollScan() {
+  if (!st.scan) return;
+  try {
+    const r = await fetch('/api/scan/' + st.scan.id + '?t=' + encodeURIComponent(st.scan.token), { cache: 'no-store' });
+    if (r.ok) st.scanStatus = await r.json();
+  } catch (e) { /* try again */ }
+  const s = st.scanStatus;
+  if (s && $('step2').dataset.state === 'done') $('s2done').textContent = st.site + scanLine(s);
+  if (s && (s.status === 'done' || s.status === 'failed')) return;
+  setTimeout(pollScan, 1500);
+}
+function scanLine(s) {
+  if (!s) return '';
+  if (s.status === 'failed') return ' · site scan failed';
+  if (s.status === 'done') return ' · scanned ' + s.done + ' pages' + (s.failed ? ' (' + s.failed + ' unreadable)' : '');
+  return ' · scanning ' + (s.done + s.failed) + ' / ' + Math.max(s.queued || 0, 1) + ' pages';
+}
+function waitForScan(veil) {
+  return new Promise(resolve => {
+    const s0 = st.scanStatus; if (!s0 || s0.status === 'done' || s0.status === 'failed') return resolve();
+    veil.textContent = '';
+    const box = document.createElement('div'); box.className = 'scan-live';
+    const t = document.createElement('div'), bar = document.createElement('div'), fill = document.createElement('b'), u = document.createElement('div'), skip = document.createElement('button');
+    bar.className = 'scan-bar'; bar.append(fill); u.className = 'scan-url';
+    skip.type = 'button'; skip.className = 'btn ghost'; skip.textContent = 'Continue without the scan';
+    skip.onclick = () => { st.scanSkip = true; clearInterval(iv); resolve(); };
+    box.append(t, bar, u, skip); veil.append(box);
+    if (window.gsap && !matchMedia('(prefers-reduced-motion: reduce)').matches) gsap.from(box.children, { opacity: 0, y: 8, duration: .35, stagger: .06, ease: 'power2.out' });
+    const paint = () => {
+      const s = st.scanStatus || {}, n = (s.done || 0) + (s.failed || 0), q = Math.max(s.queued || 0, 1);
+      t.textContent = s.status === 'seeding' || s.status === 'starting' ? 'READING ROBOTS.TXT AND SITEMAP · ' + (s.website || st.site).toUpperCase() : 'SCANNING ' + (s.website || st.site).toUpperCase() + ' · ' + n + ' / ' + q + ' PAGES';
+      fill.style.width = Math.round(100 * n / Math.max(q, s.maxPages && s.status === 'seeding' ? s.maxPages : q)) + '%';
+      const last = (s.pages || []).filter(p => p.status !== 'queued').slice(-1)[0]; u.textContent = last ? (last.status === 'ok' ? '✓ ' : '× ') + last.url : '';
+      if (s.status === 'done' || s.status === 'failed') { clearInterval(iv); resolve(); }
+    };
+    const iv = setInterval(paint, 400); paint();
+  });
+}
+function mergeScan(D) {
+  const s = st.scanStatus, R = D.report;
+  if (!s || st.scanSkip) return;
+  if (s.status === 'failed' || !s.summary) { R.scan = { website: s.website || st.site, error: s.error || 'The live-site scan did not finish.' }; return; }
+  const items = GTM_SCAN.compare(s.summary, st.web, st.server, st.site);
+  const ORDER = { critical: 0, review: 1, info: 2 };
+  R.items = R.items.concat(items).sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
+  items.forEach(i => { R.counts[i.severity]++; });
+  R.scan = Object.assign(GTM_SCAN.brief(s.summary, st.web), { website: s.website, origin: s.origin, maxPages: s.maxPages, sitemapUrls: s.sitemapUrls, webId: st.web ? st.web.info.publicId : null,
+    pages: s.pages.map(p => ({ url: p.finalUrl || p.url, status: p.status, httpStatus: p.httpStatus, error: p.error, title: p.title })) });
+  R.skipped = R.skipped.map(x => /^Live tag firing/.test(x[0]) ? ['Tags GTM fires at runtime', 'The site scan read the page source of ' + s.summary.ok + ' pages, which shows what loads outside GTM. To see what GTM itself fires, run a rendered scan (Browser Rendering, next phase) or the gtm-debug-agent skill on key pages.'] : x);
+}
 
 /* step 3 */
 wireDrop('drop3', 'file3', text => {
@@ -76,11 +143,13 @@ $('skip3').onclick = () => { state('step3', 'done', 'Skipped, web container only
 $('sample3').onclick = () => { st.server = E.parseExport(JSON.stringify(SAMPLE.server)); state('step3', 'done', summary(st.server)); finish(); };
 
 /* build */
-function finish() {
-  const veil = document.createElement('div'); veil.className = 'building'; veil.textContent = 'AUDITING ' + [st.web, st.server].filter(Boolean).map(p => p.info.publicId).join(' + '); document.body.append(veil);
+async function finish() {
+  const veil = document.createElement('div'); veil.className = 'building'; document.body.append(veil);
+  await waitForScan(veil);
+  veil.textContent = 'AUDITING ' + [st.web, st.server].filter(Boolean).map(p => p.info.publicId).join(' + ') + (st.scanStatus && st.scanStatus.status === 'done' && !st.scanSkip ? ' + LIVE SITE' : '');
   setTimeout(() => {
     let D;
-    try { D = E.build({ web: st.web, server: st.server, website: st.site }); }
+    try { D = E.build({ web: st.web, server: st.server, website: st.site }); mergeScan(D); }
     catch (e) { veil.remove(); state('step1', 'active'); return err('err1', 'The audit could not finish: ' + e.message); }
     [st.web, st.server].forEach(p => { if (p) window.__exports[p.info.publicId] = p.doc; });
     window.__report = D.report;
@@ -93,6 +162,7 @@ function finish() {
 
 /* guided review: one checkpoint at a time, each finding gets a decision */
 const CHECKPOINTS = [
+  ['Site scan', 'Live site', 'What the site\'s page source actually loads, compared with this container: is GTM installed on every page, which tags run outside it, which events no trigger hears, and consent.'],
   ['References', 'Broken references', 'Settings that point at a variable, trigger or folder that does not exist. GTM keeps publishing, but the tag sends an empty value or never fires.'],
   ['Parameters', 'Parameter integrity', 'Blank required settings, IDs typed into tags instead of a variable, plain-text access tokens, and endpoints or hostnames that do not match the site.'],
   ['Signal flow', 'Web → server routes', 'Every event the web container sends to sGTM, followed to the platform it reaches. Dead ends are events that arrive and go nowhere.'],
@@ -151,7 +221,8 @@ function progress() {
 function card(it) {
   const el = document.createElement('article'); el.className = 'rv-item ' + it.severity + (RV.dec[it.key] ? ' decided' : '');
   const name = document.createElement('button'); name.type = 'button'; name.className = 'rv-name'; name.textContent = it.name; name.title = 'Show in the diagram';
-  name.onclick = () => window.atlasFocus && window.atlasFocus(it.tab, it.nodeId);
+  name.onclick = () => it.nodeId && window.atlasFocus && window.atlasFocus(it.tab, it.nodeId);
+  if (!it.nodeId) name.title = it.context === 'site' ? 'Found by the live-site scan' : '';
   const meta = document.createElement('div'); meta.className = 'rv-meta'; meta.textContent = `${E.SEV_LABEL[it.severity]} · ${it.container} · ${it.kind} ${it.ref}`;
   const msg = document.createElement('p'); msg.className = 'rv-msg'; msg.textContent = it.message;
   const dec = document.createElement('div'); dec.className = 'rv-dec';
@@ -195,9 +266,9 @@ function finalCard(box, notes) {
 
 /* report format: what the downloads include and how they are titled */
 const FMT_KEY = 'atlas-report-format';
-const SECTIONS = [['fix', 'Fix first'], ['confirm', 'Confirm'], ['flow', 'Signal flow'], ['notes', 'Housekeeping notes'], ['inventory', 'Inventory'], ['scope', 'What this audit did not check']];
+const SECTIONS = [['fix', 'Fix first'], ['confirm', 'Confirm'], ['flow', 'Signal flow'], ['scan', 'Live site scan'], ['notes', 'Housekeeping notes'], ['inventory', 'Inventory'], ['scope', 'What this audit did not check']];
 const ACCENTS = [['Brass', [150, 118, 0]], ['Ink', [23, 21, 15]], ['Teal', [0, 118, 128]], ['Indigo', [64, 72, 168]], ['Crimson', [170, 40, 60]]];
-let FMT = { title: '', preparedBy: '', preparedFor: '', accent: 0, sections: { fix: true, confirm: true, flow: true, notes: true, inventory: true, scope: true }, decisions: true };
+let FMT = { title: '', preparedBy: '', preparedFor: '', accent: 0, sections: { fix: true, confirm: true, flow: true, scan: true, notes: true, inventory: true, scope: true }, decisions: true };
 try { FMT = Object.assign(FMT, JSON.parse(localStorage.getItem(FMT_KEY) || '{}')); } catch (e) { /* storage blocked */ }
 function saveFmt() { try { localStorage.setItem(FMT_KEY, JSON.stringify(FMT)); } catch (e) { /* storage blocked */ } }
 function formatPanel() {

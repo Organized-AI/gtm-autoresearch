@@ -2,7 +2,7 @@
  <header class="in-head">
   <p class="in-eyebrow">GTM Container Atlas</p>
   <h1 id="intakeTitle">Audit a GTM container</h1>
-  <p class="in-lede">Import a container export, confirm the website it runs on, and add the server-side container if there is one. The audit runs in this page; nothing is uploaded, and the container is never changed.</p>
+  <p class="in-lede">Import a container export, confirm the website it runs on, and add the server-side container if there is one. The audit runs in this page; the export is never uploaded, and the container is never changed. If you scan the live site, only its domain is sent.</p>
  </header>
 
  <ol class="steps">
@@ -34,6 +34,11 @@
      <input id="site" type="text" inputmode="url" autocomplete="off" placeholder="example.com" spellcheck="false">
      <button class="btn" type="submit">Confirm website</button>
     </form>
+    <div class="scan-opt" id="scanOpt" hidden>
+     <label class="scan-check"><input type="checkbox" id="scanOn" checked>
+      <span><b>Also scan the live site</b>, up to <select id="scanMax" aria-label="Pages to scan"><option>10</option><option selected>25</option><option>50</option></select> pages. The scan reads each page's source, the way a crawler does, and the audit compares it with the container: is GTM installed on every page, which tags are hard-coded outside it, and which events the site pushes that no trigger hears. Only the domain leaves this page.</span>
+     </label>
+    </div>
     <p class="in-error" id="err2" role="alert" hidden></p>
    </div>
   </li>

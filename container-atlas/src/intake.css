@@ -126,3 +126,15 @@ body{background:var(--bg);color:var(--ink)}
 .pv-pages canvas{width:min(820px,100%);height:auto;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.5);border-radius:2px}
 .pv-pages iframe{width:min(860px,100%);height:calc(100vh - 140px);border:0;background:#fff}
 .pv-num{font-size:10px;color:var(--dim);margin-top:-12px}
+
+/* site scan option (step 2) and its progress */
+.scan-opt{border:1px solid var(--line);border-radius:6px;padding:12px 14px;background:var(--panel2)}
+.scan-check{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;align-items:start;font-size:11.5px;line-height:1.6;color:var(--muted);cursor:pointer}
+.scan-check b{color:var(--ink)}
+.scan-check input{margin:3px 0 0;accent-color:var(--gold);width:15px;height:15px}
+.scan-check select{font-family:var(--mono);font-size:11px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+.building .scan-live{display:grid;gap:14px;justify-items:center;text-align:center;max-width:min(560px,calc(100vw - 32px))}
+.building .scan-bar{width:min(360px,80vw);height:4px;border-radius:2px;background:var(--panel2);overflow:hidden}
+.building .scan-bar b{display:block;height:100%;width:0;background:var(--gold);transition:width .4s}
+.building .scan-url{font-size:10.5px;letter-spacing:0;color:var(--dim);overflow-wrap:anywhere;min-height:1.4em}
+.building:has(.scan-live){background:rgba(12,11,9,.96)}

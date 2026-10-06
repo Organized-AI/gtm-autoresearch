@@ -26,3 +26,14 @@ CREATE TABLE IF NOT EXISTS jev_keys (
   created_at INTEGER NOT NULL, expires_at INTEGER, calls INTEGER NOT NULL DEFAULT 0, last_used INTEGER, ip_hash TEXT
 );
 CREATE INDEX IF NOT EXISTS jev_keys_email ON jev_keys(email);
+CREATE TABLE IF NOT EXISTS scans (
+  id TEXT PRIMARY KEY, website TEXT NOT NULL, origin TEXT, token_hash TEXT NOT NULL, status TEXT NOT NULL,
+  max_pages INTEGER NOT NULL, queued INTEGER NOT NULL DEFAULT 0, done INTEGER NOT NULL DEFAULT 0, failed INTEGER NOT NULL DEFAULT 0,
+  robots TEXT, sitemap_urls INTEGER, error TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, ip_hash TEXT
+);
+CREATE INDEX IF NOT EXISTS scans_site ON scans(website, created_at);
+CREATE TABLE IF NOT EXISTS scan_pages (
+  scan_id TEXT NOT NULL, url TEXT NOT NULL, status TEXT NOT NULL, http_status INTEGER, final_url TEXT,
+  result TEXT, error TEXT, queued_at INTEGER NOT NULL, fetched_at INTEGER,
+  PRIMARY KEY (scan_id, url)
+);
