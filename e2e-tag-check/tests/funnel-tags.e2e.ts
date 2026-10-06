@@ -6,6 +6,8 @@ const TAGS = new RegExp(['/g/collect', 'facebook\\.com/tr[/?]', ...(sgtm ? [sgtm
 
 test('adding to cart fires GA4 add_to_cart and Meta AddToCart', async ({ app, agent, browser }) => {
   const hits: string[] = [];
+  // True when a recorded request carries this exact query parameter, in the URL or a batched body line.
+  const sent = (param: string) => hits.some((h) => new RegExp(`(^|[?&\\s])${param}(&|\\s|$)`).test(h));
   await browser.route(TAGS, async (route) => {
     hits.push(`${route.request.url} ${route.request.postData ?? ''}`);
     await route.continue();
@@ -16,6 +18,6 @@ test('adding to cart fires GA4 add_to_cart and Meta AddToCart', async ({ app, ag
   await agent.assert('The cart shows at least one item.');
 
   // Code, not the model, decides whether the tags fired.
-  expect(hits.some((h) => /(^|[?&\s])en=add_to_cart(&|\s|$)/.test(h)), 'GA4 add_to_cart was sent').toBeTruthy();
-  expect(hits.some((h) => /(^|[?&\s])ev=AddToCart(&|\s|$)/.test(h)), 'Meta AddToCart was sent').toBeTruthy();
+  expect(sent('en=add_to_cart'), 'GA4 add_to_cart was sent').toBeTruthy();
+  expect(sent('ev=AddToCart'), 'Meta AddToCart was sent').toBeTruthy();
 });
