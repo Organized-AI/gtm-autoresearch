@@ -18,20 +18,37 @@ It fills the "what this audit did not check" section of the Container Atlas repo
 ```sh
 cd e2e-tag-check
 npm install
-SITE_URL=https://your-site.example npx e2e test
+SITE_URL=https://your-site.example JEV_GATEWAY_TOKEN=... npx e2e run
 ```
 
 Set `SGTM_HOST` if the site sends to a server-side GTM domain (for example `sst.example.com`).
-The agent's model is read from `E2E_MODEL` through the Vercel AI Gateway (`AI_GATEWAY_API_KEY`).
 
-## Jev
+## Jev, through jev-gateway
 
-e2e can drive steps with Jev instead of an LLM agent (`@e2e-dev/decision`): Jev picks the next action as
-a `choice` from the page's elements, never free text. That executor calls TypeSafe directly, and in this
-stack every Jev call goes through jev-gateway. So this branch starts with an LLM agent, and switches to
-Jev once jev-gateway has a route the decision executor can use.
+Each browser action is a Jev `choice` question (which element moves the goal forward), sent to
+jev-gateway's `POST /v1/decide` by `jev-gateway-decision.ts`, an AI SDK decision model with no dependencies.
+Jev never writes free text, and nothing in this folder calls TypeSafe directly.
+
+- `JEV_GATEWAY_TOKEN`: the gateway bearer token. `JEV_GATEWAY_URL` overrides the default gateway URL.
+- `JEV_DECIDE_MODEL`: a jev-gateway route alias (default `jev-latest`). Point the alias at a tuned decision
+  model in the gateway's `DECIDE_ROUTES` and this test follows with no change.
+- Every call is logged in AI Gateway and audited in jev-gateway's D1 `decisions` table with consumer
+  `e2e-tag-check` (shape and usage only, never page content).
+- No text model is set, so the agent never types into fields. Adding to the cart needs only clicks.
+
+## Local check
+
+`npm run check:local` starts `local/fake-gateway.mjs`, a two-page test shop plus a stand-in for
+`/v1/decide`, and runs the test against it. It proves the wiring without a real token: e2e drives Chromium,
+every action is a choice sent through `jev-gateway-decision.ts`, and code checks the tag requests. The
+stand-in picks options by keyword. It is not Jev. Remove the Meta pixel from `local/site/product.html` and the
+test fails with "Meta AddToCart was sent: expected false to be truthy".
+
+Needs Node 24.8 or newer (or 22.22.3+), which e2e requires.
 
 ## Status
 
-Scaffold. Not yet run against a real site. Tag detection uses URL patterns (`/g/collect`, `facebook.com/tr`,
-the sGTM host); verify them against your own setup.
+Verified locally against the stand-in gateway: the test passes (5 decision calls, all through the adapter
+with consumer `e2e-tag-check`) and fails when the Meta pixel is missing. On a rerun e2e replayed from its
+cache with 3 decision calls instead of 5. Not yet run against a real site or real Jev. Tag detection uses URL
+patterns (`/g/collect`, `facebook.com/tr`, the sGTM host); verify them against your own setup.

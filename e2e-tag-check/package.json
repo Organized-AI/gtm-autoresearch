@@ -2,6 +2,6 @@
   "name": "gtm-e2e-tag-check",
   "private": true,
   "type": "module",
-  "scripts": { "test": "e2e test" },
-  "devDependencies": { "ai": "^7.0.128", "e2e": "latest", "@e2e-dev/web": "latest" }
+  "scripts": { "test": "e2e run", "check:local": "node local/fake-gateway.mjs & sleep 1; e2e run --config e2e.local.config.ts" },
+  "devDependencies": { "ai": "^7.0.128", "e2e": "latest", "@e2e-dev/web": "latest", "@e2e-dev/decision": "latest" }
 }

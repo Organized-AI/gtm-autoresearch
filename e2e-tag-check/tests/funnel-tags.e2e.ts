@@ -1,4 +1,5 @@
-import { test, expect } from 'e2e';
+import { test } from '@e2e-dev/web';
+import { expect } from 'e2e';
 
 // Every GA4, Meta Pixel and server-side GTM request the page sends, recorded and then let through unchanged.
 const sgtm = process.env.SGTM_HOST ? process.env.SGTM_HOST.replace(/\./g, '\\.') : null;
