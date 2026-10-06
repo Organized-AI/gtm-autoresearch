@@ -71,7 +71,7 @@ var GTM_REPORT = (function () {
         if (R.scan.hardcoded.length) { L.push('', '| Hard-coded outside GTM | ID | Pages |', '|---|---|---:|'); R.scan.hardcoded.forEach(function (h) { L.push('| ' + esc(h.vendor) + ' | ' + esc(h.id || '—') + ' | ' + h.pages + ' |'); }); }
         else L.push('', 'No tracking tags are hard-coded in the page source; everything found runs through GTM.');
         L.push('', '| Page | Result |', '|---|---|');
-        R.scan.pages.forEach(function (p) { L.push('| ' + esc(sf.path(p.url)) + ' | ' + esc(p.status === 'ok' ? 'Read' + (p.title ? ': ' + p.title : '') : (p.error || 'Not read')) + ' |'); });
+        R.scan.list.forEach(function (p) { L.push('| ' + esc(sf.path(p.url)) + ' | ' + esc(p.status === 'ok' ? 'Read' + (p.title ? ': ' + p.title : '') : (p.error || 'Not read')) + ' |'); });
       }
     }
     if (R.notes.length && on('notes')) {
@@ -207,7 +207,7 @@ var GTM_REPORT = (function () {
         section('Live site scan: ' + ascii(R.scan.website), SCAN_INTRO);
         table(['What the source shows', ''], sf.facts.map(function (f) { return [ascii(f[0]), ascii(f[1])]; }), { columnStyles: { 0: { cellWidth: 150, fontStyle: 'bold' } } });
         if (R.scan.hardcoded.length) table(['Hard-coded outside GTM', 'ID', 'Pages'], R.scan.hardcoded.map(function (h) { return [ascii(h.vendor), ascii(h.id || '-'), h.pages]; }), { columnStyles: { 2: { halign: 'right', cellWidth: 50 } } });
-        table(['Page', 'Result'], R.scan.pages.map(function (p) { return [ascii(sf.path(p.url)), ascii(p.status === 'ok' ? 'Read' + (p.title ? ': ' + p.title : '') : (p.error || 'Not read'))]; }), { columnStyles: { 0: { cellWidth: 220 } } });
+        table(['Page', 'Result'], R.scan.list.map(function (p) { return [ascii(sf.path(p.url)), ascii(p.status === 'ok' ? 'Read' + (p.title ? ': ' + p.title : '') : (p.error || 'Not read'))]; }), { columnStyles: { 0: { cellWidth: 220 } } });
       }
     }
     if (R.notes.length && on('notes')) {

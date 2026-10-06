@@ -52,7 +52,7 @@ async def main():
         assert rep['scan']['coverage'] == 1 and rep['scan']['ok'] == 2
         async with pg.expect_download() as d: await pg.click('#mdBtn')
         md = pathlib.Path(await (await d.value).path()).read_text()
-        assert '## Live site scan: skylinecharters.com' in md
+        assert '## Live site scan: skylinecharters.com' in md and '**Pages read:** 2 of 2' in md
         print('errors:', errs); assert not errs
         await b.close()
 asyncio.run(main())

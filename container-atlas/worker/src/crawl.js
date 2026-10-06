@@ -52,7 +52,7 @@ async function seed(env, scanId) {
     if (SCAN.rootDomain(new URL(home.url).host) !== scan.website) throw new Error(scan.website + ' redirects to ' + new URL(home.url).host + ', which is another site. Scan that domain instead.');
     let rules = [], maps = [];
     try { const r = await get(origin + '/robots.txt', 'text/plain'); if (r.status === 200) { const p = SCAN.robots(r.text, AGENT); rules = p.rules; maps = p.sitemaps; } } catch (e) { /* no robots.txt: everything allowed */ }
-    await env.DB.prepare("UPDATE scans SET robots = ?2, origin = ?3, status = 'running', updated_at = ?4 WHERE id = ?1").bind(scanId, JSON.stringify(rules), origin, Date.now()).run();
+    await env.DB.prepare('UPDATE scans SET robots = ?2, origin = ?3, updated_at = ?4 WHERE id = ?1').bind(scanId, JSON.stringify(rules), origin, Date.now()).run();
     scan.robots = JSON.stringify(rules);
     // sitemap: robots.txt entries first, then /sitemap.xml; one level of sitemap index
     let locs = [];
@@ -71,7 +71,9 @@ async function seed(env, scanId) {
     const pick = SCAN.sample([home.url].concat(locs.filter(u => SCAN.crawlable(u, scan.website))), scan.max_pages);
     const claimed = [];
     for (const u of pick) { const c = await claim(env, scan, u); if (c) claimed.push(c); }
-    await env.DB.prepare('UPDATE scans SET sitemap_urls = ?2 WHERE id = ?1').bind(scanId, locs.length).run();
+    // 'running' only once pages are claimed, so a poll in between never sees an empty, finished scan
+    await env.DB.prepare("UPDATE scans SET sitemap_urls = ?2, status = ?3, error = ?4, updated_at = ?5 WHERE id = ?1")
+      .bind(scanId, locs.length, claimed.length ? 'running' : 'failed', claimed.length ? null : 'No page on ' + scan.website + ' could be scanned: robots.txt disallows them or none are HTML pages.', Date.now()).run();
     await send(env, scanId, claimed);
   } catch (e) {
     await env.DB.prepare("UPDATE scans SET status = 'failed', error = ?2, updated_at = ?3 WHERE id = ?1").bind(scanId, String(e.message || e).slice(0, 300), Date.now()).run();
@@ -146,7 +148,7 @@ export async function status(env, id, token, sha) {
   // a page that never came back (dropped message, Worker limit) does not hold the scan open forever
   const pages = results.map(r => ({ url: r.url, final_url: r.final_url, http_status: r.http_status, error: r.status === 'queued' && now - scan.updated_at > STALE_MS ? 'Not fetched in time.' : r.error, status: r.status === 'queued' && now - scan.updated_at > STALE_MS ? 'failed' : r.status, result: r.result ? JSON.parse(r.result) : null }));
   const pending = pages.filter(p => p.status === 'queued').length;
-  const state = scan.status === 'failed' ? 'failed' : scan.status === 'seeding' ? (now - scan.created_at > STALE_MS ? 'failed' : 'seeding') : pending ? 'running' : 'done';
+  const state = scan.status === 'failed' ? 'failed' : scan.status === 'seeding' || !pages.length ? (now - scan.created_at > STALE_MS ? 'failed' : 'seeding') : pending ? 'running' : 'done';
   return {
     id: scan.id, website: scan.website, origin: scan.origin, status: state, error: scan.error || (state === 'failed' && scan.status === 'seeding' ? 'The scan did not start in time. Try again.' : null),
     maxPages: scan.max_pages, queued: pages.length, done: pages.filter(p => p.status === 'ok').length, failed: pages.filter(p => p.status === 'failed').length, sitemapUrls: scan.sitemap_urls,

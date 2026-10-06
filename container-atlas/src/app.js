@@ -128,7 +128,7 @@ function mergeScan(D) {
   R.items = R.items.concat(items).sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
   items.forEach(i => { R.counts[i.severity]++; });
   R.scan = Object.assign(GTM_SCAN.brief(s.summary, st.web), { website: s.website, origin: s.origin, maxPages: s.maxPages, sitemapUrls: s.sitemapUrls, webId: st.web ? st.web.info.publicId : null,
-    pages: s.pages.map(p => ({ url: p.finalUrl || p.url, status: p.status, httpStatus: p.httpStatus, error: p.error, title: p.title })) });
+    list: s.pages.map(p => ({ url: p.finalUrl || p.url, status: p.status, httpStatus: p.httpStatus, error: p.error, title: p.title })) });
   R.skipped = R.skipped.map(x => /^Live tag firing/.test(x[0]) ? ['Tags GTM fires at runtime', 'The site scan read the page source of ' + s.summary.ok + ' pages, which shows what loads outside GTM. To see what GTM itself fires, run a rendered scan (Browser Rendering, next phase) or the gtm-debug-agent skill on key pages.'] : x);
 }
 

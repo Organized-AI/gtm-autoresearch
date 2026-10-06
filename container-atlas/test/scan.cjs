@@ -69,8 +69,8 @@ assert.strictEqual(SCAN.compare(SCAN.summarize([{ url: 'x', http_status: 403 }])
 
 // report writers include the scan section
 const REP = require('../src/report.js');
-const D = E.build({ web, website: site }); D.report.items = D.report.items.concat(items); D.report.scan = Object.assign(B, { website: site, webId: 'GTM-SKY7Q2L', sitemapUrls: 12, pages: rows.map(r => ({ url: r.url, status: r.result ? 'ok' : 'failed', error: r.error, title: r.result && r.result.title })) });
-const md = REP.markdown(D.report); assert.ok(/## Live site scan: skylinecharters.com/.test(md) && /\| Meta \| 481920375512334 \| 1 \|/.test(md));
+const D = E.build({ web, website: site }); D.report.items = D.report.items.concat(items); D.report.scan = Object.assign(B, { website: site, webId: 'GTM-SKY7Q2L', sitemapUrls: 12, list: rows.map(r => ({ url: r.url, status: r.result ? 'ok' : 'failed', error: r.error, title: r.result && r.result.title })) });
+const md = REP.markdown(D.report); assert.ok(/\*\*Pages read:\*\* 3 of 4/.test(md), md.slice(md.indexOf('## Live'), md.indexOf('## Live') + 600)); assert.ok(/## Live site scan: skylinecharters.com/.test(md) && /\| Meta \| 481920375512334 \| 1 \|/.test(md));
 const { jsPDF } = require('jspdf'); require('jspdf-autotable'); const pdf = REP.pdf(D.report, jsPDF); assert.ok(pdf.byteLength > 5000);
 fs.writeFileSync(__dirname + '/scan-out.md', md);
 console.log('scan tests passed:', items.length, 'findings');
