@@ -70,6 +70,10 @@ pre.cmd{padding:12px 14px;max-height:none;margin:6px 0 8px}
  <div class="prompt"><button class="copy" id="copyKick" type="button">Copy prompt</button><pre id="kick" style="max-height:none">Build my own GTM Container Atlas with the Atlas Builder. Start with step 1 and ask me only what you need.</pre></div>
  <p>At step 5 you choose where Jev runs: on your own Cloudflare account (Workers AI, billed to you), or on the <b>hosted Jev-gateway</b> run by Organized AI, free for 30 days. You need a Cloudflare account (the free plan works) and Node 20 or newer.</p>
 
+ <h2>Then: edit a container safely</h2>
+ <p>The Container Editor mod turns the audit's fixes into edits. Say <b>edit my container</b> and a pane asks where the container comes from: a <b>GTM ID</b> (you sign in with Google through the GTM MCP), an <b>exported JSON file</b>, or the <b>sample container</b>. Live edits go to a new workspace, never Default Workspace; file edits go to a <code>-edited.json</code> copy; nothing is published until you type “publish”.</p>
+ <pre class="cmd">/plugin install container-editor@gtm-autoresearch</pre>
+
  <h2>Step by step</h2>
  <ol class="walk">
   <li><div><h3>Run an audit<span class="lvtag">Level 1</span></h3>
