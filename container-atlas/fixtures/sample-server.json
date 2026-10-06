@@ -296,7 +296,8 @@
        }
       ]
      }
-    ]
+    ],
+    "notes": "Temporary, for debugging the launch. Remove after go-live."
    }
   ],
   "variable": [

@@ -46,7 +46,7 @@ pre.cmd{padding:12px 14px;max-height:none;margin:6px 0 8px}
 <main>
  <p class="eyebrow">GTM Container Atlas · build kit</p>
  <h1>Build your own atlas</h1>
- <p>Upload a GTM container export, get an audit back. Everything runs on one Cloudflare Worker: the audit page, the Jev model that suggests a decision for each finding, the daily drift check, and the store that keeps every GTM auto round. Here is how it is built, one step at a time.</p>
+ <p>Upload a GTM container export, get an audit back. Everything runs on one Cloudflare Worker: the audit page, the daily drift check and the store that keeps every GTM auto round. Jev judges each finding through jev-gateway. Here is how it is built, one step at a time.</p>
 
  <div class="flow"><pre>  your GTM export (.json)
           │
@@ -54,7 +54,7 @@ pre.cmd{padding:12px 14px;max-height:none;margin:6px 0 8px}
   ┌──────────────── Cloudflare Worker ────────────────┐
   │  Assets   audit page: findings, signal flow,       │
   │           review, PDF + Markdown                   │
-  │  AI       Jev on Workers AI ── /api/judge          │
+  │  Jev      jev-gateway ── /api/judge (rubric)       │
   │  D1       drift baselines · GTM auto rounds        │
   │  Cron     daily check of the published gtm.js      │
   └────────────────────────────────────────────────────┘
@@ -68,7 +68,7 @@ pre.cmd{padding:12px 14px;max-height:none;margin:6px 0 8px}
 /plugin install atlas-builder@gtm-autoresearch</pre>
  <p>Start a new Claude Code session, then send:</p>
  <div class="prompt"><button class="copy" id="copyKick" type="button">Copy prompt</button><pre id="kick" style="max-height:none">Build my own GTM Container Atlas with the Atlas Builder. Start with step 1 and ask me only what you need.</pre></div>
- <p>At step 5 you choose where Jev runs: on your own Cloudflare account (Workers AI, billed to you), or on the <b>hosted Jev-gateway</b> run by Organized AI, free for 30 days. You need a Cloudflare account (the free plan works) and Node 20 or newer.</p>
+ <p>At step 5 you connect Jev through the <b>hosted Jev-gateway</b> run by Organized AI, free for 30 days. You need a Cloudflare account (the free plan works) and Node 20 or newer.</p>
 
  <h2>Then: edit a container safely</h2>
  <p>The Container Editor mod turns the audit's fixes into edits. Say <b>edit my container</b> and a pane asks where the container comes from: a <b>GTM ID</b> (you sign in with Google through the GTM MCP), an <b>exported JSON file</b>, or the <b>sample container</b>. Live edits go to a new workspace, never Default Workspace; file edits go to a <code>-edited.json</code> copy; nothing is published until you type “publish”.</p>
@@ -88,12 +88,11 @@ npx wrangler d1 create gtm-container-atlas
 npm run db:init</pre>
    <p>Paste the database ID that <code>d1 create</code> prints into <code>wrangler.jsonc</code> before <code>db:init</code>. D1 holds drift baselines, daily checks and GTM auto rounds.</p></div></li>
   <li><div><h3>Turn on Jev</h3>
-   <p>Jev runs inside your Worker on Workers AI, billed to your Cloudflare account. No API key, nothing for the people using your atlas to set up. It is one binding in <code>wrangler.jsonc</code>, already in the template:</p>
-   <pre class="cmd">"ai": { "binding": "AI" },
-"vars": { "JEV_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-          "AUTO_THRESHOLD": "0.75", "ASK_THRESHOLD": "0.40" }</pre>
-   <p>No Workers AI? Use the hosted Jev-gateway instead, free for 30 days: get a key with <code>POST https://atlas.organizedai.vip/api/jev/trial</code> (your email), store it with <code>npx wrangler secret put JEV_KEY</code>, remove the <code>ai</code> line and set <code>JEV_URL</code> to <code>https://atlas.organizedai.vip/api/judge</code>. The Atlas Builder does this for you if you pick it.</p>
-   <p>When an audit is built, the page sends the findings to <code>/api/judge</code> in batches of eight, three at a time. Jev answers each one with a probability for <b>fix</b>, <b>intended</b> or <b>ask the owner</b>. At 75% or more it is confident and the reviewer can accept all of those in one click; under 40% it leaves the call to a person.</p></div></li>
+   <p>Jev is a decision model from TypeSafe. In the Organized AI stack every Jev call goes through <b>jev-gateway</b>, a Cloudflare Worker that binds each call to a frozen rubric, runs its control cases, and logs every decision. Your atlas reaches it through the hosted atlas with a key, free for 30 days:</p>
+   <pre class="cmd">curl -s -X POST https://atlas.organizedai.vip/api/jev/trial \
+  -H 'content-type: application/json' -d '{"email":"you@example.com"}'
+npx wrangler secret put JEV_KEY      # paste the jev_... key</pre>
+   <p>When an audit is built, the page sends the findings to <code>/api/judge</code>. Each finding becomes one yes/no claim against the rubric <code>RUB-S1-JEV-ATLAS-FINDING</code>: is this a real problem to fix? <b>Verified</b> means fix it, <b>refuted</b> means the team documented it as deliberate, and <b>inconclusive</b> goes to a person. Until the rubric graduates to the gating stage, verdicts are suggestions only and there is no one-click accept.</p></div></li>
   <li><div><h3>Deploy</h3>
    <pre class="cmd">npm run deploy</pre>
    <p>Open <code>&lt;your-worker&gt;.workers.dev/api/health</code>; it should show <code>drift</code>, <code>runs</code> and <code>jev</code> as true. To use your own domain, add a <code>routes</code> entry with <code>custom_domain: true</code> and deploy again.</p></div></li>
@@ -108,7 +107,7 @@ npm run db:init</pre>
  <div class="scroll"><table>
   <thead><tr><th>Tool</th><th>What it does here</th><th>Step</th><th>Connect</th></tr></thead>
   <tbody>
-   <tr><td>Cloudflare + Wrangler</td><td>Hosts the atlas, Jev on Workers AI, the D1 database and the daily cron.</td><td><span class="lvl">3–6</span></td><td><code>npx wrangler login</code></td></tr>
+   <tr><td>Cloudflare + Wrangler</td><td>Hosts the atlas, the D1 database and the daily cron. Jev is reached through jev-gateway.</td><td><span class="lvl">3–6</span></td><td><code>npx wrangler login</code></td></tr>
    <tr><td>GTM MCP (Stape)</td><td>Lists accounts and containers, reads a workspace instead of exporting, creates workspaces and versions, publishes.</td><td><span class="lvl">7</span></td><td><code>https://gtm-mcp.stape.ai/mcp</code> · Google sign-in</td></tr>
    <tr><td>Stape MCP</td><td>sGTM container status, request logs and monitoring for the delivery check. Stape-hosted containers only.</td><td><span class="lvl">optional</span></td><td><code>https://mcp.stape.ai/mcp</code> · header <code>Authorization: &lt;Stape API key&gt;</code></td></tr>
    <tr><td>Chrome DevTools MCP</td><td>Loads pages in Chrome and records which tags fire, before and after consent.</td><td><span class="lvl">optional</span></td><td><code>npx -y chrome-devtools-mcp@latest</code></td></tr>
@@ -119,7 +118,7 @@ npm run db:init</pre>
 
  <h2>The prompt</h2>
  <p>Paste this into Claude Code or Codex in an empty folder to have your agent do steps 2 to 7. It asks before anything that signs in, spends money or publishes.</p>
- <div class="prompt"><button class="copy" id="copy" type="button">Copy prompt</button><pre id="prompt">You are setting up my own copy of the GTM Container Atlas: a Cloudflare Worker that audits GTM container exports, suggests a decision for each finding with Jev on Workers AI, checks the published container for drift every day, and stores every GTM auto round. Then you connect the MCP servers that let you fix GTM for me. Work step by step and tell me what you did after each step. Ask me before any step that signs in, creates a paid resource, or changes a GTM container.
+ <div class="prompt"><button class="copy" id="copy" type="button">Copy prompt</button><pre id="prompt">You are setting up my own copy of the GTM Container Atlas: a Cloudflare Worker that audits GTM container exports, gets a Jev verdict for each finding through the hosted Jev-gateway, checks the published container for drift every day, and stores every GTM auto round. Then you connect the MCP servers that let you fix GTM for me. Work step by step and tell me what you did after each step. Ask me before any step that signs in, creates a paid resource, or changes a GTM container.
 
 1. Check my tools. Confirm Node 20+ is installed. Tell me which agent you are (Claude Code or Codex); use that client's own command or config file for every MCP server below.
 
@@ -130,7 +129,7 @@ npm run db:init</pre>
    - put the returned database_id into wrangler.jsonc (replace REPLACE_WITH_YOUR_D1_ID)
    - load the schema: `npm run db:init`
 
-4. Jev. Confirm wrangler.jsonc has the "ai" binding and the JEV_MODEL, AUTO_THRESHOLD and ASK_THRESHOLD vars. Explain to me in two sentences that Jev runs on Workers AI on my account and what it costs to run.
+4. Jev. Ask me for my email, then get a free 30-day key: `curl -s -X POST https://atlas.organizedai.vip/api/jev/trial -H 'content-type: application/json' -d '{"email":"<my email>"}'`. Store the key with `npx wrangler secret put JEV_KEY` (never write it into a file). Explain to me in two sentences that each finding becomes one yes/no claim checked by jev-gateway against a frozen rubric, and that inconclusive findings come back to me.
 
 5. Deploy: `npm run deploy`. Open <my workers.dev URL>/api/health and confirm drift, runs and jev are all true. Give me the URL.
 

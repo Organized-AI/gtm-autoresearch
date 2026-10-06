@@ -3,7 +3,7 @@
 //   /api/watch/:id        GET   history for one watch (token required)
 //   /api/watch/:id/check  POST  check again now
 //   /api/watch/:id        DELETE stop watching
-//   /api/judge            POST  Jev suggestions for findings. Same-origin page calls are limited per network;
+//   /api/judge            POST  Jev verdicts for findings, through jev-gateway (rubric RUB-S1-JEV-ATLAS-FINDING). Same-origin page calls are limited per network;
 //                               other atlases call it with "Authorization: Bearer jev_..." (hosted Jev-gateway)
 //   /api/jev/trial        POST  issue a hosted Jev-gateway key, free for TRIAL_DAYS
 //   /api/jev/key          GET   status of the bearer key (plan, days left, calls)
@@ -14,6 +14,7 @@
 // Everything else is the static atlas in ./public.
 import DRIFT from './drift.js';
 import { DEMO } from './demo.js';
+import { judgeFindings } from './jev.js';
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const fail = (status, code, message) => json({ error: code, message }, status);
@@ -79,22 +80,7 @@ async function history(env, w) {
   };
 }
 
-/* ---------- Jev-style judging ---------- */
-const OPTIONS = { fix: 'Fix it: the finding is a real problem in this container.', intended: 'Intended: the setup is deliberate, keep it as it is.', ask_owner: 'Ask the owner: the export alone cannot settle it.' };
-function judgePrompt(findings) {
-  return [
-    'You review findings from a static Google Tag Manager container audit for a measurement team.',
-    'For each finding, give a probability for each decision. Probabilities for one finding must sum to 1. Be calibrated: when the export alone cannot settle it, put weight on ask_owner.',
-    'Decisions: ' + Object.entries(OPTIONS).map(([k, v]) => k + ' = ' + v).join(' '),
-    'Findings (JSON): ' + JSON.stringify(findings.map(f => ({ key: f.key, element: f.name, kind: f.kind, check: f.check, severity: f.severity, container: f.container, finding: f.message }))),
-    'Reply with JSON only: {"results":[{"key":"…","fix":0.0,"intended":0.0,"ask_owner":0.0}]}',
-  ].join('\n');
-}
-function normalize(r) {
-  const k = ['fix', 'intended', 'ask_owner'], p = k.map(x => Math.max(0, Number(r[x]) || 0)), s = p.reduce((a, b) => a + b, 0) || 1;
-  const probs = Object.fromEntries(k.map((x, i) => [x, p[i] / s])), top = k.reduce((a, b) => (probs[a] >= probs[b] ? a : b));
-  return { key: r.key, probabilities: probs, choice: top, confidence: (3 * probs[top] - 1) / 2 };
-}
+/* ---------- Jev, through jev-gateway (see jev.js) ---------- */
 const DAY = 86400000;
 async function keyFor(env, req) {
   const m = /^Bearer\s+(jev_[A-Za-z0-9_-]{20,80})$/.exec(req.headers.get('authorization') || '');
@@ -117,20 +103,21 @@ async function judge(env, req) {
   } else if (!(await limit(env, req, 'judge', 600, 3600))) return fail(429, 'rate_limited', 'Too many Jev requests from this network. Try again in a few minutes.');
   const body = await req.json().catch(() => null), findings = body && Array.isArray(body.findings) ? body.findings.slice(0, 15) : [];
   if (!findings.length) return fail(400, 'no_findings', 'Send up to 15 findings.');
-  // An atlas without its own Workers AI forwards to the hosted Jev-gateway with its key.
-  if (!env.AI && env.JEV_KEY) {
-    const r = await fetch(env.JEV_URL || 'https://atlas.organizedai.vip/api/judge', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env.JEV_KEY }, body: JSON.stringify({ findings }) });
+  // An atlas without its own gateway token forwards to the hosted atlas with its Jev key.
+  if (!env.JEV_GATEWAY_TOKEN && env.JEV_KEY) {
+    const r = await fetch(env.JEV_URL || 'https://atlas.organizedai.vip/api/judge', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env.JEV_KEY }, body: JSON.stringify({ findings, website: body.website }) });
     return new Response(r.body, { status: r.status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
   }
-  if (!env.AI) return fail(503, 'no_jev', 'Jev is not set up on this atlas: add the AI binding, or a hosted Jev-gateway key (JEV_KEY).');
-  const schema = { type: 'object', properties: { results: { type: 'array', items: { type: 'object', properties: { key: { type: 'string' }, fix: { type: 'number' }, intended: { type: 'number' }, ask_owner: { type: 'number' } }, required: ['key', 'fix', 'intended', 'ask_owner'] } } }, required: ['results'] };
-  const out = await env.AI.run(env.JEV_MODEL, { messages: [{ role: 'user', content: judgePrompt(findings) }], response_format: { type: 'json_schema', json_schema: schema }, max_tokens: 1600, temperature: 0 });
-  let parsed = out && out.response; if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed.replace(/^[^{]*/, '').replace(/[^}]*$/, '')); } catch (e) { parsed = null; } }
-  if (!parsed || !Array.isArray(parsed.results)) return fail(502, 'bad_model_output', 'The model did not return usable probabilities. Try again.');
-  return json({ provider: key ? 'jev-gateway' : 'cloudflare', model: env.JEV_MODEL, thresholds: { auto: Number(env.AUTO_THRESHOLD), ask: Number(env.ASK_THRESHOLD) }, results: parsed.results.map(normalize) });
+  if (!env.JEV_GATEWAY_TOKEN) return fail(503, 'jev_not_connected', 'Jev is not connected to this atlas yet. Every finding stays with you to decide.');
+  try {
+    const out = await judgeFindings(env, findings, String(body.website || '').slice(0, 120));
+    return json({ provider: 'jev-gateway', ...out });
+  } catch (e) {
+    return fail(502, 'jev_unavailable', 'Jev could not be reached. Every finding stays with you to decide.');
+  }
 }
 async function trial(env, req) {
-  if (!env.AI) return fail(404, 'not_offered', 'This atlas does not offer hosted Jev keys.');
+  if (!env.JEV_GATEWAY_TOKEN) return fail(404, 'not_offered', 'This atlas does not offer hosted Jev keys.');
   if (!(await limit(env, req, 'trial', 5, 86400))) return fail(429, 'rate_limited', 'Too many trial keys from this network today.');
   const b = await req.json().catch(() => null), email = String((b && b.email) || '').trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(email) || email.length > 200) return fail(400, 'bad_email', 'A valid email is needed for the trial key.');
@@ -153,7 +140,7 @@ export default {
         try { const live = await fetchLive(id); return json({ published: true, sample: !!DEMO[id], version: live.version }); }
         catch (e) { return json({ published: false, message: e.message }); }
       }
-      if (path === '/api/health') return json({ ok: true, drift: true, runs: true, jev: !!(env.AI || env.JEV_KEY), jevMode: env.AI ? 'workers-ai' : env.JEV_KEY ? 'hosted' : 'off' });
+      if (path === '/api/health') return json({ ok: true, drift: true, runs: true, jev: !!(env.JEV_GATEWAY_TOKEN || env.JEV_KEY), jevMode: env.JEV_GATEWAY_TOKEN ? 'jev-gateway' : env.JEV_KEY ? 'hosted' : 'off' });
       if (path === '/api/judge' && req.method === 'POST') return await judge(env, req);
       if (path === '/api/jev/trial' && req.method === 'POST') return await trial(env, req);
       if (path === '/api/jev/key' && req.method === 'GET') { const k = await keyFor(env, req); if (!k || k.invalid) return fail(401, 'bad_key', 'Send a Jev key as Authorization: Bearer jev_...'); return json(keyStatus(env, k)); }

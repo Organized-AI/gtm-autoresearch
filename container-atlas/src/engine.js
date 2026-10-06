@@ -175,6 +175,7 @@ var GTM_ENGINE = (function (AUTO) {
       var id = kind + ':' + ref; if (byKey[id]) return byKey[id];
       var n = { id: id, findings: [], risk: null, kind: kind, ref: String(ref), name: name, type: type, folder: row && row.parentFolderId ? folders[String(row.parentFolderId)] || null : null };
       if (kind === 'tag') n.paused = !!(row && row.paused);
+      if (row && row.notes) n.notes = String(row.notes).slice(0, 600);
       nodes.push(n); byKey[id] = n; return n;
     };
     var edge = function (from, to, kind) { var k = from + '>' + to + '>' + kind; if (from === to || seenEdge[k] || !byKey[from] || !byKey[to]) return; seenEdge[k] = 1; edges.push({ from: from, to: to, kind: kind }); };
@@ -392,7 +393,7 @@ var GTM_ENGINE = (function (AUTO) {
       c.nodes.forEach(function (n) {
         n.findings.forEach(function (f) {
           var pairNode = f.pair && byId[c.meta.publicId + '|' + f.pair];
-          var item = { tab: ci, nodeId: n.id, container: c.meta.publicId, context: c.meta.context, severity: f.severity, check: DIM_LABEL[f.dimension] || f.dimension, kind: n.kind, ref: n.ref, name: n.name, type: n.type,
+          var item = { tab: ci, nodeId: n.id, container: c.meta.publicId, context: c.meta.context, severity: f.severity, check: DIM_LABEL[f.dimension] || f.dimension, kind: n.kind, ref: n.ref, name: n.name, type: n.type, folder: n.folder || null, paused: !!n.paused, notes: n.notes || null,
             message: pairNode ? 'Same settings as ' + pairNode.kind + ' "' + pairNode.name + '" (' + pairNode.ref + '). Merge them or confirm both are needed.' : f.message };
           if (f.severity === 'info') { var k = c.meta.publicId + '|' + f.dimension + '|' + f.message.replace(/\d+/g, '#').replace(/"[^"]*"/g, '"…"'); (groups[k] = groups[k] || { container: c.meta.publicId, check: item.check, message: f.message, examples: [], count: 0 }); groups[k].count++; if (groups[k].examples.length < 4) groups[k].examples.push(n.name); }
           else items.push(item);

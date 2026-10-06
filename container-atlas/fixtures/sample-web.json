@@ -339,7 +339,8 @@
       "key": "request_path",
       "value": "/data"
      }
-    ]
+    ],
+    "notes": "Server side stores quote_requested in BigQuery from another container. No ad platform needs it."
    },
    {
     "tagId": "10",
@@ -546,7 +547,8 @@
       "key": "trackingId",
       "value": "UA-4401123-1"
      }
-    ]
+    ],
+    "notes": "TODO remove after the GA4 cutover (finished in March)."
    },
    {
     "tagId": "25",
@@ -758,7 +760,8 @@
        }
       ]
      }
-    ]
+    ],
+    "notes": "Kept on purpose: CallRail reads this click through its own dataLayer listener. Do not delete."
    },
    {
     "triggerId": "26",
@@ -891,7 +894,8 @@
       "key": "dataLayerVersion",
       "value": "2"
      }
-    ]
+    ],
+    "notes": "Created by mistake; duplicate of DLV - value."
    },
    {
     "variableId": "37",

@@ -123,6 +123,19 @@ const server = {
     builtInVariable: [{ type: 'EVENT_NAME', name: 'Event Name' }, { type: 'CLIENT_NAME', name: 'Client Name' }],
   },
 };
+// Notes are what a team writes in GTM's Notes field. Jev reads them as evidence of intent (never as instructions).
+const NOTES = {
+  web: {
+    trigger: { '25': 'Kept on purpose: CallRail reads this click through its own dataLayer listener. Do not delete.' },
+    variable: { '36': 'Created by mistake; duplicate of DLV - value.' },
+    tag: { '24': 'TODO remove after the GA4 cutover (finished in March).', '9': 'Server side stores quote_requested in BigQuery from another container. No ad platform needs it.' },
+  },
+  server: { trigger: { '65': 'Temporary, for debugging the launch. Remove after go-live.' } },
+};
+for (const [side, kinds] of Object.entries(NOTES)) {
+  const cv = (side === 'web' ? web : server).containerVersion;
+  for (const [kind, byId] of Object.entries(kinds)) for (const row of cv[kind] || []) { const n = byId[row[kind + 'Id']]; if (n) row.notes = n; }
+}
 writeFileSync(new URL('./sample-web.json', import.meta.url), JSON.stringify(web, null, 1));
 writeFileSync(new URL('./sample-server.json', import.meta.url), JSON.stringify(server, null, 1));
 console.log('ok', web.containerVersion.tag.length, server.containerVersion.tag.length);

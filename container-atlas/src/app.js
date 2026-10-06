@@ -293,38 +293,35 @@ window.atlasRunStatus = (st, el) => {
   if (r.link) { const a = document.createElement('a'); a.href = r.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open the run history'; el.append(a); }
 };
 
-/* Jev: hosted on this atlas's own Worker (Workers AI). It reviews every finding as soon as the audit is built;
-   the person still decides, and can accept the confident suggestions in one click. */
+/* Jev, through jev-gateway: one yes/no claim per finding against the scoped rubric RUB-S1-JEV-ATLAS-FINDING.
+   VERIFIED = fix, REFUTED = intended, INCONCLUSIVE or ERROR = ask the owner. The person still decides; bulk
+   acceptance only appears once the rubric has graduated to the gating stage. */
 const TO_DEC = { fix: 'fix', intended: 'keep', ask_owner: 'ask' };
-const JEV = { done: false, running: false, results: 0 };
-function jevNormalize(key, p) {
-  const k = ['fix', 'intended', 'ask_owner'], v = k.map(x => Math.max(0, Number(p[x]) || 0)), s = v.reduce((a, b) => a + b, 0) || 1, probs = {};
-  k.forEach((x, i) => { probs[x] = v[i] / s; });
-  const top = k.reduce((a, b) => (probs[a] >= probs[b] ? a : b));
-  return { key, probabilities: probs, choice: top, decision: TO_DEC[top], confidence: (3 * probs[top] - 1) / 2 };
-}
+const JEV = { done: false, running: false, results: 0, rubric: null };
+const jevDecided = r => r.verdict === 'VERIFIED' || r.verdict === 'REFUTED';
 async function jevRun(items) {
-  // Short ids keep the model from mangling long finding keys; results are mapped back by id.
   const byId = {}, findings = items.map((f, i) => { const id = 'f' + (i + 1); byId[id] = f.key; return Object.assign({}, f, { key: id }); });
-  const r = await fetch('/api/judge', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ findings }) });
+  const r = await fetch('/api/judge', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ findings, website: window.__report && window.__report.website }) });
   const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || 'Jev could not answer.');
-  return j.results.filter(x => byId[x.key]).map(x => jevNormalize(byId[x.key], x.probabilities));
+  if (j.rubric) JEV.rubric = j.rubric;
+  return j.results.filter(x => byId[x.key]).map(x => Object.assign({}, x, { key: byId[x.key], decision: TO_DEC[x.decision] || 'ask', confidence: x.pFix == null ? null : x.decision === 'intended' ? 1 - x.pFix : x.pFix }));
 }
 function jevChip(el, r) {
   const slot = el.jevSlot; slot.textContent = ''; slot.hidden = false;
-  const strong = r.confidence >= 0.75, weak = r.confidence < 0.40;
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'rv-jevbtn' + (strong ? ' strong' : weak ? ' weak' : '');
-  b.textContent = 'Jev: ' + DEC[r.decision] + ' · ' + Math.round(r.probabilities[r.choice] * 100) + '%';
-  b.title = 'fix ' + Math.round(r.probabilities.fix * 100) + '% · intended ' + Math.round(r.probabilities.intended * 100) + '% · ask owner ' + Math.round(r.probabilities.ask_owner * 100) + '%. Click to accept.';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'rv-jevbtn' + (jevDecided(r) ? ' strong' : ' weak');
+  b.textContent = 'Jev: ' + DEC[r.decision] + (r.pFix == null ? '' : ' · p(fix) ' + Math.round(r.pFix * 100) + '%');
+  b.title = (r.verdict === 'ERROR' ? 'Jev could not judge this one (' + (r.reason || 'error') + ').' : r.verdict + (r.reason ? ' (' + r.reason.replace(/_/g, ' ') + ')' : '')) + ' Click to accept.';
   b.onclick = () => el.decide(r.decision, false);
-  const n = document.createElement('span'); n.textContent = strong ? 'confident' : weak ? 'unsure, ask a person' : 'leaning';
+  const n = document.createElement('span'); n.textContent = r.verdict === 'VERIFIED' ? 'verified' : r.verdict === 'REFUTED' ? 'refuted' : r.verdict === 'ERROR' ? 'no verdict, ask a person' : 'inconclusive, ask a person';
   slot.append(b, n);
 }
 function paintJev() { document.querySelectorAll('.rv-item').forEach(el => { if (RV.jev[el.dataset.key]) jevChip(el, RV.jev[el.dataset.key]); }); }
 function jevSummary() {
-  const all = Object.values(RV.jev), confident = all.filter(r => r.confidence >= 0.75), open = confident.filter(r => !RV.dec[r.key]);
-  $('jevStatus').textContent = all.length ? `Reviewed ${all.length} of ${RV.total} findings · ${confident.length} confident` : 'Ready';
-  const acc = $('jevAccept'); acc.hidden = !open.length; acc.textContent = 'Accept ' + open.length + ' confident suggestion' + (open.length === 1 ? '' : 's');
+  const all = Object.values(RV.jev), dec = all.filter(jevDecided), gating = JEV.rubric && JEV.rubric.stage === 'gating';
+  const open = gating ? dec.filter(r => !RV.dec[r.key]) : [];
+  const rb = JEV.rubric ? ' · rubric ' + JEV.rubric.version + ' (' + JEV.rubric.stage + ')' : '';
+  $('jevStatus').textContent = all.length ? `Reviewed ${all.length} of ${RV.total} · ${dec.length} decided · ${all.length - dec.length} for a person${rb}` : 'Ready';
+  const acc = $('jevAccept'); acc.hidden = !open.length; acc.textContent = 'Accept ' + open.length + ' decided verdict' + (open.length === 1 ? '' : 's');
 }
 async function jevAll() {
   if (JEV.running) return; JEV.running = true;
@@ -345,7 +342,10 @@ async function jevAll() {
   };
   await Promise.all([worker(), worker(), worker()]);
   const missing = RV.list.flatMap(c => c.items).filter(i => !RV.jev[i.key]).length;
-  msg.textContent = missing ? missing + ' findings got no suggestion. Ask Jev again to retry them.' : 'Each finding has a suggestion: fix, intended or ask the owner, with Jev\'s confidence. Click one to accept it, or accept every confident one at once.';
+  const shadow = !JEV.rubric || JEV.rubric.stage !== 'gating';
+  msg.textContent = missing ? missing + ' findings got no verdict. Ask Jev again to retry them.'
+    : shadow ? 'Jev judged each finding through jev-gateway. Its rubric is still in shadow, so verdicts are suggestions only: click one to accept it yourself.'
+    : 'Jev judged each finding through jev-gateway with a frozen rubric. Click a verdict to accept it, or accept every decided one at once.';
   if (missing) { $('jevRun').hidden = false; $('jevRun').textContent = 'Ask Jev again'; }
   JEV.running = false; jevSummary();
 }
@@ -355,7 +355,8 @@ async function jevBar() {
     bar.dataset.wired = '1';
     $('jevRun').onclick = jevAll;
     $('jevAccept').onclick = () => {
-      Object.values(RV.jev).filter(r => r.confidence >= 0.75 && !RV.dec[r.key]).forEach(r => { RV.dec[r.key] = { d: r.decision, note: '', jev: r.confidence }; });
+      if (!JEV.rubric || JEV.rubric.stage !== 'gating') return;
+      Object.values(RV.jev).filter(r => jevDecided(r) && !RV.dec[r.key]).forEach(r => { RV.dec[r.key] = { d: r.decision, note: '', jev: r.confidence }; });
       persist(); go(RV.cp); jevSummary();
     };
   }

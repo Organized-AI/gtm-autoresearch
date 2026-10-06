@@ -21,7 +21,7 @@ export const STEPS: StepDef[] = [
   { id: 'code', title: 'Get the atlas code' },
   { id: 'cloudflare', title: 'Sign in to Cloudflare', you: 'Finish the Cloudflare sign-in in your browser.' },
   { id: 'database', title: 'Create the D1 database' },
-  { id: 'jev', title: 'Choose where Jev runs', you: 'Pick your own Workers AI, or the hosted Jev-gateway (free for 30 days).' },
+  { id: 'jev', title: 'Connect Jev', you: 'Give your email for a hosted Jev-gateway key (free for 30 days).' },
   { id: 'deploy', title: 'Deploy your atlas' },
   { id: 'gtm', title: 'Connect the GTM MCP', you: 'Sign in with the Google account that can see your GTM container.' },
   { id: 'audit', title: 'Audit your real container', you: 'Pick the container, then open your atlas and drop the files in.' },
@@ -48,16 +48,14 @@ Steps
 2 code: git clone -b ${BRANCH} ${REPO} atlas, then npm install in atlas/container-atlas/worker. Read atlas/container-atlas/README.md and atlas/jev-gtm/README.md. Work in atlas/container-atlas/worker from here on.
 3 cloudflare: run "npx wrangler whoami". If not signed in, run "npx wrangler login" and set the step to "you" until it finishes. If they have no Cloudflare account, tell them to create a free one at dash.cloudflare.com/sign-up first.
 4 database: "npx wrangler d1 create gtm-container-atlas", put the database_id into wrangler.jsonc (replace REPLACE_WITH_YOUR_D1_ID), then "npm run db:init".
-5 jev: ask with AskUserQuestion where Jev runs:
-   a) "My Cloudflare account (Workers AI)": keep the "ai" binding in wrangler.jsonc. Usage is billed to their Cloudflare account; Workers AI has a free daily allowance.
-   b) "Hosted Jev-gateway by Organized AI (free 30 days)": ask for their email (AskUserQuestion with an "Other" answer), then POST {"email": "...", "label": "<their site>"} to ${HOSTED_JEV}/api/jev/trial. Save the returned key with "npx wrangler secret put JEV_KEY" fed through stdin (never echo it), remove the "ai" binding from wrangler.jsonc, and add "JEV_URL": "${HOSTED_JEV}/api/judge" to vars. Tell them the trial end date and that they can switch to their own Workers AI at any time.
+5 jev: Jev runs only through jev-gateway, which binds every call to a frozen rubric and logs it. The person's atlas reaches it through the hosted atlas with a key. Ask for their email (AskUserQuestion with an "Other" answer), then POST {"email": "...", "label": "<their site>"} to ${HOSTED_JEV}/api/jev/trial. Save the returned key with "npx wrangler secret put JEV_KEY" fed through stdin (never echo it). Remove any "ai" binding and JEV_MODEL var from wrangler.jsonc and add "JEV_URL": "${HOSTED_JEV}/api/judge" to vars. Tell them the trial end date, and that each finding comes back verified (fix), refuted (intended) or inconclusive (ask a person).
 6 deploy: "npm run deploy", then fetch <workers.dev URL>/api/health and confirm drift, runs and jev are true. Report the URL with ${STEP_TOOL} (field "url").
 7 gtm: add the remote MCP server https://gtm-mcp.stape.ai/mcp named "gtm" with this client's own command (Claude Code: "claude mcp add --transport http gtm https://gtm-mcp.stape.ai/mcp"). It signs in with Google: set the step to "you" while they do. If the tools are not visible yet, tell them to restart Claude Code and run /atlas-build resume.
 8 audit: list their GTM accounts and containers, ask which to audit, read the live workspace and save it as export JSON (exportFormatVersion 2, containerVersion with tag, trigger, variable, folder, builtInVariable, container). Ask whether there is a server container; if yes save it too. Tell them to open their atlas URL and drop the files in.
 9 drift: remind them to click Watch on the last review step. The watch only saves when the container is published.
 10 publish (only if they ask): with the gtm server create a workspace "Atlas fixes <date>", apply the operations they accepted in the GTM auto tab, create a version, show the diff, and publish only after they type "publish".
 
-Finish with: their atlas URL, where Jev runs (and the trial end date if hosted), which MCP servers are connected, and what is left for them.`
+Finish with: their atlas URL, the Jev trial end date, which MCP servers are connected, and what is left for them.`
 
 export const KICKOFF = 'Build my own GTM Container Atlas with the Atlas Builder. Start with step 1 and ask me only what you need.'
 // Any prompt that asks to build (or resume) the atlas starts the guided build.
@@ -208,7 +206,7 @@ export const register: Register = on => {
           )
         })}
         <Text> </Text>
-        {b.jev ? <Text dimColor>Jev: {b.jev === 'hosted' ? 'hosted Jev-gateway (free 30 days)' : 'your Workers AI'}</Text> : null}
+        {b.jev ? <Text dimColor>Jev: hosted Jev-gateway (free 30 days)</Text> : null}
         {!b.active ? <Text dimColor>Type /atlas-build to start.</Text> : null}
       </Box>
     )
