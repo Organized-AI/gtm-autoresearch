@@ -1,0 +1,7 @@
+{
+  "name": "container-editor",
+  "version": "0.1.0",
+  "description": "Say \"edit my container\": load a GTM container by ID (Google sign-in), from an export file, or the sample, then edit it safely.",
+  "author": { "name": "Organized AI", "url": "https://atlas.organizedai.vip" },
+  "types": "./types/index.d.ts"
+}

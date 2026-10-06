@@ -1,8 +1,20 @@
 {
   "name": "gtm-autoresearch",
-  "description": "GTM Container Atlas tools by Organized AI: build your own atlas in Claude Code.",
-  "owner": { "name": "Organized AI", "url": "https://github.com/Organized-AI" },
+  "description": "GTM Container Atlas tools by Organized AI: build your own atlas and edit containers safely in Claude Code.",
+  "owner": {
+    "name": "Organized AI",
+    "url": "https://github.com/Organized-AI"
+  },
   "plugins": [
-    { "name": "atlas-builder", "source": "./atlas-builder", "description": "Builds your own GTM Container Atlas step by step: you answer questions and connect tools, Claude does the rest." }
+    {
+      "name": "atlas-builder",
+      "source": "./atlas-builder",
+      "description": "Builds your own GTM Container Atlas step by step: you answer questions and connect tools, Claude does the rest."
+    },
+    {
+      "name": "container-editor",
+      "source": "./container-editor",
+      "description": "Say \"edit my container\": load a GTM container by ID (Google sign-in), from an export file, or the sample, then edit it safely."
+    }
   ]
 }
