@@ -15,6 +15,20 @@
 import DRIFT from './drift.js';
 import { DEMO } from './demo.js';
 import { judgeFindings } from './jev.js';
+import * as CFW from 'cloudflare:workers';
+
+// Observability (watched by the atlas-observer tail consumer):
+//   span()  a custom span in Workers traces when tracing is on, a plain call otherwise
+//   obs()   one structured {"obs":1,...} line per unit of work: counts and timings only.
+//           Never tokens, emails, click ids or container contents.
+const TRACING = CFW.tracing;
+function span(name, attrs, fn) {
+  if (!TRACING || typeof TRACING.enterSpan !== 'function') return fn(null);
+  return TRACING.enterSpan(name, s => { if (s && s.isTraced && attrs) s.setAttributes(attrs); return fn(s); });
+}
+const obs = fields => console.log(JSON.stringify({ obs: 1, ...fields }));
+const ID_SEGMENT = /^(?=[^/]*\d)[A-Za-z0-9_-]{8,}$/;
+const routeOf = path => path.split('/').map(p => (ID_SEGMENT.test(p) && !/^GTM-/.test(p) ? ':id' : p)).join('/');
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const fail = (status, code, message) => json({ error: code, message }, status);
@@ -109,12 +123,22 @@ async function judge(env, req) {
     return new Response(r.body, { status: r.status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
   }
   if (!env.JEV_GATEWAY_TOKEN) return fail(503, 'jev_not_connected', 'Jev is not connected to this atlas yet. Every finding stays with you to decide.');
-  try {
-    const out = await judgeFindings(env, findings, String(body.website || '').slice(0, 120));
-    return json({ provider: 'jev-gateway', ...out });
-  } catch (e) {
-    return fail(502, 'jev_unavailable', 'Jev could not be reached. Every finding stays with you to decide.');
-  }
+  const t0 = Date.now();
+  return span('atlas.jev.judge', { 'jev.findings': findings.length, 'jev.caller': key ? 'key' : 'page' }, async s => {
+    try {
+      const out = await judgeFindings(env, findings, String(body.website || '').slice(0, 120));
+      const tally = {};
+      for (const r of out.results) tally[r.verdict] = (tally[r.verdict] || 0) + 1;
+      const errors = tally.ERROR || 0;
+      if (s && s.isTraced) s.setAttributes({ 'jev.errors': errors, 'jev.rubric_source': out.rubric.source, 'jev.stage': out.rubric.stage });
+      obs({ e: 'jev', span: 'atlas.jev.judge', n: findings.length, errors, verdicts: tally, source: out.rubric.source, stage: out.rubric.stage, ms: Date.now() - t0 });
+      return json({ provider: 'jev-gateway', ...out });
+    } catch (e) {
+      if (s) s.recordException({ name: 'JevUnavailable', message: String(e && e.message || e).slice(0, 200) });
+      obs({ e: 'jev', span: 'atlas.jev.judge', n: findings.length, errors: findings.length, failed: 'unavailable', ms: Date.now() - t0 });
+      return fail(502, 'jev_unavailable', 'Jev could not be reached. Every finding stays with you to decide.');
+    }
+  });
 }
 async function trial(env, req) {
   if (!env.JEV_GATEWAY_TOKEN) return fail(404, 'not_offered', 'This atlas does not offer hosted Jev keys.');
@@ -129,8 +153,8 @@ async function trial(env, req) {
   return json({ key, plan: 'trial', expiresAt: now + days * DAY, daysLeft: days, url: new URL(req.url).origin + '/api/judge', upgradeUrl: env.UPGRADE_URL || null });
 }
 
-export default {
-  async fetch(req, env) {
+const atlas = {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url), path = url.pathname;
     if (!path.startsWith('/api/')) return env.ASSETS.fetch(req);
     try {
@@ -203,15 +227,39 @@ export default {
       }
       return fail(404, 'not_found', 'Unknown API route.');
     } catch (e) {
-      console.error('atlas api error', path, e && e.stack || e);
+      console.error(JSON.stringify({ event: 'atlas_api_error', route: routeOf(path), message: String(e && e.message || e).slice(0, 300), stack: String(e && e.stack || '').slice(0, 1200) }));
       return fail(500, 'server_error', 'Something went wrong on the server. Try again.');
     }
   },
   async scheduled(event, env, ctx) {
-    const cutoff = Date.now() - 20 * 3600 * 1000, cache = {};
-    const { results } = await env.DB.prepare('SELECT * FROM watches WHERE last_checked IS NULL OR last_checked < ?1 ORDER BY last_checked LIMIT 200').bind(cutoff).all();
-    for (const w of results) { try { await runCheck(env, w, cache); } catch (e) { console.error('drift check failed', w.id, e && e.message); } }
-    await env.DB.prepare('DELETE FROM hits WHERE rowid IN (SELECT rowid FROM hits LIMIT 5000)').run().catch(() => {});
-    console.log('drift cron checked', results.length, 'watches across', Object.keys(cache).length, 'containers');
+    const t0 = Date.now();
+    return span('atlas.drift.cron', { 'cron': event.cron || '' }, async s => {
+      const cutoff = Date.now() - 20 * 3600 * 1000, cache = {};
+      const { results } = await env.DB.prepare('SELECT * FROM watches WHERE last_checked IS NULL OR last_checked < ?1 ORDER BY last_checked LIMIT 200').bind(cutoff).all();
+      let failed = 0, liveErrors = 0;
+      for (const w of results) {
+        try { const r = await runCheck(env, w, cache); if (r.error) liveErrors++; }
+        catch (e) { failed++; console.error(JSON.stringify({ event: 'drift_check_failed', watch: w.id, message: String(e && e.message || e).slice(0, 300) })); }
+      }
+      await env.DB.prepare('DELETE FROM hits WHERE rowid IN (SELECT rowid FROM hits LIMIT 5000)').run().catch(() => {});
+      if (s && s.isTraced) s.setAttributes({ 'drift.checked': results.length, 'drift.failed': failed, 'drift.live_errors': liveErrors, 'drift.containers': Object.keys(cache).length });
+      obs({ e: 'drift', span: 'atlas.drift.cron', checked: results.length, failed, liveErrors, containers: Object.keys(cache).length, ms: Date.now() - t0 });
+    });
   },
+};
+
+// Every API call becomes one span named by its route (ids dropped, never the query string) and one obs line.
+export default {
+  async fetch(req, env, ctx) {
+    const url = new URL(req.url);
+    if (!url.pathname.startsWith('/api/')) return atlas.fetch(req, env, ctx);
+    const route = routeOf(url.pathname), t0 = Date.now();
+    return span('atlas.api ' + route, { 'http.route': route, 'http.request.method': req.method }, async s => {
+      const res = await atlas.fetch(req, env, ctx);
+      if (s && s.isTraced) s.setAttribute('http.response.status_code', res.status);
+      obs({ e: 'api', span: 'atlas.api', route, method: req.method, status: res.status, ms: Date.now() - t0 });
+      return res;
+    });
+  },
+  scheduled: (event, env, ctx) => atlas.scheduled(event, env, ctx),
 };
