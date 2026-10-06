@@ -152,11 +152,13 @@ async function finish() {
     try { D = E.build({ web: st.web, server: st.server, website: st.site }); mergeScan(D); }
     catch (e) { veil.remove(); state('step1', 'active'); return err('err1', 'The audit could not finish: ' + e.message); }
     [st.web, st.server].forEach(p => { if (p) window.__exports[p.info.publicId] = p.doc; });
-    window.__report = D.report;
+    window.__report = D.report; window.__atlasSite = st.site;
     $('intake').hidden = true; $('app').hidden = false; veil.remove();
     window.bootAtlas(D);
     reportBar(D.report);
     review(D.report);
+    // proof first: the upload beside the container the audit proposes
+    if (window.atlasCompare) setTimeout(() => window.atlasCompare.open(), 250);
   }, 60);
 }
 
@@ -173,6 +175,7 @@ const CHECKPOINTS = [
 ];
 const RV = { cp: 0, dec: {}, key: '', list: [], jev: {} };
 const DEC = { fix: 'Will fix', keep: 'Intended', ask: 'Ask owner' };
+window.__atlasDecisions = () => RV.dec;
 function persist() { try { localStorage.setItem(RV.key, JSON.stringify(RV.dec)); } catch (e) { /* storage blocked */ } }
 function review(R) {
   RV.key = 'atlas-review:' + R.containers.map(c => c.publicId).join('+');
@@ -260,7 +263,7 @@ function finalCard(box, notes) {
   const all = RV.list.flatMap(c => c.items), n = decided(all);
   done.textContent = n === RV.total ? 'Every finding has a decision. Download the report; your decisions and notes are in it.' : (RV.total - n) + ' findings still have no decision. You can download the report now; undecided findings are listed as open.';
   const row = document.createElement('div'); row.className = 'in-row';
-  [['Preview PDF', 'previewBtn'], ['Download PDF', 'pdfBtn'], ['Download Markdown', 'mdBtn']].forEach(([t, id], k) => { const b = document.createElement('button'); b.type = 'button'; b.className = k ? 'btn ghost' : 'btn'; b.textContent = t; b.onclick = () => $(id).click(); row.append(b); });
+  [['Preview PDF', 'previewBtn'], ['Download PDF', 'pdfBtn'], ['Download Markdown', 'mdBtn'], ['Upload ↔ Proposed', 'cmpBtn']].forEach(([t, id], k) => { const b = document.createElement('button'); b.type = 'button'; b.className = k ? 'btn ghost' : 'btn'; b.textContent = t; b.onclick = () => $(id).click(); row.append(b); });
   box.append(formatPanel(), done, row, watchPanel());
 }
 
@@ -509,6 +512,7 @@ function reportBar(R) {
   };
   $('mdBtn').onclick = () => save(base + '.md', GTM_REPORT.markdown(formatted(R)), msg);
   $('reviewBtn').onclick = () => openReview(true);
+  if ($('cmpBtn')) $('cmpBtn').onclick = () => window.atlasCompare && window.atlasCompare.open();
   $('newBtn').onclick = () => location.reload();
 }
 })();

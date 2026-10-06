@@ -40,6 +40,7 @@ async def main():
         body = json.loads(sent[0]); assert body == {'website': 'skylinecharters.com', 'maxPages': 25}, body
         assert 'containerVersion' not in sent[0]
         await pg.click('#skip3'); await pg.wait_for_timeout(500)
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         await pg.screenshot(path=str(here / 'scan-2-progress.png'))
         await pg.wait_for_selector('#app:not([hidden])', timeout=15000); await pg.wait_for_timeout(800)
         first = await pg.inner_text('.rv-panel')

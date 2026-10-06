@@ -7,6 +7,7 @@ async def main():
         errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto(BASE + '/?v=2'); await pg.wait_for_timeout(1200)
         await pg.click('#sample'); await pg.click('#siteForm button[type=submit]'); await pg.click('#sample3'); await pg.wait_for_timeout(3000)
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         btns = await pg.query_selector_all('#rvCps button'); await btns[-1].click(); await pg.wait_for_timeout(500)
         await pg.click('.rv-watch .btn'); await pg.wait_for_timeout(4000)
         print('panel:', (await pg.inner_text('.rv-watch'))[-330:])

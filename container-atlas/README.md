@@ -6,6 +6,7 @@ Import a GTM export, confirm the website, add the sGTM export or skip, then revi
 |---|---|---|
 | 1 · Audit | Static audit of web + server containers, web → server signal flow, guided review with decisions, report format, PDF and Markdown | A browser |
 | 1b · Site scan | Crawls the live site's page source (sitemap + internal links, robots.txt respected) and compares it with the export: GTM coverage, second containers, tags hard-coded outside GTM, dataLayer events no trigger hears, consent | This Worker (Queues + D1) |
+| 1c · Proposed | Opens when the audit finishes: the upload beside a copy with every fix the audit can make without guessing, line by line, re-audited with the same checks; downloadable as an importable .json. GTM notes that say "keep" block removal; review decisions (Intended / Ask owner) are respected | A browser |
 | 2 · Drift | Saves the audited export as a baseline; a daily cron compares it with the published `gtm.js` | This Worker (D1 + cron) |
 | 3 · Fix | Turns accepted fixes into a GTM workspace and version; publishes only on request | GTM MCP (Stape) in Claude Code or Codex |
 
@@ -14,7 +15,7 @@ Jev runs on Workers AI inside the Worker and reviews every finding as soon as th
 ## Layout
 
 ```
-src/            page source: engine (audit), scan (page-source detectors + live-site comparison), report (PDF/MD), drift digests, atlas client, intake + review
+src/            page source: engine (audit), propose + compare (upload ↔ proposed container), scan (page-source detectors + live-site comparison), report (PDF/MD), drift digests, atlas client, intake + review
 fixtures/       fictional Skyline Charters web + server exports (make.mjs regenerates them)
 worker/         Cloudflare Worker: static assets + /api/watch, /api/judge, /api/scan (queue consumer), daily cron
 build.py        assembles the single-file page and worker/public/

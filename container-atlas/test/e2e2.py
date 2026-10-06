@@ -6,6 +6,7 @@ async def main():
         errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('http://127.0.0.1:8787/'); await pg.wait_for_timeout(1500)
         await pg.click('#sample'); await pg.click('#siteForm button[type=submit]'); await pg.click('#sample3'); await pg.wait_for_timeout(3000)
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         print('jevbar visible', await pg.is_visible('#rvJev'))
         btns = await pg.query_selector_all('#rvCps button'); await btns[-1].click(); await pg.wait_for_timeout(400)
         await pg.fill('#fmt-title', 'Tracking health check'); await pg.fill('#fmt-preparedBy', 'Organized AI'); await pg.fill('#fmt-preparedFor', 'Skyline Charters')

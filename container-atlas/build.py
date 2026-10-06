@@ -9,6 +9,7 @@ markup = markup.replace('<div id="app">', '<div id="app" hidden>', 1)
 markup = markup.replace('<span class="spacer"></span><button id="reset" class="primary">Reset</button>',
   '<span class="spacer"></span>'
   '<div class="reportbar"><button id="reviewBtn" type="button" aria-pressed="true">Review</button>'
+  '<button id="cmpBtn" type="button">Upload ↔ Proposed</button>'
   '<button id="previewBtn" type="button" class="primary">Preview PDF</button>'
   '<button id="pdfBtn" type="button">Download PDF</button>'
   '<button id="mdBtn" type="button">Markdown</button>'
@@ -28,10 +29,12 @@ page = f'''<title>GTM Container Atlas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
 <style>{src('atlas.css')}
-{src('intake.css')}</style>
+{src('intake.css')}
+{src('compare.css')}</style>
 {src('intake.html')}
 {markup}
 {src('preview.html')}
+{src('compare.html')}
 <script type="application/json" id="sample-data">{sample}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -40,10 +43,12 @@ page = f'''<title>GTM Container Atlas</title>
 {src('gtm-auto.js')}
 {src('drift.js')}
 {src('engine.js')}
+{src('propose.js')}
 {src('scan.js')}
 {src('report.js')}
 {src('atlas-client.js')}
 {src('app.js')}
+{src('compare.js')}
 </script>
 '''
 out = here / 'container-atlas.html'

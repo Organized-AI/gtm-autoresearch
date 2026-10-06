@@ -6,6 +6,7 @@ async def main():
         errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('http://127.0.0.1:8787/'); await pg.wait_for_timeout(1200)
         await pg.click('#sample'); await pg.click('#siteForm button[type=submit]'); await pg.click('#sample3'); await pg.wait_for_timeout(3000)
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         print('status:', await pg.inner_text('#jevStatus'), '| setup hidden:', await pg.is_hidden('#jevSetup'))
         await pg.click('#jevChange'); await pg.select_option('#jevProvider','openrouter'); await pg.wait_for_timeout(200)
         print('openrouter status:', await pg.inner_text('#jevStatus'), '| connect visible:', await pg.is_visible('#jevConnect'))

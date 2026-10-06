@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "python3 build.py",
-    "test": "node fixtures/make.mjs && node test/run.cjs"
+    "test": "node fixtures/make.mjs && node test/run.cjs && node test/propose.cjs"
   },
   "devDependencies": { "jspdf": "2.5.1", "jspdf-autotable": "3.8.2" }
 }

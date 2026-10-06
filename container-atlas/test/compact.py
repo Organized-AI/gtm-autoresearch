@@ -8,6 +8,7 @@ async def main():
         errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('file://'+str(pathlib.Path('test/page.html').resolve())); await pg.wait_for_timeout(800)
         await pg.click('#sample'); await pg.click('#siteForm button[type=submit]'); await pg.click('#sample3'); await pg.wait_for_timeout(2500)
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         await pg.click('#rvClose'); await pg.wait_for_timeout(800)
         for v in ['structured','spatial','axonometric']:
             await pg.click('button:text-is("%s")' % {'structured':'Structured','spatial':'Free-form','axonometric':'Axonometric'}[v]); await pg.wait_for_timeout(900)

@@ -15,6 +15,7 @@ async def main():
         await pg.screenshot(path='test/s1-site.png')
         await pg.click('#siteForm button[type=submit]'); await pg.wait_for_timeout(300)
         await pg.click('#sample3'); await pg.wait_for_timeout(3500)
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         await pg.screenshot(path='test/s2-atlas.png')
         # decide first two findings
         btns = await pg.query_selector_all('.rv-dec button[data-d=fix]')

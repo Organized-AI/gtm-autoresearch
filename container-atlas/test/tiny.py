@@ -11,6 +11,7 @@ async def main():
         await pg.goto('file://'+str(pathlib.Path('test/page.html').resolve())); await pg.wait_for_timeout(800)
         await pg.set_input_files('#file1', 'test/tiny.json'); await pg.wait_for_timeout(300)
         await pg.fill('#site','tiny-shop.com'); await pg.click('#siteForm button[type=submit]'); await pg.click('#skip3'); await pg.wait_for_timeout(2500)
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         await pg.click('#rvClose'); await pg.wait_for_timeout(900)
         print(await pg.inner_text('#zoomLevel')); await pg.screenshot(path='test/c-tiny.png')
         await b.close()

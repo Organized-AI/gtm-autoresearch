@@ -6,6 +6,7 @@ async def main():
         errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('https://atlas.organizedai.vip/'); await pg.wait_for_timeout(1500)
         await pg.click('#sample'); await pg.click('#siteForm button[type=submit]'); await pg.click('#sample3')
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         for i in range(60):
             await pg.wait_for_timeout(2000)
             st = await pg.inner_text('#jevStatus')

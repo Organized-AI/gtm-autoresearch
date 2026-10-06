@@ -235,6 +235,79 @@ body{background:var(--bg);color:var(--ink)}
 .building .scan-bar b{display:block;height:100%;width:0;background:var(--gold);transition:width .4s}
 .building .scan-url{font-size:10.5px;letter-spacing:0;color:var(--dim);overflow-wrap:anywhere;min-height:1.4em}
 .building:has(.scan-live){background:rgba(12,11,9,.96)}
+
+/* Upload ↔ proposed: a full-screen sheet over the atlas. Change log rail on the left, two aligned panes on the right. */
+.cmp{position:fixed;inset:0;z-index:60;display:grid;grid-template-rows:auto auto minmax(0,1fr);background:radial-gradient(circle at 70% 0,#1d190f 0,#0c0b09 60%);color:var(--ink);font-family:var(--mono)}
+.cmp-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.cmp-who{min-width:0}.cmp-eyebrow{margin:0;color:var(--gold);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.cmp-top h2{margin:6px 0 0;font-size:18px;line-height:1.25;text-wrap:balance}
+.cmp-lede{margin:6px 0 0;color:var(--muted);font-size:11px;line-height:1.6;max-width:86ch}
+.cmp-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}
+.cmp-scores{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--line);background:rgba(21,19,15,.8)}
+.cmp-stat{padding:10px 18px;border-right:1px solid var(--line);min-width:0}.cmp-stat:last-child{border-right:0}
+.cmp-stat span{display:block;font-size:9px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.cmp-stat b{font-size:22px;font-variant-numeric:tabular-nums;line-height:1.3}.cmp-stat b s{color:var(--dim);text-decoration:none;font-weight:400}
+.cmp-stat b em{font-style:normal;color:var(--gold)}.cmp-stat small{display:block;font-size:10px;color:var(--muted)}
+.cmp-stat.up b em{color:var(--pass)}
+.cmp-body{display:grid;grid-template-columns:320px minmax(0,1fr);min-height:0}
+.cmp-rail{border-right:1px solid var(--line);overflow:auto;min-height:0;padding:12px 14px 18px;background:rgba(12,11,9,.6)}
+.cmp-railhead{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 8px}
+.cmp-railhead h3{margin:0;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}.cmp-railhead span{font-size:10px;color:var(--dim)}
+.cmp-changes,.cmp-owner{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:6px}
+.cmp-ch{border:1px solid var(--line);border-left:3px solid var(--dim);border-radius:6px;background:var(--panel);padding:8px 10px;cursor:pointer;font-size:11px;line-height:1.5}
+.cmp-ch:hover,.cmp-ch:focus-visible{border-color:var(--gold);outline:none}
+.cmp-ch b{display:block;font-size:11.5px;overflow-wrap:anywhere}.cmp-ch p{margin:3px 0 0;color:var(--ink)}
+.cmp-ch .why{color:var(--muted);font-size:10px}
+.cmp-ch .tag{display:inline-block;font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border-radius:3px;margin-right:6px;background:var(--panel2);color:var(--muted)}
+.cmp-ch.a-remove{border-left-color:var(--crit)}.cmp-ch.a-add{border-left-color:var(--pass)}.cmp-ch.a-edit,.cmp-ch.a-merge{border-left-color:var(--gold)}.cmp-ch.a-pause{border-left-color:var(--amber)}.cmp-ch.a-folder{border-left-color:var(--trigger)}
+.cmp-ch.a-resolved{opacity:.6;cursor:default}
+.cmp-ch .src{float:right;font-size:9px;color:var(--dim)}
+.cmp-ow{border:1px dashed var(--line);border-radius:6px;padding:8px 10px;font-size:11px;line-height:1.5}
+.cmp-ow b{display:block;overflow-wrap:anywhere}.cmp-ow p{margin:3px 0 0;color:var(--muted)}.cmp-ow i{font-style:normal;color:var(--dim);font-size:10px}
+.cmp-dl{display:grid;gap:8px;position:sticky;bottom:-18px;padding:12px 0 6px;background:linear-gradient(transparent,var(--bg) 28%)}
+.cmp-msg{margin:0;font-size:10px;color:var(--muted);min-height:1em}
+.cmp-panes{display:grid;grid-template-rows:auto auto minmax(0,1fr);min-width:0;min-height:0}
+.cmp-bar{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.cmp-head{padding:9px 14px;display:flex;gap:10px;align-items:baseline;min-width:0;font-size:11px}
+.cmp-head b{font-size:12px;letter-spacing:.06em;text-transform:uppercase}.cmp-head span{color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-head.up b{color:var(--muted)}.cmp-head.pr{border-left:1px solid var(--line)}.cmp-head.pr b{color:var(--gold)}
+.cmp-filter{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:7px 14px;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted)}
+.cmp-filter label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.cmp-key{display:flex;gap:6px;align-items:center}.cmp-key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-left:6px}
+.k-del{background:rgba(255,98,95,.35)}.k-add{background:rgba(92,225,164,.35)}.k-mod{background:rgba(255,233,74,.3)}
+.cmp-scroll{overflow:auto;min-height:0;outline:none;position:relative}
+.cmp-grid{display:grid;grid-template-columns:34px minmax(0,1fr) 34px minmax(0,1fr);font-size:11px;line-height:1.55;min-width:640px}
+.cmp-grid>.ln{color:var(--dim);text-align:right;padding-right:8px;font-variant-numeric:tabular-nums;user-select:none;font-size:10px}
+.cmp-grid>.tx{white-space:pre-wrap;overflow-wrap:anywhere;padding-right:10px;min-width:0}
+.cmp-grid>.ln.r{border-left:1px solid var(--line)}
+.cmp-grid>.del{background:rgba(255,98,95,.13)}.cmp-grid>.tx.del{color:#ffb3b1}
+.cmp-grid>.add{background:rgba(92,225,164,.11)}.cmp-grid>.tx.add{color:#aaf3d0}
+.cmp-grid>.mod{background:rgba(255,233,74,.09)}.cmp-grid>.tx.mod{color:#fff3a6}
+.cmp-grid>.gap{background:repeating-linear-gradient(135deg,transparent 0 5px,rgba(255,255,255,.025) 5px 10px)}
+.cmp-el{grid-column:1/-1;display:flex;gap:10px;align-items:center;padding:6px 10px;margin-top:10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel2);font-size:11px;position:sticky;top:0;z-index:1}
+.cmp-el:first-child{margin-top:0}
+.cmp-el .st{font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border-radius:3px;border:1px solid var(--line);color:var(--muted)}
+.cmp-el .st.changed{color:var(--gold);border-color:#6b6120}.cmp-el .st.removed{color:var(--crit);border-color:#6e2a29}.cmp-el .st.added{color:var(--pass);border-color:#265b44}
+.cmp-el .k{color:var(--muted)}.cmp-el .k.tag{color:var(--tag)}.cmp-el .k.trigger{color:var(--trigger)}.cmp-el .k.variable{color:var(--variable)}.cmp-el .k.client{color:var(--client)}
+.cmp-el b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-el.flash{animation:cmpflash 1.4s ease-out}
+@keyframes cmpflash{0%{background:rgba(255,233,74,.45)}100%{background:var(--panel2)}}
+.cmp-fold{grid-column:1/-1;padding:4px 10px;color:var(--dim);font-size:10px;border-bottom:1px dashed var(--line)}
+.cmp-fold button{font-size:10px;padding:2px 8px;margin-left:8px}
+.cmp-empty{grid-column:1/-1;padding:40px 16px;text-align:center;color:var(--muted)}
+.reportbar #cmpBtn{border-color:#265b44;color:var(--pass)}
+@media (max-width:1100px){
+ .cmp{overflow:auto;display:block}.cmp-body{grid-template-columns:1fr}
+ .cmp-rail{border-right:0;border-bottom:1px solid var(--line);max-height:none;overflow:visible}
+ .cmp-dl{position:static;background:none}
+ .cmp-panes{min-height:80vh}.cmp-scroll{max-height:80vh}
+ .cmp-scores{grid-template-columns:repeat(2,minmax(0,1fr))}.cmp-stat:nth-child(2){border-right:0}.cmp-stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+}
+@media (max-width:640px){
+ .cmp-top{flex-direction:column;align-items:stretch;padding:14px 16px 10px}.cmp-actions{justify-content:space-between}
+ .cmp-stat{padding:8px 16px}.cmp-stat b{font-size:18px}
+ .cmp-rail{padding:12px 16px}
+}
 </style>
 <main id="intake" class="intake" aria-labelledby="intakeTitle">
  <header class="in-head">
@@ -310,7 +383,7 @@ body{background:var(--bg);color:var(--ink)}
  <label for="kind">Family <select id="kind"><option value="all">All</option></select></label>
  <label for="risk">Finding <select id="risk"><option value="all">Any</option><option value="critical">Fix first</option><option value="review">Confirm</option><option value="info">Note</option><option value="none">No finding</option></select></label>
  <label for="trace">Trace <select id="trace"><option value="near">Neighbors</option><option value="path">Full path</option></select></label>
- <span class="spacer"></span><div class="reportbar"><button id="reviewBtn" type="button" aria-pressed="true">Review</button><button id="previewBtn" type="button" class="primary">Preview PDF</button><button id="pdfBtn" type="button">Download PDF</button><button id="mdBtn" type="button">Markdown</button><button id="newBtn" type="button">New audit</button><span class="rmsg" id="rmsg" aria-live="polite"></span></div><button id="reset" type="button">Reset view</button>
+ <span class="spacer"></span><div class="reportbar"><button id="reviewBtn" type="button" aria-pressed="true">Review</button><button id="cmpBtn" type="button">Upload ↔ Proposed</button><button id="previewBtn" type="button" class="primary">Preview PDF</button><button id="pdfBtn" type="button">Download PDF</button><button id="mdBtn" type="button">Markdown</button><button id="newBtn" type="button">New audit</button><span class="rmsg" id="rmsg" aria-live="polite"></span></div><button id="reset" type="button">Reset view</button>
 </div>
 <div class="workspace">
  <main class="diagram" id="diagram" tabindex="0" aria-label="Diagram. Arrow keys pan, plus and minus zoom, 0 fits.">
@@ -363,6 +436,45 @@ body{background:var(--bg);color:var(--ink)}
  <p class="pv-msg" id="pvMsg" aria-live="polite"></p>
  <div class="pv-pages" id="pvPages" tabindex="0" aria-label="Report pages"></div>
 </div>
+
+<section id="compare" class="cmp" hidden aria-labelledby="cmpTitle" role="dialog" aria-modal="true">
+ <header class="cmp-top">
+  <div class="cmp-who">
+   <p class="cmp-eyebrow">Proof · audit applied to a copy</p>
+   <h2 id="cmpTitle">Your upload, and the container the audit proposes</h2>
+   <p class="cmp-lede">Same file, two states. The left pane is exactly what you imported. The right pane is a copy with every fix the audit can make without guessing, re-audited with the same checks. Nothing is published.</p>
+  </div>
+  <div class="cmp-actions">
+   <div class="tabs" id="cmpTabs" role="tablist" aria-label="Container"></div>
+   <button id="cmpClose" type="button" class="primary">Review findings →</button>
+  </div>
+ </header>
+ <div class="cmp-scores" id="cmpScores"></div>
+ <div class="cmp-body">
+  <aside class="cmp-rail" aria-label="What changed">
+   <div class="cmp-railhead"><h3>What changed</h3><span id="cmpCount"></span></div>
+   <ol class="cmp-changes" id="cmpChanges"></ol>
+   <div class="cmp-railhead"><h3>Left for the owner</h3><span id="cmpOwnerCount"></span></div>
+   <ul class="cmp-owner" id="cmpOwner"></ul>
+   <div class="cmp-dl">
+    <button id="cmpDownload" type="button" class="btn">Download proposed .json</button>
+    <button id="cmpCopy" type="button" class="btn ghost">Copy change log</button>
+    <p class="cmp-msg" id="cmpMsg" aria-live="polite"></p>
+   </div>
+  </aside>
+  <section class="cmp-panes" aria-label="Upload and proposed container side by side">
+   <div class="cmp-bar">
+    <div class="cmp-head up"><b>Upload</b><span id="cmpUpMeta"></span></div>
+    <div class="cmp-head pr"><b>Proposed</b><span id="cmpPrMeta"></span></div>
+   </div>
+   <div class="cmp-filter">
+    <label><input type="checkbox" id="cmpOnly" checked> Changed elements only</label>
+    <span class="cmp-key"><i class="k-del"></i>removed <i class="k-add"></i>added <i class="k-mod"></i>edited</span>
+   </div>
+   <div class="cmp-scroll" id="cmpScroll" tabindex="0" aria-label="Line-by-line comparison"><div class="cmp-grid" id="cmpGrid"></div></div>
+  </section>
+ </div>
+</section>
 
 <script type="application/json" id="sample-data">{"web":{"exportFormatVersion":2,"exportTime":"2026-10-01 09:12:00","containerVersion":{"accountId":"6100000001","containerId":"170000001","containerVersionId":"42","name":"v42 - checkout events","container":{"accountId":"6100000001","containerId":"170000001","name":"skylinecharters.com","publicId":"GTM-SKY7Q2L","usageContext":["WEB"]},"folder":[{"folderId":"90","name":"GA4"},{"folderId":"91","name":"Meta"},{"folderId":"92","name":"Google Ads"}],"tag":[{"tagId":"1","name":"GA4 - Config","type":"googtag","parentFolderId":"90","firingTriggerId":["2147479573"],"parameter":[{"type":"TEMPLATE","key":"tagId","value":"G-SKY4H7Q2LP"},{"type":"LIST","key":"configSettingsTable","list":[{"type":"MAP","map":[{"type":"TEMPLATE","key":"parameter","value":"server_container_url"},{"type":"TEMPLATE","key":"parameterValue","value":"https://sst.skylinecharters.com"}]},{"type":"MAP","map":[{"type":"TEMPLATE","key":"parameter","value":"send_page_view"},{"type":"TEMPLATE","key":"parameterValue","value":"true"}]}]}]},{"tagId":"2","name":"GA4 - purchase","type":"gaawe","parentFolderId":"90","firingTriggerId":["20"],"parameter":[{"type":"TEMPLATE","key":"eventName","value":"purchase"},{"type":"TEMPLATE","key":"measurementIdOverride","value":"{{CONST - GA4 ID}}"},{"type":"LIST","key":"eventSettingsTable","list":[{"type":"MAP","map":[{"type":"TEMPLATE","key":"parameter","value":"value"},{"type":"TEMPLATE","key":"parameterValue","value":"{{DLV - value}}"}]},{"type":"MAP","map":[{"type":"TEMPLATE","key":"parameter","value":"transaction_id"},{"type":"TEMPLATE","key":"parameterValue","value":"{{DLV - transaction_id}}"}]},{"type":"MAP","map":[{"type":"TEMPLATE","key":"parameter","value":"coupon"},{"type":"TEMPLATE","key":"parameterValue","value":"{{DLV - coupon}}"}]}]}]},{"tagId":"3","name":"GA4 - generate_lead","type":"gaawe","parentFolderId":"90","firingTriggerId":["21"],"parameter":[{"type":"TEMPLATE","key":"eventName","value":"generate_lead"},{"type":"TEMPLATE","key":"measurementIdOverride","value":"{{CONST - GA4 ID}}"}]},{"tagId":"4","name":"GA4 - add_to_cart","type":"gaawe","parentFolderId":"90","firingTriggerId":["22"],"parameter":[{"type":"TEMPLATE","key":"eventName","value":""},{"type":"TEMPLATE","key":"measurementIdOverride","value":"{{CONST - GA4 ID}}"}]},{"tagId":"5","name":"GA4 - Quote Requested","type":"gaawe","firingTriggerId":["23"],"parameter":[{"type":"TEMPLATE","key":"eventName","value":"Quote Requested"},{"type":"TEMPLATE","key":"measurementIdOverride","value":"{{CONST - GA4 ID}}"}]},{"tagId":"6","name":"Data Tag - page_view","type":"cvt_MBTSV","firingTriggerId":["2147479553"],"parameter":[{"type":"TEMPLATE","key":"event_type","value":"standard"},{"type":"TEMPLATE","key":"event_name_standard","value":"page_view"},{"type":"TEMPLATE","key":"gtm_server_domain","value":"https://skyln.us.stape.io"},{"type":"TEMPLATE","key":"request_path","value":"/data"}]},{"tagId":"7","name":"Data Tag - purchase","type":"cvt_MBTSV","firingTriggerId":["20"],"parameter":[{"type":"TEMPLATE","key":"event_type","value":"standard"},{"type":"TEMPLATE","key":"event_name_standard","value":"purchase"},{"type":"TEMPLATE","key":"gtm_server_domain","value":"https://skyln.us.stape.io"},{"type":"TEMPLATE","key":"request_path","value":"/data"},{"type":"TEMPLATE","key":"user_data","value":"{{DLV - email}}"}]},{"tagId":"8","name":"Data Tag - add_to_cart","type":"cvt_MBTSV","firingTriggerId":["22"],"parameter":[{"type":"TEMPLATE","key":"event_type","value":"standard"},{"type":"TEMPLATE","key":"event_name_standard","value":"add_to_cart"},{"type":"TEMPLATE","key":"gtm_server_domain","value":"https://skyln.us.stape.io"},{"type":"TEMPLATE","key":"request_path","value":"/data"}]},{"tagId":"9","name":"Data Tag - quote_requested","type":"cvt_MBTSV","firingTriggerId":["23"],"parameter":[{"type":"TEMPLATE","key":"event_type","value":"custom"},{"type":"TEMPLATE","key":"event_name_custom","value":"quote_requested"},{"type":"TEMPLATE","key":"gtm_server_domain","value":"https://skyln.us.stape.io"},{"type":"TEMPLATE","key":"request_path","value":"/data"}],"notes":"Server side stores quote_requested in BigQuery from another container. No ad platform needs it."},{"tagId":"10","name":"Meta Pixel - PageView","type":"cvt_8840_12","parentFolderId":"91","firingTriggerId":["2147479553"],"parameter":[{"type":"TEMPLATE","key":"pixelId","value":"481920375512334"},{"type":"TEMPLATE","key":"eventName","value":"PageView"}]},{"tagId":"11","name":"Meta Pixel - Purchase","type":"cvt_8840_12","parentFolderId":"91","firingTriggerId":["20"],"parameter":[{"type":"TEMPLATE","key":"pixelId","value":"481920375512334"},{"type":"TEMPLATE","key":"eventName","value":"Purchase"},{"type":"TEMPLATE","key":"value","value":"{{DLV - value}}"}]},{"tagId":"12","name":"Meta Pixel - Lead","type":"cvt_8840_12","parentFolderId":"91","firingTriggerId":["21"],"parameter":[{"type":"TEMPLATE","key":"pixelId","value":"481920375512334"},{"type":"TEMPLATE","key":"eventName","value":"Lead"}]},{"tagId":"13","name":"Google Ads - Purchase","type":"awct","parentFolderId":"92","firingTriggerId":["20"],"parameter":[{"type":"TEMPLATE","key":"conversionId","value":"907112233"},{"type":"TEMPLATE","key":"conversionLabel","value":"Xk2fCLu8pZ0YEL"},{"type":"TEMPLATE","key":"conversionValue","value":"{{DLV - value}}"},{"type":"TEMPLATE","key":"orderId","value":"{{DLV - transaction_id}}"}]},{"tagId":"14","name":"Google Ads - Lead","type":"awct","parentFolderId":"92","firingTriggerId":["21"],"parameter":[{"type":"TEMPLATE","key":"conversionId","value":"907112233"},{"type":"TEMPLATE","key":"conversionLabel","value":""}]},{"tagId":"15","name":"Google Ads - Remarketing","type":"sp","parentFolderId":"92","firingTriggerId":["2147479553"],"parameter":[{"type":"TEMPLATE","key":"conversionId","value":"907112233"}]},{"tagId":"16","name":"Conversion Linker","type":"gclidw","parentFolderId":"92","firingTriggerId":["2147479553"],"parameter":[]},{"tagId":"17","name":"LinkedIn Insight","type":"html","firingTriggerId":["2147479553"],"parameter":[{"type":"TEMPLATE","key":"html","value":"<script>_linkedin_partner_id=\"5512093\";<\/script><script src=\"https://snap.licdn.com/li.lms-analytics/insight.min.js\"><\/script>"}]},{"tagId":"18","name":"TikTok Pixel - Base","type":"html","firingTriggerId":["2147479553"],"parameter":[{"type":"TEMPLATE","key":"html","value":"<script>!function(w,d,t){/* analytics.tiktok.com */}(window,document,\"ttq\");ttq.load(\"C9SKY2LQ1\");ttq.page();<\/script>"}]},{"tagId":"19","name":"TikTok Pixel - Base (copy)","type":"html","firingTriggerId":["2147479553"],"parameter":[{"type":"TEMPLATE","key":"html","value":"<script>!function(w,d,t){/* analytics.tiktok.com */}(window,document,\"ttq\");ttq.load(\"C9SKY2LQ1\");ttq.page();<\/script>"}]},{"tagId":"24","name":"UA - Pageview (old)","type":"ua","paused":true,"firingTriggerId":["2147479553"],"parameter":[{"type":"TEMPLATE","key":"trackingId","value":"UA-4401123-1"}],"notes":"TODO remove after the GA4 cutover (finished in March)."},{"tagId":"25","name":"Hotjar","type":"hjtc","firingTriggerId":["2147479553"],"parameter":[{"type":"TEMPLATE","key":"hotjar_site_id","value":"3301298"}]},{"tagId":"26","name":"Meta Pixel - ViewContent","type":"cvt_8840_12","parentFolderId":"91","parameter":[{"type":"TEMPLATE","key":"pixelId","value":"{{CONST - Meta Pixel ID}}"},{"type":"TEMPLATE","key":"eventName","value":"ViewContent"}]},{"tagId":"27","name":"Floodlight - Booking","type":"fls","firingTriggerId":["24"],"parameter":[{"type":"TEMPLATE","key":"advertiserId","value":"10221344"},{"type":"TEMPLATE","key":"groupTag","value":"skyln0"},{"type":"TEMPLATE","key":"activityTag","value":"bookcf0"},{"type":"TEMPLATE","key":"ordinal","value":"{{DLV - transaction_id}}"}]}],"trigger":[{"triggerId":"20","name":"CE - purchase","type":"CUSTOM_EVENT","customEventFilter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{_event}}"},{"type":"TEMPLATE","key":"arg1","value":"purchase"}]}]},{"triggerId":"21","name":"CE - generate_lead","type":"CUSTOM_EVENT","customEventFilter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{_event}}"},{"type":"TEMPLATE","key":"arg1","value":"generate_lead"}]}]},{"triggerId":"22","name":"CE - add_to_cart","type":"CUSTOM_EVENT","customEventFilter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{_event}}"},{"type":"TEMPLATE","key":"arg1","value":"add_to_cart"}]}]},{"triggerId":"23","name":"CE - quote_requested","type":"CUSTOM_EVENT","customEventFilter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{_event}}"},{"type":"TEMPLATE","key":"arg1","value":"quote_requested"}]}]},{"triggerId":"24","name":"PV - Booking Confirmed","type":"PAGEVIEW","filter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{Page Hostname}}"},{"type":"TEMPLATE","key":"arg1","value":"staging.skylinecharters-dev.com"}]},{"type":"CONTAINS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{Page URL}}"},{"type":"TEMPLATE","key":"arg1","value":"/booking/confirmed"}]}]},{"triggerId":"25","name":"Click - Call Button","type":"LINK_CLICK","filter":[{"type":"CONTAINS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{Click Classes}}"},{"type":"TEMPLATE","key":"arg1","value":"btn-call"}]}],"notes":"Kept on purpose: CallRail reads this click through its own dataLayer listener. Do not delete."},{"triggerId":"26","name":"CE - purchase (copy)","type":"CUSTOM_EVENT","customEventFilter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{_event}}"},{"type":"TEMPLATE","key":"arg1","value":"purchase"}]}]}],"variable":[{"variableId":"30","name":"DLV - value","type":"v","parameter":[{"type":"TEMPLATE","key":"name","value":"ecommerce.value"},{"type":"TEMPLATE","key":"dataLayerVersion","value":"2"}]},{"variableId":"31","name":"DLV - transaction_id","type":"v","parameter":[{"type":"TEMPLATE","key":"name","value":"ecommerce.transaction_id"},{"type":"TEMPLATE","key":"dataLayerVersion","value":"2"}]},{"variableId":"32","name":"DLV - email","type":"v","parameter":[{"type":"TEMPLATE","key":"name","value":"user_data.email"},{"type":"TEMPLATE","key":"dataLayerVersion","value":"2"}]},{"variableId":"33","name":"CONST - GA4 ID","type":"c","parameter":[{"type":"TEMPLATE","key":"value","value":"G-SKY4H7Q2LP"}]},{"variableId":"34","name":"CONST - Meta Pixel ID","type":"c","parameter":[{"type":"TEMPLATE","key":"value","value":"481920375512334"}]},{"variableId":"35","name":"DLV - route_id","type":"v","parameter":[{"type":"TEMPLATE","key":"name","value":""},{"type":"TEMPLATE","key":"dataLayerVersion","value":"2"}]},{"variableId":"36","name":"DLV - order_value","type":"v","parameter":[{"type":"TEMPLATE","key":"name","value":"ecommerce.value"},{"type":"TEMPLATE","key":"dataLayerVersion","value":"2"}],"notes":"Created by mistake; duplicate of DLV - value."},{"variableId":"37","name":"JS - Old Cart Total","type":"jsm","parameter":[{"type":"TEMPLATE","key":"javascript","value":"function(){return window.cartTotal;}"}]}],"builtInVariable":[{"type":"PAGE_URL","name":"Page URL"},{"type":"PAGE_HOSTNAME","name":"Page Hostname"},{"type":"EVENT","name":"Event"},{"type":"CLICK_CLASSES","name":"Click Classes"}]}},"server":{"exportFormatVersion":2,"exportTime":"2026-10-01 09:20:00","containerVersion":{"accountId":"6100000001","containerId":"170000002","containerVersionId":"18","name":"v18","container":{"accountId":"6100000001","containerId":"170000002","name":"Skyline - Server","publicId":"GTM-SKYSRV9","usageContext":["SERVER"]},"client":[{"clientId":"1","name":"GA4","type":"gaaw_client","priority":10,"parameter":[{"type":"BOOLEAN","key":"activateDefaultPaths","value":"true"}]},{"clientId":"2","name":"Data Client","type":"cvt_175099610_97","priority":5,"parameter":[{"type":"TEMPLATE","key":"path","value":"/data"}]},{"clientId":"3","name":"Web Container","type":"gtm_client","priority":1,"parameter":[{"type":"TEMPLATE","key":"allowedContainerIds","value":"GTM-SKY7Q2L"}]}],"tag":[{"tagId":"50","name":"GA4 - Forward All","type":"sgtmgaaw","firingTriggerId":["60"],"parameter":[{"type":"TEMPLATE","key":"redactVisitorIp","value":"false"}]},{"tagId":"51","name":"Meta CAPI - PageView","type":"cvt_175099610_19","firingTriggerId":["61","64"],"parameter":[{"type":"TEMPLATE","key":"pixelId","value":"{{CONST - Meta Pixel ID}}"},{"type":"TEMPLATE","key":"accessToken","value":"{{CONST - Meta Access Token}}"},{"type":"TEMPLATE","key":"eventName","value":"PageView"}]},{"tagId":"52","name":"Meta CAPI - Purchase","type":"cvt_175099610_19","firingTriggerId":["62"],"parameter":[{"type":"TEMPLATE","key":"pixelId","value":"{{CONST - Meta Pixel ID}}"},{"type":"TEMPLATE","key":"accessToken","value":"{{CONST - Meta Access Token}}"},{"type":"TEMPLATE","key":"eventName","value":"Purchase"}]},{"tagId":"53","name":"Meta CAPI - Lead","type":"cvt_175099610_19","firingTriggerId":["63"],"parameter":[{"type":"TEMPLATE","key":"pixelId","value":"{{CONST - Meta Pixel ID}}"},{"type":"TEMPLATE","key":"accessToken","value":"{{CONST - Meta Access Token}}"},{"type":"TEMPLATE","key":"eventName","value":"Lead"}]},{"tagId":"54","name":"TikTok Events API - Purchase","type":"cvt_201144_7","paused":true,"firingTriggerId":["62"],"parameter":[{"type":"TEMPLATE","key":"accessToken","value":"{{CONST - TikTok Token}}"}]}],"trigger":[{"triggerId":"60","name":"All GA4 Events","type":"ALWAYS","filter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{Client Name}}"},{"type":"TEMPLATE","key":"arg1","value":"GA4"}]}]},{"triggerId":"61","name":"Data - page_view","type":"ALWAYS","filter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{ED - Event Name}}"},{"type":"TEMPLATE","key":"arg1","value":"page_view"}]}]},{"triggerId":"62","name":"Data - purchase","type":"ALWAYS","filter":[{"type":"MATCH_REGEX","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{ED - Event Name}}"},{"type":"TEMPLATE","key":"arg1","value":"^(purchase|checked_out)$"}]}]},{"triggerId":"63","name":"Lead - CompleteRegistration","type":"ALWAYS","filter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{Event Name}}"},{"type":"TEMPLATE","key":"arg1","value":"CompleteRegistration"}]}]},{"triggerId":"64","name":"GA4 page_view","type":"ALWAYS","filter":[{"type":"EQUALS","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{Event Name}}"},{"type":"TEMPLATE","key":"arg1","value":"page_view"}]}]},{"triggerId":"65","name":"Debug - everything","type":"ALWAYS","filter":[{"type":"MATCH_REGEX","parameter":[{"type":"TEMPLATE","key":"arg0","value":"{{Event Name}}"},{"type":"TEMPLATE","key":"arg1","value":".+"}]}],"notes":"Temporary, for debugging the launch. Remove after go-live."}],"variable":[{"variableId":"70","name":"ED - Event Name","type":"ed","parameter":[{"type":"TEMPLATE","key":"keyPath","value":"event_name"}]},{"variableId":"71","name":"CONST - Meta Pixel ID","type":"c","parameter":[{"type":"TEMPLATE","key":"value","value":"481920375512334"}]},{"variableId":"72","name":"CONST - Meta Access Token","type":"c","parameter":[{"type":"TEMPLATE","key":"value","value":"EAAGsk2xFakeSampleToken000000000000"}]},{"variableId":"73","name":"CONST - TikTok Token","type":"c","parameter":[{"type":"TEMPLATE","key":"value","value":"tt_sample_token_0000"}]},{"variableId":"74","name":"ED - user_agent","type":"ed","parameter":[{"type":"TEMPLATE","key":"keyPath","value":"user_agent"}]}],"builtInVariable":[{"type":"EVENT_NAME","name":"Event Name"},{"type":"CLIENT_NAME","name":"Client Name"}]}}}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -1131,6 +1243,268 @@ var GTM_ENGINE = (function (AUTO) {
   return { parseExport: parseExport, detectWebsite: detectWebsite, build: build, rootDomain: rootDomain, hostOf: hostOf, SEV_LABEL: SEV_LABEL, DIM_LABEL: DIM_LABEL };
 })(typeof GTM_AUTO !== 'undefined' ? GTM_AUTO : (typeof globalThis !== 'undefined' && globalThis.GTM_AUTO));
 if (typeof module !== 'undefined') module.exports = GTM_ENGINE;
+
+// Proposed container: applies the audit's mechanical fixes to a copy of each
+// uploaded export, re-audits the copy, and says exactly what changed and why.
+// Read-only toward the upload; nothing here publishes or leaves the browser.
+// A finding marked "Intended" is left alone, "Ask owner" goes to the owner list,
+// "Will fix" or undecided is applied when a rule can fix it without guessing.
+var GTM_PROPOSE = (function () {
+  'use strict';
+  var IDK = { tag: 'tagId', trigger: 'triggerId', variable: 'variableId', client: 'clientId', folder: 'folderId' };
+  var KINDS = ['tag', 'trigger', 'variable', 'client', 'folder'];
+  function clone(x) { return JSON.parse(JSON.stringify(x)); }
+  function cvOf(doc) { return doc.containerVersion || doc; }
+  function param(row, key) { return (row.parameter || []).filter(function (p) { return p.key === key; })[0]; }
+  function setParam(row, key, value) {
+    var p = param(row, key);
+    if (p) { var old = p.value; p.value = value; return old; }
+    (row.parameter = row.parameter || []).push({ type: 'TEMPLATE', key: key, value: value }); return undefined;
+  }
+  function snake(s) { return String(s).trim().replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase(); }
+  function rowOf(cv, kind, id) { return (cv[kind] || []).filter(function (r) { return String(r[IDK[kind]]) === String(id); })[0]; }
+  // new IDs come after every ID in the upload too, so a removed element's ID is never reused (a merge import would overwrite it)
+  function nextId(cv, kind, base) { var m = 0; [cv, base || {}].forEach(function (c) { (c[kind] || []).forEach(function (r) { m = Math.max(m, +r[IDK[kind]] || 0); }); }); return String(m + 1); }
+  // walk every string in a row (skipping its own name) and let fn rewrite it
+  function mapStrings(row, fn) {
+    var n = 0;
+    (function walk(o) {
+      Object.keys(o).forEach(function (k) {
+        if (o === row && (k === 'name' || k === 'notes' || k === 'fingerprint')) return;
+        var v = o[k];
+        if (typeof v === 'string') { var nv = fn(v, k); if (nv !== v) { o[k] = nv; n++; } }
+        else if (v && typeof v === 'object') walk(v);
+      });
+    })(row);
+    return n;
+  }
+  function allRows(cv) { var out = []; ['tag', 'trigger', 'variable', 'client'].forEach(function (k) { (cv[k] || []).forEach(function (r) { out.push(r); }); }); return out; }
+  function referenced(cv, name) { var needle = '{{' + name + '}}', hit = false; allRows(cv).forEach(function (r) { if (r.name !== name && JSON.stringify(r).indexOf(needle) >= 0) hit = true; }); return hit; }
+  function triggerUsed(cv, id) { return (cv.tag || []).some(function (t) { return (t.firingTriggerId || []).concat(t.blockingTriggerId || []).map(String).indexOf(String(id)) >= 0; }); }
+  function touch(row) { delete row.fingerprint; }
+  // GTM notes are the owner's own words: a "keep" note blocks removal, a "remove" note is cited as support.
+  var KEEP_NOTE = /\b(kept|keep|leave)\b[^.]*\b(on purpose|intentional(ly)?|as is)\b|\b(do not|don't|never)\s+(delete|remove|pause)\b|\bintentional\b|\brequired by\b/i;
+  var DROP_NOTE = /\b(remove|delete|deprecated|by mistake|duplicate|temporary|old)\b/i;
+  function quoteNote(row) { var n = String(row.notes || '').trim(); return n.length > 140 ? n.slice(0, 137) + '…' : n; }
+  function protectedBy(row) { return row && row.notes && KEEP_NOTE.test(row.notes) ? 'Its GTM note says: "' + quoteNote(row) + '" The proposal leaves it alone.' : null; }
+  function cite(row, what) { return row && row.notes && DROP_NOTE.test(row.notes) && !KEEP_NOTE.test(row.notes) ? what + ' Its GTM note agrees: "' + quoteNote(row) + '"' : what; }
+
+  /* ---------- one rule per finding shape; each returns a change, an owner reason, or null ---------- */
+  function fix(cv, it, site, base) {
+    var row = it.kind in IDK ? rowOf(cv, it.kind, it.ref) : null, m;
+    var ok = function (action, what) { return { action: action, what: what }; };
+    var owner = function (reason) { return { owner: reason }; };
+    if (it.check === 'Signal flow') return owner('Routing between containers depends on which platforms should receive the event; the audit cannot pick that.');
+    if (it.check === 'Site scan') return owner('This is about the live site, not the container file.');
+    if (!row) return { gone: 'Already handled: a change above removed or merged this element.' };
+
+    if (it.check === 'Unused') {
+      var keepNote = protectedBy(row); if (keepNote && it.kind !== 'tag') return owner(keepNote);
+      if (it.kind === 'variable') {
+        if (referenced(cv, row.name)) return owner('Something now references it.');
+        cv.variable = cv.variable.filter(function (r) { return r !== row; }); return ok('remove', cite(row, 'Removed the unused variable.'));
+      }
+      if (it.kind === 'trigger') {
+        if (triggerUsed(cv, it.ref)) return owner('A tag now uses it.');
+        cv.trigger = cv.trigger.filter(function (r) { return r !== row; }); return ok('remove', cite(row, 'Removed the trigger no tag uses.'));
+      }
+      if (it.kind === 'tag') return owner('Only the owner knows which trigger this tag was meant to fire on, or whether it can go.');
+    }
+
+    if (it.check === 'Duplicates' && (m = /^Same settings as (\w+) "(.+)" \((\d+)\)/.exec(it.message))) {
+      var other = rowOf(cv, it.kind, m[3]); if (!other) return { gone: 'Already handled: its twin was merged above.' };
+      // keep the original: the one not called a copy, else the older (lower) ID
+      var copyish = function (r) { return /\b(copy|old|dup(licate)?|test)\b/i.test(r.name); };
+      var keep = copyish(row) && !copyish(other) ? other : copyish(other) && !copyish(row) ? row : (+row[IDK[it.kind]] < +other[IDK[it.kind]] ? row : other);
+      var drop = keep === row ? other : row;
+      if (protectedBy(drop)) return owner(protectedBy(drop));
+      if (it.kind === 'variable') {
+        var n = 0; allRows(cv).forEach(function (r) { if (r === drop) return; var c = mapStrings(r, function (s) { return s.split('{{' + drop.name + '}}').join('{{' + keep.name + '}}'); }); if (c) { touch(r); n += c; } });
+        cv.variable = cv.variable.filter(function (r) { return r !== drop; });
+        return ok('merge', cite(drop, 'Merged "' + drop.name + '" into "' + keep.name + '"' + (n ? ' and repointed ' + n + ' reference' + (n > 1 ? 's' : '') : '') + '.'));
+      }
+      if (it.kind === 'trigger') {
+        var moved = 0, dropId = String(drop.triggerId), keepId = String(keep.triggerId);
+        (cv.tag || []).forEach(function (t) { ['firingTriggerId', 'blockingTriggerId'].forEach(function (k) { if (!t[k]) return; var before = t[k].map(String); if (before.indexOf(dropId) < 0) return; var nx = []; before.forEach(function (x) { x = x === dropId ? keepId : x; if (nx.indexOf(x) < 0) nx.push(x); }); t[k] = nx; moved++; touch(t); }); });
+        cv.trigger = cv.trigger.filter(function (r) { return r !== drop; });
+        return ok('merge', 'Merged trigger "' + drop.name + '" into "' + keep.name + '"' + (moved ? '; ' + moved + ' tag' + (moved > 1 ? 's' : '') + ' now use the original' : '') + '.');
+      }
+      if (it.kind === 'tag') {
+        if (drop.paused) return { gone: 'The copy is already paused in the upload.' };
+        drop.paused = true; touch(drop);
+        return ok('pause', 'Paused "' + drop.name + '" so the same hit is not sent twice; "' + keep.name + '" keeps firing.');
+      }
+    }
+
+    if (it.check === 'Legacy' && it.kind === 'tag') {
+      if (row.paused) return { gone: cite(row, 'Already paused in the upload. Delete it once nothing depends on it.') };
+      if (protectedBy(row)) return owner(protectedBy(row));
+      row.paused = true; touch(row); return ok('pause', 'Paused the retired Universal Analytics tag. It stays in the container until someone deletes it.');
+    }
+
+    if (it.check === 'Parameters') {
+      if ((m = /^Hardcodes (\S+) although the Constant \{\{(.+?)\}\}/.exec(it.message))) {
+        var lit = m[1], ref = '{{' + m[2] + '}}', c = mapStrings(row, function (s) { return s === lit ? ref : s; });
+        if (!c) return { gone: 'The ID is no longer typed in.' };
+        touch(row); return ok('edit', 'Replaced the typed-in ' + lit + ' with ' + ref + '.');
+      }
+      if ((m = /^GA4 event name "(.+)" is not snake_case/.exec(it.message))) {
+        var en = snake(m[1]); setParam(row, 'eventName', en); touch(row);
+        return ok('edit', 'Renamed the GA4 event "' + m[1] + '" to "' + en + '". Reports will show it under the new name from the next publish.');
+      }
+      if (/^Data layer variable has no key/.test(it.message)) {
+        if (!(m = /^DLV\s*[-–:]\s*([A-Za-z0-9_.]+)$/.exec(row.name))) return owner('The key cannot be read from the variable name.');
+        setParam(row, 'name', m[1]); touch(row); return ok('edit', 'Set the data layer key to "' + m[1] + '", taken from the variable name. Confirm it matches the site\'s dataLayer.');
+      }
+      if (/^Required setting "event name" is blank/.test(it.message) && row.type === 'gaawe') {
+        if (!(m = /^GA4\s*[-–:]\s*([A-Za-z][A-Za-z0-9_ ]*)$/.exec(row.name))) return owner('The event name cannot be read from the tag name.');
+        var ev = snake(m[1]); setParam(row, 'eventName', ev); touch(row); return ok('edit', 'Set the event name to "' + ev + '", taken from the tag name.');
+      }
+      if (/^Required setting/.test(it.message)) return owner('Needs an ID or label from the ad or analytics account; the audit will not invent one.');
+      if (/access token in plain text/.test(it.message)) return owner('Move the token to a secret store or server environment variable, then rotate it. A file cannot fix a leaked secret.');
+      if (/not a first-party subdomain/.test(it.message)) return owner('Needs a custom domain on ' + (site || 'your site') + ' pointed at the server container first.');
+      if (/^Condition targets/.test(it.message)) return owner('It may be a deliberate staging trigger; the owner decides.');
+    }
+
+    if (it.check === 'References') {
+      if ((m = /^Unresolved variable (.+)$/.exec(it.message))) {
+        var name = m[1].trim(), k;
+        if ((cv.variable || []).some(function (v) { return v.name === name; })) return { gone: 'The variable exists now.' };
+        if (!(k = /^DLV\s*[-–:]\s*([A-Za-z0-9_.]+)$/.exec(name))) return owner('Only the owner knows what "' + name + '" should read.');
+        var nv = { accountId: cv.accountId || (cv.container || {}).accountId, containerId: cv.containerId || (cv.container || {}).containerId, variableId: nextId(cv, 'variable', base), name: name, type: 'v',
+          parameter: [{ type: 'INTEGER', key: 'dataLayerVersion', value: '2' }, { type: 'BOOLEAN', key: 'setDefaultValue', value: 'false' }, { type: 'TEMPLATE', key: 'name', value: k[1] }] };
+        if (!nv.accountId) delete nv.accountId; if (!nv.containerId) delete nv.containerId;
+        (cv.variable = cv.variable || []).push(nv);
+        return ok('add', 'Created the missing data layer variable "' + name + '" (key "' + k[1] + '") that "' + it.name + '" already references. Confirm the key against the site\'s dataLayer.');
+      }
+      return owner('A dangling reference needs the owner to say what it should point at.');
+    }
+    if (it.check === 'Naming') return owner('A better name needs to know what the element is for.');
+    return owner('No safe automatic fix for this finding.');
+  }
+
+  /* ---------- folder tidy: the GTM auto loop, accepted rounds only ---------- */
+  function tidy(E, AUTO, doc, notes) {
+    var p = E.parseExport(clone(doc)), D = E.build({ web: p.context === 'server' ? null : p, server: p.context === 'server' ? p : null });
+    var data = D.auto[0], st = AUTO.start(data), guard = 0;
+    while (!st.done && guard++ < 20) { var prop = AUTO.propose(st, { vendor: data.vendor }); if (!prop) break; AUTO.step(st, prop); }
+    var rounds = st.rounds.filter(function (r) { return r.accepted && r.idea !== 'dupes'; }).map(function (r) { return r.operations; });
+    if (!rounds.length) return { doc: doc, changes: [] };
+    var out = AUTO.exportContainer(doc, rounds), byFolder = {}, made = {}, names = {};
+    rounds.forEach(function (ops) { ops.forEach(function (o) { if (o.op === 'addFolder') { made[o.id] = 1; names[o.id] = o.name; } }); });
+    (cvOf(out).folder || []).forEach(function (f) { names[f.folderId] = f.name; });
+    rounds.forEach(function (ops) { ops.forEach(function (o) { if (o.op === 'assignFolder') { var g = byFolder[o.folderId] = byFolder[o.folderId] || { tag: 0, trigger: 0, variable: 0 }; g[o.kind]++; } }); });
+    var changes = Object.keys(byFolder).map(function (fid) {
+      var g = byFolder[fid], parts = ['tag', 'trigger', 'variable'].filter(function (k) { return g[k]; }).map(function (k) { return g[k] + ' ' + k + (g[k] > 1 ? 's' : ''); });
+      return { action: 'folder', kind: 'folder', ref: fid, name: names[fid], check: 'Folders', source: 'tidy', what: (made[fid] ? 'New folder' : 'Folder') + ' "' + names[fid] + '": filed ' + parts.join(', ') + '.', why: notes || 'Elements with no folder; GTM auto kept only rounds that raised the score.' };
+    });
+    return { doc: out, changes: changes };
+  }
+
+  function build(opts) {
+    var E = opts.engine, AUTO = opts.auto, R = opts.report, dec = opts.decisions || {}, site = opts.website || R.website;
+    var out = { containers: [], owner: [], kept: [] };
+    var flowItems = R.items.filter(function (i) { return i.context === 'flow' || i.check === 'Site scan'; });
+    R.containers.forEach(function (meta) {
+      var up = opts.exports[meta.publicId]; if (!up) return;
+      var doc = clone(up), cv = cvOf(doc), changes = [], owner = [], kept = [];
+      // merges first, then removals, then edits: an element about to be removed is not edited
+      var items = R.items.filter(function (i) { return i.container === meta.publicId; });
+      var rank = function (i) { return i.check === 'Duplicates' ? 0 : i.check === 'Unused' ? 1 : 2; };
+      items.slice().sort(function (a, b) { return rank(a) - rank(b); }).forEach(function (it) {
+        var d = (dec[it.key] || {}).d;
+        if (d === 'keep') { kept.push(it); return; }
+        if (d === 'ask') { owner.push({ item: it, reason: 'You marked this Ask owner.' }); return; }
+        var r = fix(cv, it, site, cvOf(up));
+        if (r.gone) changes.push({ action: 'resolved', kind: it.kind, ref: it.ref, name: it.name, check: it.check, why: it.message, what: r.gone, source: d === 'fix' ? 'decision' : 'default', key: it.key });
+        else if (r.owner) owner.push({ item: it, reason: r.owner });
+        else changes.push({ action: r.action, kind: it.kind, ref: it.ref, name: it.name, check: it.check, why: it.message, what: r.what, source: d === 'fix' ? 'decision' : 'default', key: it.key });
+      });
+      var folderNote = (R.notes || []).filter(function (g) { return g.container === meta.publicId && g.check === 'Folders'; })[0];
+      var t = { doc: doc, changes: [] };
+      try { t = tidy(E, AUTO, doc, folderNote ? folderNote.count + ' elements had no folder.' : null); } catch (e) { t = { doc: doc, changes: [] }; }
+      doc = t.doc; changes = changes.concat(t.changes);
+      if (doc.containerVersion) {
+        var d = new Date(), p2 = function (x) { return (x < 10 ? '0' : '') + x; };
+        doc.exportTime = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+        var cvn = cvOf(doc); cvn.name = 'Proposed by GTM Container Atlas' + (cvn.name ? ' (from ' + cvn.name + ')' : '');
+        cvn.description = 'Proposed fixes from an atlas audit. ' + changes.filter(function (c) { return c.action !== 'resolved'; }).length + ' changes. Not published: import into a new workspace and review before publishing.';
+      }
+      out.containers.push({ publicId: meta.publicId, context: meta.context, name: meta.name, before: up, after: doc, changes: changes, owner: owner, kept: kept });
+      owner.forEach(function (o) { out.owner.push(o); }); kept.forEach(function (k) { out.kept.push(k); });
+    });
+    flowItems.forEach(function (it) { var d = (dec[it.key] || {}).d; if (d === 'keep') out.kept.push(it); else out.owner.push({ item: it, reason: d === 'ask' ? 'You marked this Ask owner.' : fix({}, it, site).owner }); });
+
+    // re-audit both sides the same way, so the scores are comparable
+    var side = function (pick) {
+      var ps = out.containers.map(function (c) { return E.parseExport(clone(pick(c))); });
+      var web = ps.filter(function (p) { return p.info.context !== 'server'; })[0] || null, srv = ps.filter(function (p) { return p.info.context === 'server'; })[0] || null;
+      return E.build({ web: web, server: srv, website: site }).report;
+    };
+    out.before = side(function (c) { return c.before; });
+    out.after = side(function (c) { return c.after; });
+    out.containers.forEach(function (c) {
+      var b = out.before.containers.filter(function (x) { return x.publicId === c.publicId; })[0], a = out.after.containers.filter(function (x) { return x.publicId === c.publicId; })[0];
+      var n = function (R, sev) { return R.items.filter(function (i) { return i.container === c.publicId && i.severity === sev; }).length; };
+      c.scoreBefore = b ? b.score : null; c.scoreAfter = a ? a.score : null;
+      c.critBefore = n(out.before, 'critical'); c.critAfter = n(out.after, 'critical');
+      c.reviewBefore = n(out.before, 'review'); c.reviewAfter = n(out.after, 'review');
+    });
+    return out;
+  }
+
+  /* ---------- element-level, line-aligned diff for the twin panes ---------- */
+  function lines(row) { return row ? JSON.stringify(row, null, 2).split('\n') : []; }
+  function lcs(a, b) {
+    var n = a.length, m = b.length, L = []; for (var i = 0; i <= n; i++) { L.push(new Int32Array(m + 1)); }
+    for (i = n - 1; i >= 0; i--) for (var j = m - 1; j >= 0; j--) L[i][j] = a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    var out = []; i = 0; j = 0;
+    while (i < n || j < m) {
+      if (i < n && j < m && a[i] === b[j]) { out.push(['same', a[i], b[j]]); i++; j++; }
+      else if (j < m && (i >= n || L[i][j + 1] >= L[i + 1][j])) { out.push(['add', null, b[j]]); j++; }
+      else { out.push(['del', a[i], null]); i++; }
+    }
+    // pair a deletion run with the addition run next to it so edits sit side by side
+    var res = [], k = 0;
+    while (k < out.length) {
+      if (out[k][0] === 'same') { res.push(out[k]); k++; continue; }
+      var dels = [], adds = [];
+      while (k < out.length && out[k][0] !== 'same') { if (out[k][0] === 'del') dels.push(out[k][1]); else adds.push(out[k][2]); k++; }
+      for (var x = 0; x < Math.max(dels.length, adds.length); x++) res.push([dels[x] != null && adds[x] != null ? 'mod' : dels[x] != null ? 'del' : 'add', dels[x] != null ? dels[x] : null, adds[x] != null ? adds[x] : null]);
+    }
+    return res;
+  }
+  function diff(before, after) {
+    var a = cvOf(before), b = cvOf(after), blocks = [];
+    KINDS.forEach(function (kind) {
+      var id = IDK[kind], A = a[kind] || [], B = b[kind] || [], seen = {};
+      var bById = {}; B.forEach(function (r) { bById[String(r[id])] = r; });
+      A.concat(B.filter(function (r) { return !A.some(function (x) { return String(x[id]) === String(r[id]); }); })).forEach(function (r) {
+        var k = String(r[id]); if (seen[k]) return; seen[k] = 1;
+        var L = A.filter(function (x) { return String(x[id]) === k; })[0] || null, Rr = bById[k] || null;
+        var la = lines(L), lb = lines(Rr), status = !L ? 'added' : !Rr ? 'removed' : la.join('\n') === lb.join('\n') ? 'same' : 'changed';
+        var rows = status === 'same' ? la.map(function (s) { return ['same', s, s]; }) : status === 'added' ? lb.map(function (s) { return ['add', null, s]; }) : status === 'removed' ? la.map(function (s) { return ['del', s, null]; }) : lcs(la, lb);
+        blocks.push({ kind: kind, ref: k, name: (Rr || L).name || k, status: status, rows: rows, paused: { before: !!(L && L.paused), after: !!(Rr && Rr.paused) } });
+      });
+    });
+    return blocks;
+  }
+
+  function markdown(P) {
+    var out = ['# Proposed container changes', ''];
+    P.containers.forEach(function (c) {
+      out.push('## ' + c.publicId + ' (' + c.context + ')', '', 'Score ' + c.scoreBefore + ' → ' + c.scoreAfter + ' · fix first ' + c.critBefore + ' → ' + c.critAfter + ' · to confirm ' + c.reviewBefore + ' → ' + c.reviewAfter, '');
+      c.changes.filter(function (x) { return x.action !== 'resolved'; }).forEach(function (x) { out.push('- **' + x.name + '** (' + x.kind + ' ' + x.ref + ') — ' + x.what + (x.source === 'default' ? ' _(applied by default)_' : x.source === 'tidy' ? ' _(GTM auto)_' : ' _(your decision)_')); });
+      out.push('');
+    });
+    if (P.owner.length) { out.push('## Left for the owner', ''); P.owner.forEach(function (o) { out.push('- **' + o.item.name + '** (' + o.item.container + ') — ' + o.item.message + ' ' + o.reason); }); out.push(''); }
+    out.push('Nothing was published. Import the proposed file into a new GTM workspace and review it before publishing.');
+    return out.join('\n');
+  }
+
+  return { build: build, diff: diff, markdown: markdown, snake: snake };
+})();
+if (typeof module !== 'undefined') module.exports = GTM_PROPOSE;
 
 // Site scan. Three pure functions shared by the Worker and the page:
 //   detect(html, url)                  what one page's source loads (Worker, per crawled page)
@@ -2744,11 +3118,13 @@ async function finish() {
     try { D = E.build({ web: st.web, server: st.server, website: st.site }); mergeScan(D); }
     catch (e) { veil.remove(); state('step1', 'active'); return err('err1', 'The audit could not finish: ' + e.message); }
     [st.web, st.server].forEach(p => { if (p) window.__exports[p.info.publicId] = p.doc; });
-    window.__report = D.report;
+    window.__report = D.report; window.__atlasSite = st.site;
     $('intake').hidden = true; $('app').hidden = false; veil.remove();
     window.bootAtlas(D);
     reportBar(D.report);
     review(D.report);
+    // proof first: the upload beside the container the audit proposes
+    if (window.atlasCompare) setTimeout(() => window.atlasCompare.open(), 250);
   }, 60);
 }
 
@@ -2765,6 +3141,7 @@ const CHECKPOINTS = [
 ];
 const RV = { cp: 0, dec: {}, key: '', list: [], jev: {} };
 const DEC = { fix: 'Will fix', keep: 'Intended', ask: 'Ask owner' };
+window.__atlasDecisions = () => RV.dec;
 function persist() { try { localStorage.setItem(RV.key, JSON.stringify(RV.dec)); } catch (e) { /* storage blocked */ } }
 function review(R) {
   RV.key = 'atlas-review:' + R.containers.map(c => c.publicId).join('+');
@@ -2852,7 +3229,7 @@ function finalCard(box, notes) {
   const all = RV.list.flatMap(c => c.items), n = decided(all);
   done.textContent = n === RV.total ? 'Every finding has a decision. Download the report; your decisions and notes are in it.' : (RV.total - n) + ' findings still have no decision. You can download the report now; undecided findings are listed as open.';
   const row = document.createElement('div'); row.className = 'in-row';
-  [['Preview PDF', 'previewBtn'], ['Download PDF', 'pdfBtn'], ['Download Markdown', 'mdBtn']].forEach(([t, id], k) => { const b = document.createElement('button'); b.type = 'button'; b.className = k ? 'btn ghost' : 'btn'; b.textContent = t; b.onclick = () => $(id).click(); row.append(b); });
+  [['Preview PDF', 'previewBtn'], ['Download PDF', 'pdfBtn'], ['Download Markdown', 'mdBtn'], ['Upload ↔ Proposed', 'cmpBtn']].forEach(([t, id], k) => { const b = document.createElement('button'); b.type = 'button'; b.className = k ? 'btn ghost' : 'btn'; b.textContent = t; b.onclick = () => $(id).click(); row.append(b); });
   box.append(formatPanel(), done, row, watchPanel());
 }
 
@@ -3101,8 +3478,164 @@ function reportBar(R) {
   };
   $('mdBtn').onclick = () => save(base + '.md', GTM_REPORT.markdown(formatted(R)), msg);
   $('reviewBtn').onclick = () => openReview(true);
+  if ($('cmpBtn')) $('cmpBtn').onclick = () => window.atlasCompare && window.atlasCompare.open();
   $('newBtn').onclick = () => location.reload();
 }
+})();
+
+// Upload ↔ proposed sheet. Builds the proposal from the current report and review
+// decisions each time it opens, then renders both containers line by line.
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const CV = { P: null, i: 0, blocks: null };
+const SRC = { decision: 'your decision', default: 'by default', tidy: 'GTM auto' };
+const VERB = { remove: 'removed', add: 'added', edit: 'edited', merge: 'merged', pause: 'paused', folder: 'filed', resolved: 'no change' };
+const motion = () => window.gsap && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const el = (tag, cls, text, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.append(e); return e; };
+
+function compute() {
+  CV.P = GTM_PROPOSE.build({ engine: GTM_ENGINE, auto: GTM_AUTO, report: window.__report, exports: window.__exports || {},
+    decisions: window.__atlasDecisions ? window.__atlasDecisions() : {}, website: window.__atlasSite || window.__report.website });
+  CV.i = Math.min(CV.i, CV.P.containers.length - 1);
+}
+
+function tabs() {
+  const t = $('cmpTabs'); t.textContent = '';
+  if (CV.P.containers.length < 2) return;
+  CV.P.containers.forEach((c, i) => {
+    const b = el('button', '', c.publicId + ' · ' + c.context, t); b.type = 'button'; b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(i === CV.i)); b.onclick = () => { CV.i = i; render(); };
+  });
+}
+
+function stat(label, before, after, note, better) {
+  const s = el('div', 'cmp-stat' + (better ? ' up' : ''));
+  el('span', '', label, s);
+  const b = el('b', '', null, s); el('s', '', String(before), b); b.append(' → '); const em = el('em', '', String(after), b); em.dataset.to = after;
+  if (note) el('small', '', note, s);
+  return s;
+}
+function scores(c) {
+  const box = $('cmpScores'); box.textContent = '';
+  const applied = c.changes.filter(x => x.action !== 'resolved').length, owner = ownerList(c).length;
+  box.append(
+    stat('Configuration score', c.scoreBefore, c.scoreAfter, 'same checks, run on both files', c.scoreAfter > c.scoreBefore),
+    stat('Fix first', c.critBefore, c.critAfter, 'critical findings', c.critAfter < c.critBefore),
+    stat('To confirm', c.reviewBefore, c.reviewAfter, 'findings to review', c.reviewAfter < c.reviewBefore),
+  );
+  const s = el('div', 'cmp-stat', null, box); el('span', '', 'Changes in the proposal', s);
+  const b = el('b', '', null, s); const em = el('em', '', String(applied), b); em.dataset.to = applied;
+  el('small', '', owner + ' finding' + (owner === 1 ? '' : 's') + ' left for the owner', s);
+  if (motion()) box.querySelectorAll('em').forEach(e => { const o = { v: 0 }, to = +e.dataset.to; gsap.to(o, { v: to, duration: .9, ease: 'power2.out', onUpdate: () => { e.textContent = Math.round(o.v); } }); });
+}
+
+function rail(c) {
+  const list = $('cmpChanges'); list.textContent = '';
+  const real = c.changes.filter(x => x.action !== 'resolved'), quiet = c.changes.filter(x => x.action === 'resolved');
+  $('cmpCount').textContent = real.length + (quiet.length ? ' · ' + quiet.length + ' already handled' : '');
+  real.concat(quiet).forEach(x => {
+    const li = el('li', 'cmp-ch a-' + x.action, null, list); li.tabIndex = x.action === 'resolved' ? -1 : 0;
+    el('span', 'src', SRC[x.source] || '', li);
+    const b = el('b', '', null, li); el('span', 'tag', VERB[x.action] || x.action, b); b.append(x.name);
+    el('p', '', x.what, li);
+    if (x.source !== 'tidy') el('p', 'why', x.check + ': ' + x.why, li); else el('p', 'why', x.why, li);
+    if (x.action !== 'resolved') { li.onclick = () => jump(x); li.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jump(x); } }; }
+  });
+  const ow = $('cmpOwner'); ow.textContent = '';
+  const all = ownerList(c);
+  $('cmpOwnerCount').textContent = String(all.length);
+  all.forEach(o => { const li = el('li', 'cmp-ow', null, ow); el('b', '', o.item.name, li); el('p', '', o.reason, li); el('i', '', o.item.check + ' · ' + o.item.message, li); });
+  if (!all.length) el('li', 'cmp-ow', 'Nothing. Every finding was fixed or marked intended.', ow);
+}
+
+function ownerList(c) { return CV.P.owner.filter(o => o.item.container === c.publicId || o.item.context === 'flow' || o.item.check === 'Site scan'); }
+function block(kind, ref) { return CV.blocks && CV.blocks.find(b => b.kind === kind && b.ref === String(ref)); }
+function target(x) {
+  const quoted = [...x.what.matchAll(/"([^"]+)"/g)].map(m => m[1]);
+  if (x.action === 'folder') return block('folder', x.ref);
+  const own = block(x.kind, x.ref);
+  if (own && own.status !== 'same') return own;
+  return CV.blocks.find(b => b.status !== 'same' && quoted.includes(b.name)) || own;
+}
+function jump(x) {
+  const b = target(x); if (!b) return;
+  if (b.status === 'same' && $('cmpOnly').checked) { $('cmpOnly').checked = false; grid(); }
+  const node = document.getElementById(b.id); if (!node) return;
+  const sc = $('cmpScroll');
+  sc.scrollTo({ top: node.offsetTop, behavior: motion() ? 'smooth' : 'auto' });
+  node.classList.remove('flash'); void node.offsetWidth; node.classList.add('flash');
+}
+
+function grid() {
+  const g = $('cmpGrid'), only = $('cmpOnly').checked; g.textContent = '';
+  let ln = 0, rn = 0, folded = 0;
+  const frag = document.createDocumentFragment();
+  const flush = () => { if (!folded) return; const f = el('div', 'cmp-fold', folded + ' unchanged element' + (folded > 1 ? 's' : ''), frag); const b = el('button', '', 'Show', f); b.type = 'button'; b.onclick = () => { $('cmpOnly').checked = false; grid(); }; folded = 0; };
+  CV.blocks.forEach((b, k) => {
+    b.id = 'cmp-el-' + k;
+    if (only && b.status === 'same') { ln += b.rows.length; rn += b.rows.length; folded++; return; }
+    flush();
+    const h = el('div', 'cmp-el', null, frag); h.id = b.id;
+    el('span', 'st ' + b.status, b.status, h); el('span', 'k ' + b.kind, b.kind + ' ' + b.ref, h); el('b', '', b.name, h);
+    if (b.paused.after && !b.paused.before) el('span', 'st changed', 'paused', h);
+    b.rows.forEach(([t, l, r]) => {
+      const cl = t === 'same' ? '' : t;
+      el('div', 'ln ' + (l == null ? 'gap' : cl), l == null ? '' : String(++ln), frag);
+      el('div', 'tx ' + (l == null ? 'gap' : cl), l == null ? '' : l, frag);
+      el('div', 'ln r ' + (r == null ? 'gap' : cl), r == null ? '' : String(++rn), frag);
+      el('div', 'tx ' + (r == null ? 'gap' : cl), r == null ? '' : r, frag);
+    });
+  });
+  flush();
+  if (!frag.childNodes.length) el('div', 'cmp-empty', 'No changes for this container.', frag);
+  g.append(frag);
+}
+
+function render() {
+  const c = CV.P.containers[CV.i]; if (!c) return;
+  tabs(); scores(c); rail(c);
+  CV.blocks = GTM_PROPOSE.diff(c.before, c.after);
+  const changed = CV.blocks.filter(b => b.status !== 'same').length;
+  const cvB = c.before.containerVersion || c.before;
+  $('cmpUpMeta').textContent = c.publicId + (cvB.containerVersionId ? ' · version ' + cvB.containerVersionId : '') + (c.before.exportTime ? ' · exported ' + c.before.exportTime : '');
+  $('cmpPrMeta').textContent = changed + ' of ' + CV.blocks.length + ' elements differ · not published';
+  $('cmpScroll').scrollTop = 0; grid();
+  if (motion()) gsap.fromTo('#cmpGrid .cmp-el', { opacity: 0, x: -6 }, { opacity: 1, x: 0, duration: .3, stagger: .015, ease: 'power2.out' });
+}
+
+function open() {
+  if (!window.__report) return;
+  try { compute(); } catch (e) { console.error(e); return; }
+  if (!CV.P.containers.length) return;
+  const sheet = $('compare'); sheet.hidden = false; document.body.style.overflow = 'hidden';
+  render();
+  if (motion()) { gsap.fromTo(sheet, { opacity: 0 }, { opacity: 1, duration: .3 }); gsap.fromTo('.cmp-head', { y: -6, opacity: 0 }, { y: 0, opacity: 1, stagger: .12, duration: .4, delay: .1 }); }
+  $('cmpClose').focus({ preventScroll: true });
+}
+function close() {
+  $('compare').hidden = true; document.body.style.overflow = '';
+  const b = $('cmpBtn'); if (b) b.focus({ preventScroll: true });
+  window.dispatchEvent(new Event('resize'));
+}
+
+function say(t) { $('cmpMsg').textContent = t; }
+$('cmpClose').onclick = close;
+$('cmpOnly').onchange = grid;
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('compare').hidden) close(); });
+$('cmpDownload').onclick = () => {
+  const c = CV.P.containers[CV.i];
+  const url = URL.createObjectURL(new Blob([JSON.stringify(c.after, null, 2)], { type: 'application/json' }));
+  const a = el('a'); a.href = url; a.download = c.publicId + '_proposed.json'; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  say('Downloaded ' + a.download + '. Import it into a new workspace in GTM (Admin → Import Container → Merge) and review before publishing.');
+};
+$('cmpCopy').onclick = async () => {
+  const md = GTM_PROPOSE.markdown(CV.P);
+  try { await navigator.clipboard.writeText(md); say('Change log copied as Markdown.'); }
+  catch (e) { const t = el('textarea'); t.value = md; document.body.append(t); t.select(); try { document.execCommand('copy'); say('Change log copied as Markdown.'); } catch (x) { say('Copy was blocked by the browser.'); } t.remove(); }
+};
+window.atlasCompare = { open, close };
 })();
 
 </script>

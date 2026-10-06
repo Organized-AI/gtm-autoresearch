@@ -8,6 +8,7 @@ async def main():
         errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('file://'+str(pathlib.Path('test/page.html').resolve())); await pg.wait_for_timeout(800)
         await pg.click('#sample'); await pg.click('#siteForm button[type=submit]'); await pg.click('#sample3'); await pg.wait_for_timeout(2500)
+        await pg.wait_for_selector('#compare:not([hidden])', timeout=8000); await pg.click('#cmpClose'); await pg.wait_for_timeout(300)
         await pg.click('#previewBtn'); await pg.wait_for_timeout(6000)
         print('meta:', await pg.inner_text('#pvMeta'), '| msg:', await pg.inner_text('#pvMsg'), '| canvases:', len(await pg.query_selector_all('#pvPages canvas')))
         await pg.screenshot(path='test/pv.png')

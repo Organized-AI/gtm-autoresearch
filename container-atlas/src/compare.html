@@ -1,0 +1,38 @@
+<section id="compare" class="cmp" hidden aria-labelledby="cmpTitle" role="dialog" aria-modal="true">
+ <header class="cmp-top">
+  <div class="cmp-who">
+   <p class="cmp-eyebrow">Proof · audit applied to a copy</p>
+   <h2 id="cmpTitle">Your upload, and the container the audit proposes</h2>
+   <p class="cmp-lede">Same file, two states. The left pane is exactly what you imported. The right pane is a copy with every fix the audit can make without guessing, re-audited with the same checks. Nothing is published.</p>
+  </div>
+  <div class="cmp-actions">
+   <div class="tabs" id="cmpTabs" role="tablist" aria-label="Container"></div>
+   <button id="cmpClose" type="button" class="primary">Review findings →</button>
+  </div>
+ </header>
+ <div class="cmp-scores" id="cmpScores"></div>
+ <div class="cmp-body">
+  <aside class="cmp-rail" aria-label="What changed">
+   <div class="cmp-railhead"><h3>What changed</h3><span id="cmpCount"></span></div>
+   <ol class="cmp-changes" id="cmpChanges"></ol>
+   <div class="cmp-railhead"><h3>Left for the owner</h3><span id="cmpOwnerCount"></span></div>
+   <ul class="cmp-owner" id="cmpOwner"></ul>
+   <div class="cmp-dl">
+    <button id="cmpDownload" type="button" class="btn">Download proposed .json</button>
+    <button id="cmpCopy" type="button" class="btn ghost">Copy change log</button>
+    <p class="cmp-msg" id="cmpMsg" aria-live="polite"></p>
+   </div>
+  </aside>
+  <section class="cmp-panes" aria-label="Upload and proposed container side by side">
+   <div class="cmp-bar">
+    <div class="cmp-head up"><b>Upload</b><span id="cmpUpMeta"></span></div>
+    <div class="cmp-head pr"><b>Proposed</b><span id="cmpPrMeta"></span></div>
+   </div>
+   <div class="cmp-filter">
+    <label><input type="checkbox" id="cmpOnly" checked> Changed elements only</label>
+    <span class="cmp-key"><i class="k-del"></i>removed <i class="k-add"></i>added <i class="k-mod"></i>edited</span>
+   </div>
+   <div class="cmp-scroll" id="cmpScroll" tabindex="0" aria-label="Line-by-line comparison"><div class="cmp-grid" id="cmpGrid"></div></div>
+  </section>
+ </div>
+</section>
