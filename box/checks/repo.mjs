@@ -29,7 +29,7 @@ export function sections(md) {
 export const findSection = (secs, re) => Object.keys(secs).find((k) => re.test(k));
 
 // The fixed rules a human owns, and the working habits AutoLoop may rewrite.
-export const FIXED_RE = /^Constraints|^Mutation Budget|^Stop Conditions|^Eval Dimensions/i;
+export const FIXED_RE = /^Constraints|^Mutation Budget|^Stop Conditions|^Eval Dimensions|^Agent Traffic/i;
 export const HOW_RE = /^Edit Strategy/i;
 
 // Weights table: "| 1 | Tag coverage | 0.14 | ..." -> { tagCoverage: 0.14 }
@@ -63,7 +63,8 @@ export function clients() {
     const winningDir = `${dir}/winning`;
     const winning = exists(winningDir) ? readdirSync(p(winningDir)).filter((f) => f.endsWith(".json")).sort().map((f) => `${winningDir}/${f}`) : [];
     const manifest = exists(`${dir}/manifest.json`) ? JSON.parse(read(`${dir}/manifest.json`)) : null;
-    return { id, dir, programFile, program, tmpl, snap: snap && exists(snap) ? snap : null, ledgers, winning, manifest };
+    const agentTraffic = /Agent traffic dimension:\s*on\b/i.test(program);
+    return { id, dir, programFile, program, tmpl, snap: snap && exists(snap) ? snap : null, ledgers, winning, manifest, agentTraffic };
   });
 }
 
@@ -73,9 +74,10 @@ export function rows(c) {
 }
 
 // Score with the repo's own evaluator. Returns null when tsx is unavailable.
-export function score(container, snapshot) {
+export function score(container, snapshot, opts = {}) {
   const args = ["tsx", join(HERE, "score.ts"), p(container)];
   if (snapshot) args.push(p(snapshot));
+  if (opts.agentTraffic) args.push("--agent-traffic");
   const r = spawnSync("npx", ["--no-install", ...args], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   if (r.status !== 0) return { error: (r.stderr || r.stdout || "").trim().split("\n").slice(-2).join(" ") };
   try { return JSON.parse(r.stdout); } catch { return { error: "scorer printed non-JSON" }; }

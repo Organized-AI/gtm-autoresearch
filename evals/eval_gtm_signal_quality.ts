@@ -1085,6 +1085,86 @@ const META_EVENT_TO_TAG_PATTERN: Record<string, RegExp> = {
   complete_registration: /meta.*registration/i,
 };
 
+
+// ── Dimension 13 (opt-in): Agent and bot traffic ─────────────────────────────
+//
+// Can this container tell agent and bot traffic from people, and does it tell GA4?
+// Only traffic that runs JavaScript ever reaches a web container: browser agents
+// (cloud browsers, automation frameworks) and people arriving from AI assistants.
+// AI crawlers and user-triggered fetchers (GPTBot, ClaudeBot, OAI-SearchBot,
+// PerplexityBot, ChatGPT-User, Claude-User, Perplexity-User) usually fetch HTML
+// without running it, and signed agents announce themselves in request headers
+// (Signature-Agent) that page JavaScript cannot read. Those belong to the edge or
+// server layer; this dimension scores only what a web container can do.
+//
+// Built from GTM's own variable types (JavaScript Variable "j", HTTP Referrer "f",
+// URL "u", Regex Table "remm", Lookup Table "smm") so it adds no custom code.
+
+export const AGENT_UA_TOKENS = [
+  "GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-SearchBot", "Claude-User",
+  "PerplexityBot", "Perplexity-User", "Meta-ExternalAgent", "meta-externalfetcher", "Amazonbot",
+  "Applebot", "Bytespider", "CCBot",
+];
+export const AUTOMATION_UA_TOKENS = ["HeadlessChrome", "Puppeteer", "Playwright", "PhantomJS", "Selenium"];
+export const AI_REFERRER_HOSTS = ["chatgpt.com", "chat.openai.com", "perplexity.ai", "claude.ai", "gemini.google.com", "copilot.microsoft.com"];
+
+function paramText(params: GtmParam[] | undefined): string {
+  // Regex Table patterns escape dots (chatgpt\.com); compare on the unescaped text.
+  return JSON.stringify(params ?? []).replace(/\\/g, "");
+}
+
+function configParamNames(tag: GtmTag): string[] {
+  const names: string[] = [];
+  for (const key of ["configSettingsTable", "fieldsToSet", "eventSettingsTable"]) {
+    const list = tag.parameter?.find((p) => p.key === key)?.list ?? [];
+    for (const row of list) {
+      const name = row.map?.find((m) => m.key === "parameter" || m.key === "fieldName")?.value;
+      const value = row.map?.find((m) => m.key === "parameterValue" || m.key === "value")?.value ?? "";
+      if (name) names.push(`${name}=${value}`);
+    }
+  }
+  return names;
+}
+
+export function scoreAgentTraffic(tags: GtmTag[], variables: GtmVariable[]): DimensionScore {
+  const issues: GtmIssue[] = [];
+  const dim = "agentTraffic";
+  const hit = (v: GtmVariable, tokens: string[]) => tokens.filter((t) => paramText(v.parameter).toLowerCase().includes(t.toLowerCase())).length;
+
+  const webdriver = variables.find((v) => v.type === "j" && /navigator\.webdriver/.test(paramText(v.parameter)));
+  const uaClassifier = variables.find((v) => (v.type === "remm" || v.type === "smm") && hit(v, AGENT_UA_TOKENS) >= 3 && hit(v, AUTOMATION_UA_TOKENS) >= 1);
+  const utmVar = variables.find((v) => v.type === "u" && /utm_source/.test(paramText(v.parameter)));
+  const isTable = (v: GtmVariable) => (v.type === "remm" || v.type === "smm") && hit(v, AI_REFERRER_HOSTS) >= 3;
+  const utmClassifier = utmVar ? variables.find((v) => isTable(v) && paramText(v.parameter).includes(`{{${utmVar.name}}}`)) : undefined;
+  const referrerClassifier = variables.find((v) => isTable(v) && v !== utmClassifier);
+  const opaque = variables.filter((v) => v.type === "jsm" && (hit(v, AGENT_UA_TOKENS) >= 2 || /webdriver/.test(paramText(v.parameter))));
+
+  // The variable GA4 should receive: a lookup/regex table that folds the signals together.
+  const classNames = new Set([uaClassifier?.name, ...variables.filter((v) => (v.type === "smm" || v.type === "remm") && webdriver && paramText(v.parameter).includes(`{{${webdriver.name}}}`)).map((v) => v.name)].filter(Boolean) as string[]);
+  const ga4 = tags.filter((t) => t.type === "googtag" || t.type === "gaawc");
+  const sends = (param: string, varNames: Set<string>) => ga4.some((t) => configParamNames(t).some((nv) => nv.startsWith(`${param}=`) && [...varNames].some((n) => nv.includes(`{{${n}}}`))));
+  const sendsClass = sends("traffic_class", classNames);
+  const sendsReferrer = sends("ai_referrer", new Set([referrerClassifier?.name, utmClassifier?.name].filter(Boolean) as string[]));
+
+  let score = 0;
+  if (webdriver) score += 0.2; else issues.push({ severity: "warning", entity: dim, message: "No JavaScript Variable reading navigator.webdriver (automation flag set by WebDriver-driven browsers)", dimension: dim });
+  if (uaClassifier) score += 0.25; else issues.push({ severity: "warning", entity: dim, message: `No Regex Table classifying the user agent into AI agent / automation / human (needs tokens such as ${AGENT_UA_TOKENS.slice(0, 4).join(", ")} and ${AUTOMATION_UA_TOKENS[0]})`, dimension: dim });
+  if (utmClassifier) score += 0.05; else issues.push({ severity: "warning", entity: dim, message: "No Regex Table on utm_source for AI assistants (ChatGPT tags outbound links utm_source=chatgpt.com; referrers are often stripped)", dimension: dim });
+  if (referrerClassifier) score += 0.15; else issues.push({ severity: "warning", entity: dim, message: `No Regex Table classifying AI assistant referrals (${AI_REFERRER_HOSTS.slice(0, 4).join(", ")})`, dimension: dim });
+  if (sendsClass) score += 0.2; else issues.push({ severity: "warning", entity: dim, message: "The Google tag doesn't send a traffic_class parameter from the classifier, so GA4 can't segment agent traffic", dimension: dim });
+  if (sendsReferrer) score += 0.15; else issues.push({ severity: "warning", entity: dim, message: "The Google tag doesn't send an ai_referrer parameter, so visits from AI assistants look like ordinary referrals", dimension: dim });
+  for (const v of opaque) issues.push({ severity: "info", entity: `variable:${v.name}`, message: "Agent detection in Custom JavaScript is opaque code; a Regex Table on a JavaScript Variable does the same without it", dimension: dim });
+  issues.push({ severity: "info", entity: dim, message: "AI crawlers and signed agents mostly never run this container; classify them at the edge or server (user agent + Signature-Agent header)", dimension: dim });
+
+  return { name: dim, weight: 0, score: Math.min(1, score), issues };
+}
+
+export interface EvaluateOptions {
+  /** Score agent and bot traffic as a 13th dimension. Takes AGENT_TRAFFIC_WEIGHT; every other weight is scaled to keep the sum at 1.0. */
+  agentTraffic?: boolean;
+}
+export const AGENT_TRAFFIC_WEIGHT = 0.08;
+
 function scoreMetaAdsAlignment(
   tags: GtmTag[],
   snapshot: MetaAdsSnapshot,
@@ -1148,6 +1228,7 @@ function scoreMetaAdsAlignment(
 export function evaluateGtmSignalQuality(
   container: GtmContainer,
   adsSnapshot?: EnrichedAdsSnapshot | MetaAdsSnapshot,
+  options: EvaluateOptions = {},
 ): GtmSignalQualityResult {
   const cv = container.containerVersion;
   const tags = cv.tag ?? [];
@@ -1222,6 +1303,14 @@ export function evaluateGtmSignalQuality(
     }
   }
 
+  // Opt-in agent traffic dimension: fixed weight, everything else scaled down.
+  if (options.agentTraffic) {
+    for (const dim of dimensions) dim.weight = Number((dim.weight * (1 - AGENT_TRAFFIC_WEIGHT)).toFixed(6));
+    const agent = scoreAgentTraffic(tags, variables);
+    agent.weight = AGENT_TRAFFIC_WEIGHT;
+    dimensions.push(agent);
+  }
+
   // Validate weight sum ≈ 1.0 (catch future misconfigurations)
   const weightSum = dimensions.reduce((s, d) => s + d.weight, 0);
   if (Math.abs(weightSum - 1.0) > 0.01) {
@@ -1267,9 +1356,13 @@ async function main(): Promise<void> {
     args.splice(metaFlagIdx, 2);
   }
 
+  const agentFlagIdx = args.indexOf("--agent-traffic");
+  const agentTraffic = agentFlagIdx !== -1;
+  if (agentTraffic) args.splice(agentFlagIdx, 1);
+
   const filePath = args[0];
   if (!filePath) {
-    console.error("Usage: npx tsx evals/eval_gtm_signal_quality.ts <container.json> [--enriched-snapshot <enriched.json>] [--meta-snapshot <snapshot.json>]");
+    console.error("Usage: npx tsx evals/eval_gtm_signal_quality.ts <container.json> [--enriched-snapshot <enriched.json>] [--meta-snapshot <snapshot.json>] [--agent-traffic]");
     process.exit(1);
   }
 
@@ -1297,7 +1390,7 @@ async function main(): Promise<void> {
     snapshot = metaSnapshot;
   }
 
-  const result = evaluateGtmSignalQuality(container, snapshot);
+  const result = evaluateGtmSignalQuality(container, snapshot, { agentTraffic });
 
   console.log("\n=== GTM Signal Quality Eval ===\n");
   console.log(`Container: ${absPath}`);

@@ -161,7 +161,7 @@
 <nav>
   <div class="wrap">
     <a class="brand" href="#top">OrganizedAI · <b>Autoresearch in a Box</b></a>
-    <div class="links"><a href="#proof">Proof</a><a href="#map">Map</a><a class="hide-sm" href="#guide">Guide</a><a href="#gates">Gates</a><a href="#jev">Jev lane</a><a href="#autoloop">AutoLoop</a><a class="hide-sm" href="#plan">Plan</a><a class="hide-sm" href="#prompt">Prompt</a></div>
+    <div class="links"><a href="#proof">Proof</a><a href="#map">Map</a><a class="hide-sm" href="#guide">Guide</a><a href="#gates">Gates</a><a href="#jev">Jev lane</a><a class="hide-sm" href="#agents">Agents</a><a href="#autoloop">AutoLoop</a><a class="hide-sm" href="#plan">Plan</a><a class="hide-sm" href="#prompt">Prompt</a></div>
   </div>
 </nav>
 
@@ -334,6 +334,29 @@
   </div>
 </section>
 
+<section id="agents">
+  <div class="wrap">
+    <div class="kicker">Exhibit D2 · Agent and bot traffic</div>
+    <h2>The loop now builds toward knowing which visitors are agents</h2>
+    <p class="lead">Agent and bot traffic is an opt-in 13th dimension, <code>agentTraffic</code>, switched on for BLADE and HRE in program.md. When the loop targets it, the mutation prompt carries a recipe built only from GTM's own variable types, so it never adds the custom code the Jev guide stops on. It classifies; it never blocks a tag.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Who</th><th>Runs GTM?</th><th>Where it's classified</th><th>What GA4 gets</th></tr></thead>
+        <tbody>
+          <tr><td>People arriving from ChatGPT, Perplexity, Claude, Gemini, Copilot</td><td>yes</td><td>web GTM: referrer, then <code>utm_source</code></td><td><code>ai_referrer</code></td></tr>
+          <tr><td>Browser agents and automation (cloud browsers, Playwright, Puppeteer, Selenium)</td><td>yes</td><td>web GTM: <code>navigator.webdriver</code> and the user agent</td><td><code>traffic_class</code></td></tr>
+          <tr><td>AI crawlers and fetchers (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-User, PerplexityBot, Perplexity-User)</td><td>usually not</td><td>edge Worker: user agent</td><td><code>ai_crawler_hit</code> via Measurement Protocol</td></tr>
+          <tr><td>Signed agents (Signature-Agent header, Web Bot Auth)</td><td>sometimes; the signature is a header JavaScript can't read</td><td>edge Worker: Signature-Agent</td><td><code>ai_crawler_hit</code>, class <code>ai_signed_agent</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <strong>Tested through the loop's own validator.</strong>
+      <p>On BLADE's best container the recipe takes 4 rounds of at most 3 edits. Every round passes <code>validateCandidate</code> and raises the score, so keep/revert never throws away half-built work; agentTraffic goes 0% → 100%. Both best containers score 0% today, and the next run targets it. To stop BLADE spending another run on the trigger it can't fix, the loop now drops a target after 3 reverts in a row, and records the strategy and candidate scores on every round. The edge Worker is a template in <code>box/templates/agent-traffic/</code>, not yet deployed in front of a client site.</p>
+    </div>
+  </div>
+</section>
+
 <section id="autoloop">
   <div class="wrap">
     <div class="kicker">Exhibit E · AutoLoop's first read</div>
@@ -379,7 +402,7 @@ node box/cli/arb.mjs replay \
     <div class="kicker">Exhibit G · Phased plan</div>
     <h2>Build order, gate by gate</h2>
     <div class="phases">
-      <div class="ph"><div class="n">Phase 0<small>this session</small></div><p><b>Box exists and runs.</b> <code>arb</code> CLI with 32 checks tied to the field guide's chapters, the Jev guide's reader and audit vendored in <code>box/jev/</code>, AutoLoop analyzer, Worker with SSE stream, D1 schema, <code>box.yml</code> CI, and a recorded proof run on the real repo. Branch <code>feat/autoresearch-in-a-box</code>.</p></div>
+      <div class="ph"><div class="n">Phase 0<small>this session</small></div><p><b>Box exists and runs.</b> <code>arb</code> CLI with 35 checks tied to the field guide's chapters, the Jev guide's reader and audit vendored in <code>box/jev/</code>, AutoLoop analyzer, Worker with SSE stream, D1 schema, <code>box.yml</code> CI, and a recorded proof run on the real repo. Branch <code>feat/autoresearch-in-a-box</code>.</p></div>
       <div class="ph"><div class="n">Phase 1 · G1<small>lock the scorer</small></div><p><b>Make the code match the guide.</b> Add <code>.claude/settings.json</code> denying edits to <code>evals/**</code>, the Jev rubric and <code>box/</code>. Rewrite <code>parseProgram()</code> to read Constraints, Mutation Budget and Edit Strategy, and make <code>pickStrategy()</code> follow them. Write per-dimension floors. Refresh both snapshots (the loop exits on them today). Fix HRE's weights table or add Google Ads data.</p></div>
       <div class="ph"><div class="n">Phase 2 · G2<small>a ledger that teaches</small></div><p><b>Record every attempt.</b> Each round writes the field guide's receipt: strategy, operations, hashes, validator result, candidate dimensions, QA status and shadow route, reverted or not. Make a revert count as a regression, as chapter 04 says. Keep <code>manifest.json</code> pointed at the best winner. Correct the chapter 04 first-run row.</p></div>
       <div class="ph"><div class="n">Phase 3 · G3<small>AutoLoop live</small></div><p><b>Proposals as pull requests.</b> <code>arb autoloop --pr</code> opens a PR touching only Edit Strategy, with the evidence rounds in the body. Only the owner merges. Rerun BLADE with the merged habits and compare against 77.3%.</p></div>
@@ -400,7 +423,7 @@ Work in /Users/supabowl/gtm-autoresearch (clone github.com/Organized-AI/gtm-auto
 
 First step: apply the Organized Codebase agent templates to .claude/ before writing code. Then read CLAUDE.md, AGENT-HANDOFF/CURRENT-STATE.md, and the field guide chapters at guide.organizedai.vip/gtm-autoresearch (01-08). Where the guide and code disagree, fix the code unless the guide's number is the error.
 
-Context: box/ is "Autoresearch in a Box", an FDE package that maps the Karpathy loop + AutoLoop onto this repo. The inner loop (scripts/run-gtm-loop.ts) is unchanged. box/ adds `arb check` (32 checks, gates G0-G4, each tied to a field guide chapter; G4 runs the Jev container guide's reader and audit from box/jev/), `arb autoloop` (reads loop-results ledgers, finds recurring habits, proposes a rewrite of the "Edit Strategy" section of program.md only), a Worker with D1 + SSE run view, and .github/workflows/box.yml. The recorded proof is box/proof/2026-10-03-gtm-autoresearch.jsonl: 13 pass, 11 fail, 3 manual, 5 not built.
+Context: box/ is "Autoresearch in a Box", an FDE package that maps the Karpathy loop + AutoLoop onto this repo. The inner loop (scripts/run-gtm-loop.ts) is unchanged. box/ adds `arb check` (35 checks, gates G0-G4, each tied to a field guide chapter; G4 runs the Jev container guide's reader and audit from box/jev/), `arb autoloop` (reads loop-results ledgers, finds recurring habits, proposes a rewrite of the "Edit Strategy" section of program.md only), a Worker with D1 + SSE run view, and .github/workflows/box.yml. The recorded proof is box/proof/2026-10-10-gtm-autoresearch.jsonl: 14 pass, 12 fail, 3 manual, 6 not built.
 
 Deploy first:
 1. cd box &amp;&amp; npx wrangler d1 create autoresearch-in-a-box, put the id in wrangler.jsonc, npx wrangler d1 migrations apply autoresearch-in-a-box --remote
@@ -464,7 +487,8 @@ MAX_ROUNDS=30</pre></div>
     ['11/11 passed, the order form was missing','Score up, Jev container audit worse: high findings 43→157 on BLADE','audit-not-worse'],
     ['Checks the agent can\'t argue with','Jev guide hard stops in code: consent touched, opaque code, unresolved refs','container-hard-stops'],
     ['Run what you built','Preview-mode QA per kept round, jev-site-scan observed vs configured','staging-qa'],
-    ['Human approval gate','Staging workspace; the owner publishes','human-publish']
+    ['Human approval gate','Staging workspace; the owner publishes','human-publish'],
+    ['(new) Know who the visitor is','agentTraffic dimension: traffic_class and ai_referrer to GA4; edge Worker for crawlers','agent-traffic-web']
   ];
 
   var CH = [
@@ -476,6 +500,7 @@ MAX_ROUNDS=30</pre></div>
     ['06 · Two atomic questions','Frozen two-question contract; a broader quiz is a different contract, not an alias.',['judge-contract-frozen','broader-quiz']],
     ['07 · The synthetic lab','Group-disjoint splits, untouched holdout, read-only replay.',['holdout-untouched']],
     ['08 · What the pilot does not prove','Five-stage ladder; the audit is a separate workflow; a human publishes.',['promotion-stage','audit-not-worse','human-publish']],
+    ['Agent and bot traffic','An opt-in 13th dimension the loop builds from built-in variable types, plus an edge layer for crawlers and signed agents.',['agent-traffic-dimension','agent-traffic-web','agent-traffic-edge']],
     ['Meta layer (ch01)','An auto loop may rewrite "how to work", never the scorer or the Jev gates.',['autoloop-finds-habits','autoloop-scope','autoloop-takes-effect','owner-approves']]
   ];
   document.querySelectorAll('[data-copy]').forEach(function(btn){

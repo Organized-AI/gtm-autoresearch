@@ -29,7 +29,7 @@ where `/` and `/run/` show it live over `/api/stream`. Set `ARB_RECORD` to appen
 | AutoLoop | `box/autoloop/analyze.mjs` |
 | "11/11 passed, form missing" | Jev container pipeline on each winner (reader, hard stops, audit), preview QA, jev-site-scan (G4) |
 
-## Gates and the first run (main @ 62dfaa3): 13 pass, 11 fail, 3 manual, 5 not built
+## Gates and the latest run: 14 pass, 12 fail, 3 manual, 6 not built
 
 Every check is tied to a chapter of the field guide (guide.organizedai.vip/gtm-autoresearch).
 Where the guide calls a rule a future gate (shadow mode, ch05-08), the check reports "not built", never "fail".
@@ -59,7 +59,11 @@ consent types (AUD-CON-02 0→114). HRE shows the same pattern (6→28) and its 
 entities. Both winners trip hard stops (consent touched, opaque code touched). `shadowPolicy()` has
 none of the guide's container hard stops. The guide's reader flags GTM built-in triggers as unresolved.
 
-The recorded run is `proof/2026-10-03-gtm-autoresearch.jsonl`.
+The recorded run is `proof/2026-10-10-gtm-autoresearch.jsonl`.
+
+## Agent and bot traffic
+
+`agentTraffic` is an opt-in 13th scorer dimension (weight 0.08), on for BLADE and HRE via `Agent traffic dimension: on` in program.md. The loop builds it from GTM's own variable types (no Custom JavaScript) and sends `traffic_class` and `ai_referrer` to GA4. Crawlers and signed agents, which mostly never run GTM, are handled by the edge Worker template. Details: `templates/agent-traffic/README.md`. The loop also now drops a target after 3 reverts in a row and records the strategy and candidate scores on every round.
 
 ## Deploy
 

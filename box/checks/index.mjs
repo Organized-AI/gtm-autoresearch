@@ -29,7 +29,7 @@ const notBuilt = (reason) => ({ result: "not_built", reason });
 const pct = (x) => `${(x * 100).toFixed(1)}%`;
 
 let _scoreCache = new Map();
-const scoreOnce = (f, s) => { const k = `${f}|${s}`; if (!_scoreCache.has(k)) _scoreCache.set(k, score(f, s)); return _scoreCache.get(k); };
+const scoreOnce = (f, s, o = {}) => { const k = `${f}|${s}|${!!o.agentTraffic}`; if (!_scoreCache.has(k)) _scoreCache.set(k, score(f, s, o)); return _scoreCache.get(k); };
 const _jev = new Map();
 const jevDiff = (a, b) => { const k = `d|${a}|${b}`; if (!_jev.has(k)) _jev.set(k, readDiff(a, b)); return _jev.get(k); };
 const jevAudit = (a) => { const k = `a|${a}`; if (!_jev.has(k)) _jev.set(k, audit(a)); return _jev.get(k); };
@@ -101,16 +101,28 @@ export const CHECKS = [
     const out = [], bad = [];
     for (const c of clients()) {
       if (!c.tmpl) continue;
-      const s = scoreOnce(c.tmpl, c.snap); if (s.error) return manual(`scorer didn't run here (${s.error})`);
-      const w = weightsFromProgram(c.program);
+      const s = scoreOnce(c.tmpl, c.snap, { agentTraffic: c.agentTraffic }); if (s.error) return manual(`scorer didn't run here (${s.error})`);
+      const w0 = weightsFromProgram(c.program);
+      const scale = c.agentTraffic ? 0.92 : 1;
+      const w = Object.fromEntries(Object.entries(w0).map(([k, v]) => [k, Number((v * scale).toFixed(6))]));
+      if (c.agentTraffic) w.agentTraffic = 0.08;
       const missing = Object.keys(w).filter((k) => !s.dimensions.some((d) => d.name === k));
-      const diff = s.dimensions.filter((d) => w[d.name] !== undefined && Math.abs(w[d.name] - d.weight) > 1e-9).map((d) => `${d.name} ${w[d.name]}→${d.weight}`);
+      const diff = s.dimensions.filter((d) => w[d.name] !== undefined && Math.abs(w[d.name] - d.weight) > 1e-5).map((d) => `${d.name} ${w[d.name]}→${d.weight}`);
       const head = missing.length ? `${c.id}: program.md lists ${Object.keys(w).length} dimensions, the scorer applied ${s.dimensions.length} (dropped ${missing.join(", ")}: no data for it in ${c.snap || "the snapshot"}) and reweighted the rest` : `${c.id}`;
       (diff.length || missing.length ? bad : out).push(diff.length || missing.length ? `${head}: ${diff.join(", ")}` : `${c.id}: ${s.dimensions.length}/${Object.keys(w).length} weights match`);
     }
     return bad.length ? fail(`${bad.map((b) => b.split(":")[0]).join(", ")} is scored on different dimensions or weights than its program.md says`, [...bad, ...out]) : pass("program.md weights match the scorer for every client", out);
   } },
 
+  { gate: "g1", id: "agent-traffic-dimension", why: "The loop can only build what it scores. Agent and bot traffic is an opt-in 13th dimension, switched on per client in program.md.", run() {
+    const ev = read("evals/eval_gtm_signal_quality.ts");
+    if (!/export function scoreAgentTraffic/.test(ev)) return fail("the scorer has no agentTraffic dimension");
+    const cs = clients(); const off = cs.filter((c) => !c.agentTraffic);
+    const loop = /Agent traffic dimension/.test(read("scripts/run-gtm-loop.ts"));
+    if (!loop) return fail("the scorer has agentTraffic but run-gtm-loop.ts never turns it on");
+    return off.length ? fail(`${off.length} of ${cs.length} clients haven't opted in`, off.map((c) => c.id))
+      : pass(`scorer and loop support agentTraffic (weight 0.08); ${cs.map((c) => c.id).join(" and ")} opt in through program.md`);
+  } },
   { gate: "g1", id: "dimension-floors", why: "Guide ch02: one weighted number is gameable. Per-dimension floors, written before the run and enforced in code, stop a critical property being traded for a better average.", run() {
     const loop = read("scripts/run-gtm-loop.ts");
     const kept = [], drops = [];
@@ -259,6 +271,23 @@ export const CHECKS = [
   } },
   { gate: "g4", id: "promotion-stage", why: "Field guide ch08 adoption ladder: evidence builder → shadow baseline → reviewed evaluation → optional enforcement → production publishing (always human).", run() {
     return manual("stage 2 of 5, shadow baseline. Stage 1 needs the evidence builder tested (the container guide's reader fails on built-in triggers); stage 3 needs reviewed real labels and Preview evidence");
+  } },
+  { gate: "g4", id: "agent-traffic-web", why: "Can each client's best container tell agent and bot traffic from people, and does it send traffic_class and ai_referrer to GA4?", run() {
+    const out = [], bad = [];
+    for (const c of clients()) {
+      const w = bestWinner(c); if (!w || !c.agentTraffic) continue;
+      const s = scoreOnce(w, c.snap, { agentTraffic: true }); if (s.error) return manual(`scorer didn't run here (${s.error})`);
+      const d = s.dimensions.find((x) => x.name === "agentTraffic");
+      const missing = (d.warnings ?? 0);
+      (d.score < 1 ? bad : out).push(`${c.id} ${w.split("/").pop()}: agentTraffic ${(d.score * 100).toFixed(0)}% (${missing} of 5 parts missing)`);
+    }
+    if (!out.length && !bad.length) return manual("no opted-in client with a winner to score");
+    return bad.length ? fail(`${bad.length} best containers can't tell agents from people yet. The next loop run targets it with the built-in-only recipe`, [...bad, ...out]) : pass("every best container classifies agent traffic and tells GA4", out);
+  } },
+  { gate: "g4", id: "agent-traffic-edge", why: "AI crawlers and signed agents mostly never run GTM. Classify them at the edge (user agent + Signature-Agent header) and send them to the same GA4 property.", run() {
+    return exists("box/templates/agent-traffic/edge-worker.js")
+      ? notBuilt("box/templates/agent-traffic/edge-worker.js is written but not deployed in front of any client site")
+      : notBuilt("no edge classifier");
   } },
   { gate: "g4", id: "staging-qa", why: "The video's restaurant case: 11/11 checks passed and the order form was still missing. Each kept round needs a preview-mode tag-firing check.", run() {
     return /qa: \{ status: "absent" \}/.test(read("scripts/run-gtm-loop.ts"))
