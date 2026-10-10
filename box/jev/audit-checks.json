@@ -1,0 +1,13 @@
+{
+  "AUD-REF-01": { "title": "Unresolved references", "side": "both", "checks": "Every {{variable}}, trigger ID and folder ID resolves to an entity or built-in.", "next": "Define the missing variable or remove the reference, then re-export and re-run the audit. Do not publish while this stands.", "when": "Now" },
+  "AUD-OPQ-01": { "title": "Opaque code", "side": "both", "checks": "Custom HTML tags, custom JavaScript variables and sandboxed templates.", "next": "Have a person read the code. Record its purpose and owner in the entity notes. Replace it with a built-in tag or template where one fits.", "when": "Now" },
+  "AUD-CON-01": { "title": "No consent setting on a tag", "side": "both", "checks": "Each tag has a consent status other than not set.", "next": "Decide per tag whether it needs consent. Set the consent types, or set not needed and note why.", "when": "Soon" },
+  "AUD-CON-02": { "title": "Consent needed with no types", "side": "both", "checks": "A tag marked needed lists at least one consent type.", "next": "Add the consent types the tag depends on, for example analytics_storage or ad_storage, or change the status.", "when": "Now" },
+  "AUD-TRG-01": { "title": "Tag with no firing trigger", "side": "both", "checks": "Each tag has at least one firing trigger.", "next": "Attach a trigger, or delete the tag if it is dead.", "when": "Soon" },
+  "AUD-TRG-02": { "title": "Unused trigger", "side": "both", "checks": "Each trigger is used by some tag as firing or blocking.", "next": "Delete it, or note what it is kept for.", "when": "Later" },
+  "AUD-VAR-01": { "title": "Unused variable", "side": "both", "checks": "Each variable is referenced by something.", "next": "Delete it, or note what it is kept for.", "when": "Later" },
+  "AUD-TAG-01": { "title": "Paused tag", "side": "both", "checks": "Paused tags are listed.", "next": "Delete paused tags that have no planned return date.", "when": "Later" },
+  "AUD-TAG-02": { "title": "liveOnly tag", "side": "both", "checks": "Tags marked liveOnly are listed, because Preview cannot observe them.", "next": "Add a canary plan for this tag. Do not treat a clean Preview run as coverage.", "when": "Later" },
+  "AUD-SRV-01": { "title": "No client on a server container", "side": "server", "checks": "At least one client exists.", "next": "Add the client that should claim your incoming requests, then replay sample requests.", "when": "Now" },
+  "AUD-SRV-02": { "title": "Clients share a priority", "side": "server", "checks": "Client priorities are distinct, so claim order is explicit.", "next": "Give each client its own priority and replay sample requests to confirm the right client claims each one.", "when": "Soon" }
+}

@@ -27,6 +27,17 @@ When enriched snapshot is available (full profile — Meta + Google Ads):
 
 Falls back to 8-dimension structural scoring when no ads snapshot is provided.
 
+## Agent Traffic (opt-in 13th dimension)
+
+Agent traffic dimension: on
+
+Scores whether the container can tell agent and bot traffic from people and tells GA4. Weight 0.08; every other weight above is multiplied by 0.92 so the total stays 1.0.
+
+- Web layer only. AI crawlers and user-triggered fetchers (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-User, PerplexityBot, Perplexity-User) usually never run this container, and signed agents identify themselves in request headers (Signature-Agent) that page JavaScript can't read. Those are classified at the edge; see box/templates/agent-traffic/README.md.
+- Built from GTM variable types only (JavaScript Variable, HTTP Referrer, URL, Regex Table, Lookup Table). No Custom JavaScript or Custom HTML.
+- Classify, never block: no conversion tag is paused or changed because of traffic_class.
+- Reference configuration: box/templates/agent-traffic/gtm-fragment.json. GA4 needs event-scoped custom dimensions traffic_class and ai_referrer registered by a person.
+
 ## Edit Strategy (priority order)
 
 1. **Consent first** — Add Consent Mode v2 init tag, set all existing tags to `consentStatus: "NEEDED"`
@@ -37,6 +48,7 @@ Falls back to 8-dimension structural scoring when no ads snapshot is provided.
 6. **Google Ads alignment** — Add missing GAds conversion tags for active conversion actions
 7. **Naming** — Fix any naming convention violations
 8. **Folders** — Assign unfoldered entities to correct folders
+9. **Agent traffic** — Add `JS - Navigator WebDriver`, `JS - User Agent`, `RT - Agent UA Class`, `LT - Traffic Class`, then the AI referrer tables, then send `traffic_class` and `ai_referrer` on the Google tag. Built-in variable types only.
 
 ## Constraints (INVARIANTS — mutations that violate these are rejected)
 

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(evals/**)",
+      "Write(evals/**)",
+      "Edit(box/checks/**)",
+      "Write(box/checks/**)",
+      "Edit(box/jev/**)",
+      "Write(box/jev/**)",
+      "Edit(DOCUMENTATION/jev-shadow-pilot/rubric-*.json)",
+      "Write(DOCUMENTATION/jev-shadow-pilot/rubric-*.json)"
+    ]
+  }
+}

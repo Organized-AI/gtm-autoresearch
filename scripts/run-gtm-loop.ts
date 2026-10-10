@@ -80,6 +80,7 @@ interface ProgramConfig {
   enrichedSnapshotPath: string | undefined;
   strategyOrder: string[];
   constraints: string[];
+  agentTraffic: boolean;
 }
 
 interface RoundResult {
@@ -88,6 +89,11 @@ interface RoundResult {
   dimensions: Record<string, number>;
   issueCount: number;
   action: "improved" | "reverted" | "validation_fail" | "json_fail";
+  /** The dimension this round targeted. */
+  strategy?: string;
+  /** For reverted rounds: what the rejected candidate scored, so AutoLoop can see what was tried. */
+  candidateScore?: number;
+  candidateDimensions?: Record<string, number>;
   mutationSummary: string;
   shadow?: ShadowOutcome;
 }
@@ -148,7 +154,10 @@ function parseProgram(content: string): ProgramConfig {
     "unique_ids",
   ];
 
-  return { templatePath, metaSnapshotPath, enrichedSnapshotPath, strategyOrder, constraints };
+  // Opt-in 13th dimension: "Agent traffic dimension: on" anywhere in program.md.
+  const agentTraffic = /Agent traffic dimension:\s*on\b/i.test(content);
+
+  return { templatePath, metaSnapshotPath, enrichedSnapshotPath, strategyOrder, constraints, agentTraffic };
 }
 
 function formatPercent(score: number, digits = 1): string {
@@ -718,6 +727,19 @@ function buildMutationPrompt(
     ? "\nIMPORTANT: Previous mutations had JSON errors. Output ONLY 1 operation this round.\n"
     : "";
 
+  const agentGuide = strategy === "agentTraffic" ? `
+## Agent traffic recipe (strategy is agentTraffic)
+Build agent and bot classification from GTM's own variable types. Never use Custom JavaScript ("jsm") or Custom HTML for this: opaque code is a hard stop for review.
+Target, in this order. Each round should raise the agentTraffic score on its own, so add a variable together with whatever uses it:
+Round A: add_variable {"name":"JS - Navigator WebDriver","type":"j","parameter":[{"type":"TEMPLATE","key":"name","value":"navigator.webdriver"}]}; add_variable {"name":"JS - User Agent","type":"j","parameter":[{"type":"TEMPLATE","key":"name","value":"navigator.userAgent"}]}; add_variable "RT - Agent UA Class": type "remm" (Regex Table), input {{JS - User Agent}}, ignoreCase true, default "human", rows: GPTBot|OAI-SearchBot|ChatGPT-User → ai_openai; ClaudeBot|Claude-SearchBot|Claude-User → ai_anthropic; PerplexityBot|Perplexity-User → ai_perplexity; Meta-ExternalAgent|meta-externalfetcher → ai_meta; Amazonbot|Applebot|Bytespider|CCBot → ai_other; HeadlessChrome|Puppeteer|Playwright|PhantomJS|Selenium → automation; bot|crawl|spider|slurp → bot_other
+Round B: add_variable "LT - Traffic Class": type "smm" (Lookup Table), input {{JS - Navigator WebDriver}}, row true → automation, default {{RT - Agent UA Class}}; modify_tag on the Google tag (type "googtag") appending a configSettingsTable row traffic_class = {{LT - Traffic Class}}
+Round C: add_variable "URL - utm_source" type "u" (component QUERY, queryKey utm_source); add_variable "RT - AI utm_source": Regex Table on {{URL - utm_source}}, default "none", rows chatgpt\\.com|chat\\.openai\\.com → chatgpt, perplexity\\.ai → perplexity, claude\\.ai → claude, gemini\\.google\\.com → gemini, copilot\\.microsoft\\.com → copilot
+Round D: add_variable "REF - Referrer" type "f"; add_variable "RT - AI Referrer": same rows on {{REF - Referrer}}, default {{RT - AI utm_source}}; modify_tag on the Google tag appending ai_referrer = {{RT - AI Referrer}}
+When you modify the Google tag, keep every existing parameter and configSettingsTable row.
+Only reference a variable that already exists or that you add in the same round. Classify only; never block or change conversion tags for this.
+Reference shapes: box/templates/agent-traffic/gtm-fragment.json.
+` : "";
+
   return `You are optimizing a GTM container. Output a JSON operations object — NOT the full container.
 Round ${round}. Current score: ${(scores.combinedScore * 100).toFixed(1)}%.
 ${smallerScope}
@@ -731,7 +753,7 @@ ${topIssues || "  None"}
 ${warningIssues || "  None"}
 
 ## Strategy focus: ${strategy}
-
+${agentGuide}
 ## Existing entities:
 Tags:
 ${tagList}
@@ -835,16 +857,19 @@ function callMutation(prompt: string): string | null {
 
 // ── Determine strategy focus ─────────────────────────────────────────────────
 
-function pickStrategy(scores: GtmSignalQualityResult): string {
+export function pickStrategy(scores: GtmSignalQualityResult, exhausted: Set<string> = new Set()): string {
+  // Targets that reverted STALL_REVERTS times in a row are skipped for the rest of the run.
+  const open = scores.dimensions.filter((d) => !exhausted.has(d.name) && d.score < 1);
+  const pool = open.length ? open : scores.dimensions;
   // Pick the lowest-scoring dimension with errors
-  const withErrors = scores.dimensions.filter((d) => d.issues.some((i) => i.severity === "error"));
+  const withErrors = pool.filter((d) => d.issues.some((i) => i.severity === "error"));
   if (withErrors.length > 0) {
     withErrors.sort((a, b) => a.score - b.score);
     return withErrors[0].name;
   }
 
   // Otherwise pick lowest scoring dimension
-  const sorted = [...scores.dimensions].sort((a, b) => a.score - b.score);
+  const sorted = [...pool].sort((a, b) => a.score - b.score);
   return sorted[0].name;
 }
 
@@ -860,6 +885,8 @@ async function main(): Promise<void> {
   const config = parseProgram(programContent);
 
   const templatePath = path.resolve(PROJECT_ROOT, config.templatePath);
+  const evalOptions = { agentTraffic: config.agentTraffic };
+  if (config.agentTraffic) console.log("[GTMLoop] Agent traffic dimension: on");
 
   // Load ads snapshot (enriched preferred, legacy Meta fallback)
   let adsSnapshot: EnrichedAdsSnapshot | MetaAdsSnapshot | undefined;
@@ -925,7 +952,7 @@ async function main(): Promise<void> {
   // Load seed template (read-only reference)
   const seedJson = await readFile(templatePath, "utf-8");
   const seed: GtmContainer = JSON.parse(seedJson);
-  const baselineScores = evaluateGtmSignalQuality(seed, adsSnapshot);
+  const baselineScores = evaluateGtmSignalQuality(seed, adsSnapshot, evalOptions);
 
   // Deep copy as working state
   let working: GtmContainer = JSON.parse(seedJson);
@@ -935,6 +962,11 @@ async function main(): Promise<void> {
   let plateauCount = 0;
   let regressionCount = 0;
   let consecutiveJsonFails = 0;
+  // Rotate off a target the loop can't move (BLADE spent 24 rounds on one).
+  const STALL_REVERTS = 3;
+  const exhausted = new Set<string>();
+  let lastStrategy = "";
+  let strategyReverts = 0;
   let bestScore = baselineScores.combinedScore;
   let bestJson = seedJson;
   let prevScore = baselineScores.combinedScore;
@@ -953,7 +985,7 @@ async function main(): Promise<void> {
     console.log(`${"═".repeat(60)}`);
 
     // Score current state
-    const scores = evaluateGtmSignalQuality(working, adsSnapshot);
+    const scores = evaluateGtmSignalQuality(working, adsSnapshot, evalOptions);
 
     console.log(
       `[Score] Combined: ${(scores.combinedScore * 100).toFixed(1)}%`,
@@ -1013,7 +1045,7 @@ async function main(): Promise<void> {
 
     // ── Mutate ──
 
-    const strategy = pickStrategy(scores);
+    const strategy = pickStrategy(scores, exhausted);
     console.log(`[Mutate] Strategy focus: ${strategy}`);
 
     const prompt = buildMutationPrompt(
@@ -1120,7 +1152,7 @@ async function main(): Promise<void> {
     }
 
     // Re-score mutated version
-    const mutatedScores = evaluateGtmSignalQuality(mutated, adsSnapshot);
+    const mutatedScores = evaluateGtmSignalQuality(mutated, adsSnapshot, evalOptions);
     let shadowBase: Omit<ShadowOutcome, "actualAction" | "disagreement"> | undefined;
     if (JEV_MODE === "shadow") {
       const evidence = buildEvidence({
@@ -1145,6 +1177,7 @@ async function main(): Promise<void> {
     if (mutatedScores.combinedScore > scores.combinedScore) {
       // Keep improvement
       console.log("[Mutate] IMPROVED — keeping mutation");
+      strategyReverts = 0; lastStrategy = strategy;
       working = mutated;
       workingJson = JSON.stringify(mutated, null, 2);
       if (mutatedScores.combinedScore > bestScore) { bestScore = mutatedScores.combinedScore; bestJson = workingJson; }
@@ -1156,12 +1189,19 @@ async function main(): Promise<void> {
         ),
         issueCount: mutatedScores.issues.length,
         action: "improved",
+        strategy,
         mutationSummary: `Score ${(scores.combinedScore * 100).toFixed(1)}% → ${(mutatedScores.combinedScore * 100).toFixed(1)}%`,
         shadow: shadowBase && { ...shadowBase, actualAction: "improved", disagreement: shadowBase.proposedRoute !== "keep" },
       });
     } else {
       // Revert
       console.log("[Mutate] No improvement — reverting");
+      strategyReverts = strategy === lastStrategy ? strategyReverts + 1 : 1;
+      lastStrategy = strategy;
+      if (strategyReverts >= STALL_REVERTS && !exhausted.has(strategy)) {
+        exhausted.add(strategy);
+        console.log(`[Strategy] ${strategy} reverted ${STALL_REVERTS} times in a row; moving to the next target for the rest of this run`);
+      }
       results.push({
         round,
         score: scores.combinedScore,
@@ -1170,6 +1210,9 @@ async function main(): Promise<void> {
         ),
         issueCount: scores.issues.length,
         action: "reverted",
+        strategy,
+        candidateScore: mutatedScores.combinedScore,
+        candidateDimensions: Object.fromEntries(mutatedScores.dimensions.map((d) => [d.name, d.score])),
         mutationSummary: `${(mutatedScores.combinedScore * 100).toFixed(1)}% <= ${(scores.combinedScore * 100).toFixed(1)}%, reverted`,
         shadow: shadowBase && { ...shadowBase, actualAction: "reverted", disagreement: shadowBase.proposedRoute === "keep" },
       });
@@ -1222,7 +1265,7 @@ async function main(): Promise<void> {
   // ── Generate markdown notes ──
 
   const finalContainer = JSON.parse(bestJson) as GtmContainer;
-  const finalScores = evaluateGtmSignalQuality(finalContainer, adsSnapshot);
+  const finalScores = evaluateGtmSignalQuality(finalContainer, adsSnapshot, evalOptions);
   const notesDir = path.join(logDir, "notes");
   await mkdir(notesDir, { recursive: true });
 

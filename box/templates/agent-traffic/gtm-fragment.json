@@ -1,0 +1,519 @@
+{
+  "$comment": "Agent and bot traffic for a web GTM container. Add the variables, then add the two configSettingsTable rows to the Google tag. Built-in variable types only; no Custom JavaScript. Register traffic_class and ai_referrer as event-scoped custom dimensions in GA4.",
+  "variables": [
+    {
+      "name": "JS - Navigator WebDriver",
+      "type": "j",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "navigator.webdriver"
+        }
+      ],
+      "notes": "true in WebDriver-controlled browsers (Selenium, Playwright, Puppeteer by default)."
+    },
+    {
+      "name": "JS - User Agent",
+      "type": "j",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "name",
+          "value": "navigator.userAgent"
+        }
+      ]
+    },
+    {
+      "name": "RT - Agent UA Class",
+      "type": "remm",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "input",
+          "value": "{{JS - User Agent}}"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "setDefaultValue",
+          "value": "true"
+        },
+        {
+          "type": "TEMPLATE",
+          "key": "defaultValue",
+          "value": "human"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "fullMatch",
+          "value": "false"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "replaceAfterMatch",
+          "value": "false"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "ignoreCase",
+          "value": "true"
+        },
+        {
+          "type": "LIST",
+          "key": "map",
+          "list": [
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "GPTBot|OAI-SearchBot|ChatGPT-User"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "ai_openai"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "ClaudeBot|Claude-SearchBot|Claude-User"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "ai_anthropic"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "PerplexityBot|Perplexity-User"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "ai_perplexity"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "Meta-ExternalAgent|meta-externalfetcher"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "ai_meta"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "Amazonbot|Applebot|Bytespider|CCBot"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "ai_other"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "HeadlessChrome|Puppeteer|Playwright|PhantomJS|Selenium"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "automation"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "bot|crawl|spider|slurp"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "bot_other"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "notes": "User agent tokens for AI crawlers, user-triggered fetchers and automation. Most crawlers never run GTM; matches here are the ones that do."
+    },
+    {
+      "name": "LT - Traffic Class",
+      "type": "smm",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "input",
+          "value": "{{JS - Navigator WebDriver}}"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "setDefaultValue",
+          "value": "true"
+        },
+        {
+          "type": "TEMPLATE",
+          "key": "defaultValue",
+          "value": "{{RT - Agent UA Class}}"
+        },
+        {
+          "type": "LIST",
+          "key": "map",
+          "list": [
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "key",
+                  "value": "true"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "value",
+                  "value": "automation"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "notes": "automation when navigator.webdriver is true, else the user-agent class. Sent to GA4 as traffic_class."
+    },
+    {
+      "name": "URL - utm_source",
+      "type": "u",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "component",
+          "value": "QUERY"
+        },
+        {
+          "type": "TEMPLATE",
+          "key": "queryKey",
+          "value": "utm_source"
+        }
+      ]
+    },
+    {
+      "name": "REF - Referrer",
+      "type": "f",
+      "parameter": []
+    },
+    {
+      "name": "RT - AI Referrer",
+      "type": "remm",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "input",
+          "value": "{{REF - Referrer}}"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "setDefaultValue",
+          "value": "true"
+        },
+        {
+          "type": "TEMPLATE",
+          "key": "defaultValue",
+          "value": "{{RT - AI utm_source}}"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "fullMatch",
+          "value": "false"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "replaceAfterMatch",
+          "value": "false"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "ignoreCase",
+          "value": "true"
+        },
+        {
+          "type": "LIST",
+          "key": "map",
+          "list": [
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "chatgpt\\.com|chat\\.openai\\.com"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "chatgpt"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "perplexity\\.ai"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "perplexity"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "claude\\.ai"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "claude"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "gemini\\.google\\.com"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "gemini"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "copilot\\.microsoft\\.com"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "copilot"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "notes": "People arriving from an AI assistant. Falls back to utm_source (ChatGPT tags outbound links utm_source=chatgpt.com)."
+    },
+    {
+      "name": "RT - AI utm_source",
+      "type": "remm",
+      "parameter": [
+        {
+          "type": "TEMPLATE",
+          "key": "input",
+          "value": "{{URL - utm_source}}"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "setDefaultValue",
+          "value": "true"
+        },
+        {
+          "type": "TEMPLATE",
+          "key": "defaultValue",
+          "value": "none"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "fullMatch",
+          "value": "false"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "replaceAfterMatch",
+          "value": "false"
+        },
+        {
+          "type": "BOOLEAN",
+          "key": "ignoreCase",
+          "value": "true"
+        },
+        {
+          "type": "LIST",
+          "key": "map",
+          "list": [
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "chatgpt\\.com|chat\\.openai\\.com"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "chatgpt"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "perplexity\\.ai"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "perplexity"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "claude\\.ai"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "claude"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "gemini\\.google\\.com"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "gemini"
+                }
+              ]
+            },
+            {
+              "type": "MAP",
+              "map": [
+                {
+                  "type": "TEMPLATE",
+                  "key": "pattern",
+                  "value": "copilot\\.microsoft\\.com"
+                },
+                {
+                  "type": "TEMPLATE",
+                  "key": "output",
+                  "value": "copilot"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "googleTagConfigRows": [
+    {
+      "type": "MAP",
+      "map": [
+        {
+          "type": "TEMPLATE",
+          "key": "parameter",
+          "value": "traffic_class"
+        },
+        {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "{{LT - Traffic Class}}"
+        }
+      ]
+    },
+    {
+      "type": "MAP",
+      "map": [
+        {
+          "type": "TEMPLATE",
+          "key": "parameter",
+          "value": "ai_referrer"
+        },
+        {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "{{RT - AI Referrer}}"
+        }
+      ]
+    }
+  ],
+  "ga4CustomDimensions": [
+    {
+      "parameter": "traffic_class",
+      "scope": "EVENT",
+      "description": "human, automation, ai_openai, ai_anthropic, ai_perplexity, ai_meta, ai_other, bot_other"
+    },
+    {
+      "parameter": "ai_referrer",
+      "scope": "EVENT",
+      "description": "chatgpt, perplexity, claude, gemini, copilot, none"
+    }
+  ]
+}
