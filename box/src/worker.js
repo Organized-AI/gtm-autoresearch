@@ -89,7 +89,7 @@ function stream(req, env, after) {
 
 async function status(env) {
   const latest = await env.DB.prepare(
-    "SELECT run_id, MAX(at) AS at FROM events WHERE kind = 'run.end' GROUP BY run_id ORDER BY at DESC LIMIT 1",
+    "SELECT run_id, MAX(at) AS at FROM events WHERE kind = 'run.end' AND run_id IN (SELECT run_id FROM events WHERE kind = 'check') GROUP BY run_id ORDER BY at DESC LIMIT 1",
   ).first();
   if (!latest) return { runs: 0, latest: null, checks: [] };
   const { results } = await env.DB.prepare("SELECT body FROM events WHERE run_id = ?1 AND kind = 'check' ORDER BY seq").bind(latest.run_id).all();
